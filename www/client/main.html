@@ -1,0 +1,76 @@
+<head>
+	<title>Todo List</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+</head>
+<body>
+	<div>
+		{{> navbar}}
+	</div>
+	
+	<div id="wrapper">
+		
+		<!-- Sidebar -->
+		<div id="sidebar-wrapper">
+			<ul class="sidebar-nav">
+				<li class="sidebar-brand">
+					<a href="#">
+						Start Bootstrap
+					</a>
+				</li>
+				<li>
+					<a href="#" class="togglerrr">Dashboard</a>
+					<ul>
+						<li><a href="#">HEheh</a></li>
+						<li><a href="#">HEheh</a></li>
+					</ul>
+				</li>
+				<li>
+					<a href="#">Shortcuts</a>
+				</li>
+				<li>
+					<a href="#">Overview</a>
+				</li>
+				<li>
+					<a href="#">Events</a>
+				</li>
+				<li>
+					<a href="#">About</a>
+				</li>
+				<li>
+					<a href="#">Services</a>
+				</li>
+				<li>
+					<a href="#">Contact</a>
+				</li>
+			</ul>
+		</div>
+		
+		<div id="page-content-wrapper">
+			<div class="container-fluid">
+				<div class="row">
+					<!--div class="col-xs-3">
+						{{> sidebar}}
+					</div-->
+					<div class="col-xs-12">
+						<div id="listArticlesPage" style="display:none">
+							{{>listArticles}}
+						</div>
+						<div id="newArticlePage" style="display:none">
+							{{>newArticle}}
+						</div>
+						<div id="viewArticlePage" style="display:none">
+							{{>viewArticle}}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+					
+	</div>
+					
+</body>
+
+<template name="preload">
+	LOADING
+</template>
+	

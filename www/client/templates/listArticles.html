@@ -1,0 +1,70 @@
+<template name="listArticles">
+	<div class="row">
+		<div class="col-lg-12 page-header">
+			<h1 class="">hxKnowlegeBase</h1><p>Find haxe related articles and tutorials here, also submit your own entries and rate them.</p>
+		</div>
+		
+		
+	</div>
+	
+	<div class="row">
+		<div class="col-lg-12">
+			<table id="tableArticles" class="table table-hover" style="border-collapse:collapse">
+				<thead>
+				<tr>
+					<th class="text-center" style="width:10px"></th> 
+					<th class="" style=""><a href="#">TITLE</a></th>
+					<th class="text-center" style="width:90px"><a href="#">STARS</a></th>
+					<th class="text-center" style="width:120px"><a href="#">AGE</a></th>
+				</tr>
+				</thead>
+				<tbody id="dataParent">
+					{{#each articles}}
+					{{> articleRow}}
+					{{/each}}
+				</tbody>
+			</table>
+			<div>
+				<p><small id="entriesNumText">Showing 123 of 234 Entries</small></p>
+				<div class="text-center">
+					<button id="btnLoadMoreResults" type="button" class="btn btn-primary">Load more results</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</template>
+	
+<template name="articleRow">
+	<tr style="border-top:0px">
+		<td class="articleRowToggle" data-target="#articleRow{{_id}}" data-toggle="collapse"></td>
+		<td class="articleRowToggle" data-target="#articleRow{{_id}}" data-toggle="collapse"><strong>{{title}}</strong></td>
+		<td class="text-right">{{upvotes}}</td>
+		<td class="articleRowToggle text-center" data-target="#articleRow{{_id}}" data-toggle="collapse" >{{formatDate created}}</td>
+	</tr>
+	<tr class="noHover">
+		<td colspan="6" class="hiddenRow" style="padding:0;border-top:0px;border-bottom:1px solid #ddd">
+			<div  id="articleRow{{_id}}" class="articleRowBody collapse">
+				<div style="padding:20px">
+				
+				<p>{{description}}</p>
+				<div>
+					Posted by : <a href="#">{{user}}</a>
+				</div>
+				<div style="display:inline-block">
+					{{#if content}}
+					<button class="btn btn-info" onclick="Router.goto(Router.routes.viewArticle + '::article.id::')">
+						Read Here
+					</button>
+					{{/if}}
+					
+					{{#if link}}
+					<button class="btn btn-warning" onClick="window.open('{{formatLink link}}')">
+						External Link
+					</button>
+					{{/if}}
+				</div>
+				</div> 
+			</div> 
+		</td>
+	</tr>
+</template>

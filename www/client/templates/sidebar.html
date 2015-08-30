@@ -1,0 +1,28 @@
+<template name="sidebar">
+	<header>
+		<h1>Todo List</h1>
+	</header>
+	<ul>	
+		{{#each categories}}
+		{{> category}}
+		{{/each}}
+	</ul>
+</template>
+	
+<template name="category">
+	<li>
+		<span class="text">{{name}}</span>
+		{{#each children}}
+		{{> subcategory}}
+		{{/each}}
+	</li>
+</template>
+
+<template name="subcategory">
+	<li style="padding-left:40px">
+		<span class="text">{{name}}</span>
+		{{#each children}}
+		{{> subcategory}}
+		{{/each}}
+	</li>
+</template>
