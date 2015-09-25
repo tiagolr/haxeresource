@@ -1,6 +1,7 @@
 import meteor.packages.Router;
 import model.Articles;
-import model.Categories;
+import model.TagGroups;
+import model.Tags;
 /**
  * Shared
  * @author TiagoLr
@@ -8,8 +9,9 @@ import model.Categories;
 class Shared {
 
 	public static function init() {
-		new Categories();
+		new TagGroups();
 		new Articles();
+		new Tags();
 	}
 	
 }

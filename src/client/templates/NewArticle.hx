@@ -52,30 +52,19 @@ class NewArticle {
 						max:30000,
 						optional:true
 					},
-					category: {
-						type:String
-					},
 					tags: {
 						type:[String],
 						autoform: {
 							type: 'tags',
 							afFieldInput: {
-								maxTags:5,
-								maxChars:25,
+								maxTags:10,
+								maxChars:30,
 							}
 						}
 					}
 				});
-			},
+			}
 			
-			categories : function () {
-				return [
-					{label: 'Cat1', value: 1 },
-					{label: 'Cat2', value: 2 },
-					{label: 'Cat3', value: 3 },
-					{label: 'Cat4', value: 4 },
-				];
-			},
 		});
 		
 		/*untyped Template.registerHelper('schema', function () {

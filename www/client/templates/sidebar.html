@@ -1,28 +1,25 @@
 <template name="sidebar">
-	<header>
-		<h1>Todo List</h1>
-	</header>
-	<ul>	
-		{{#each categories}}
-		{{> category}}
-		{{/each}}
-	</ul>
+	<div id="sidebar-wrapper">
+		<ul class="sidebar-nav">
+			<li class="sidebar-brand">
+				<a href="#">
+					Start Bootstrap
+				</a>
+			</li>
+			{{#each tag_groups}}
+				{{> tag_group}}
+			{{/each}}
+		</ul>
+	</div>
 </template>
 	
-<template name="category">
+<template name="tag_group">
 	<li>
-		<span class="text">{{name}}</span>
-		{{#each children}}
-		{{> subcategory}}
-		{{/each}}
-	</li>
-</template>
-
-<template name="subcategory">
-	<li style="padding-left:40px">
-		<span class="text">{{name}}</span>
-		{{#each children}}
-		{{> subcategory}}
-		{{/each}}
+		<a href="#" class="togglerrr">{{name}}</a>
+		<ul>
+			{{#each tags}}
+			<li><a href="#">{{name}}</a></li>
+			{{/each}}
+		</ul>
 	</li>
 </template>

@@ -1,6 +1,0 @@
-tbody>tr{cursor:pointer;}
-#tableArticles{border:1px solid #e7e7e7;}
-#tableArticles>thead>tr>th{border-bottom:0px;}
-#tableArticles>thead>tr>th:last-child{border-right:1px solid #e7e7e7;}
-#tableArticles>tbody>tr>td:last-child{border-right:1px solid #e7e7e7;}
-.hiddenRow:hover{background-color:#fff;}

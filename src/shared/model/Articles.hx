@@ -1,18 +1,20 @@
 package model;
 import meteor.Collection;
 import meteor.packages.SimpleSchema;
+
 typedef Article = {
+	?_id:String,
 	title:String,
 	description:String,
-	link:String,
-	contents:String,
-	categoryId:String,
-	comments:Int,
-	upvotes:Int,
-	downvotes:Int,
+	?link:String,
+	?content:String,
+	?comments:Array<{message:String, user:String}>,
+	?upvotes:Int,
+	?downvotes:Int,
 	user:String,
-	created:Date,
-	modified:Date,
+	?created:Date,
+	?modified:Date,
+	tags:Array<String>,
 }
 
 /**
@@ -20,27 +22,47 @@ typedef Article = {
  * @author TiagoLr
  */
 class Articles extends Collection {
+	
+	public static inline var NAME = 'articles';
 
-	public static var collection:Articles;
+	public static var collection(default, null):Articles;
 	public function new() {
-		super('articles');
+		super(NAME);
 		collection = this;
 	}
 	
-	public static function create(title:String, description:String, ?link:String, ?contents:String, categoryId:String, user:String) {
-		return {
-			title:title,
-			description:description,
-			link:link,
-			contents:contents,
-			categoryId:categoryId,
-			upvotes:0,
-			downvotes:0,
-			comments:0,
-			created:Date.now(),
-			modified:Date.now(),
-			user:user
+	public static function create(article:Article):Article {
+		var resolvedTags = [];
+		for (tag in article.tags) {
+			var t = Tags.collection.findOne( { name:tag } );
+			if (t != null) {
+				resolvedTags.push(t._id);
+			} else {
+				var created = Tags.create({name:tag});
+				if (created != null) {
+					resolvedTags.push(created._id);
+				}
+			}
 		}
+		
+		article.tags = resolvedTags;
+		
+		if (article.comments == null)
+			article.comments = [];
+			
+		if (article.upvotes == null) {
+			article.upvotes = 0;
+		}
+		
+		if (article.downvotes == null) {
+			article.downvotes = 0;
+		}
+		
+		article.created = Date.now();
+		article.modified = Date.now();
+		
+		Articles.collection.insert(article);
+		return article;
 	}
 	
 }

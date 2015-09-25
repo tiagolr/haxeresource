@@ -1,11 +1,8 @@
 import js.Browser;
-import js.JQuery;
 import meteor.Meteor;
-import meteor.packages.Router;
-import meteor.Session;
-import meteor.Template;
 import model.Articles;
-import model.Categories;
+import model.TagGroups;
+import model.Tags;
 import templates.ListArticles;
 import templates.Navbar;
 import templates.NewArticle;
@@ -21,11 +18,13 @@ class Client {
 	public static function main() {
 		Shared.init();
 
-		untyped Browser.window.categories = untyped Categories.collection._collection;
+		untyped Browser.window.tags = untyped Tags.collection._collection;
 		untyped Browser.window.articles = untyped Articles.collection._collection;
+		untyped Browser.window.groups = untyped TagGroups.collection._collection;
 
-		Meteor.subscribe('categories');
-		Meteor.subscribe('articles');
+		Meteor.subscribe(Tags.NAME);
+		Meteor.subscribe(TagGroups.NAME);
+		Meteor.subscribe(Articles.NAME);
 		
 		Navbar.init();
 		SideBar.init();

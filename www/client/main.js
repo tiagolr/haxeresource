@@ -27,9 +27,11 @@ CRouter.init = function() {
 var Client = function() { };
 Client.main = function() {
 	Shared.init();
-	window.categories = model_Categories.collection._collection;
+	window.tags = model_Tags.collection._collection;
 	window.articles = model_Articles.collection._collection;
-	Meteor.subscribe("categories");
+	window.groups = model_TagGroups.collection._collection;
+	Meteor.subscribe("tags");
+	Meteor.subscribe("tag_groups");
 	Meteor.subscribe("articles");
 	templates_Navbar.init();
 	templates_SideBar.init();
@@ -41,6 +43,18 @@ Client.main = function() {
 		return hljs.highlightAuto(code).value;
 	}});
 };
+var EReg = function(r,opt) {
+	opt = opt.split("u").join("");
+	this.r = new RegExp(r,opt);
+};
+EReg.prototype = {
+	match: function(s) {
+		if(this.r.global) this.r.lastIndex = 0;
+		this.r.m = this.r.exec(s);
+		this.r.s = s;
+		return this.r.m != null;
+	}
+};
 var HxOverrides = function() { };
 HxOverrides.substr = function(s,pos,len) {
 	if(pos != null && pos != 0 && len != null && len < 0) return "";
@@ -51,10 +65,23 @@ HxOverrides.substr = function(s,pos,len) {
 	} else if(len < 0) len = s.length + len - pos;
 	return s.substr(pos,len);
 };
+HxOverrides.indexOf = function(a,obj,i) {
+	var len = a.length;
+	if(i < 0) {
+		i += len;
+		if(i < 0) i = 0;
+	}
+	while(i < len) {
+		if(a[i] === obj) return i;
+		i++;
+	}
+	return -1;
+};
 var Shared = function() { };
 Shared.init = function() {
-	new model_Categories();
+	new model_TagGroups();
 	new model_Articles();
+	new model_Tags();
 };
 var StringTools = function() { };
 StringTools.startsWith = function(s,start) {
@@ -64,21 +91,52 @@ var model_Articles = function() {
 	Mongo.Collection.call(this,"articles");
 	model_Articles.collection = this;
 };
-model_Articles.create = function(title,description,link,contents,categoryId,user) {
-	return { title : title, description : description, link : link, contents : contents, categoryId : categoryId, upvotes : 0, downvotes : 0, comments : 0, created : new Date(), modified : new Date(), user : user};
+model_Articles.create = function(article) {
+	var resolvedTags = [];
+	var _g = 0;
+	var _g1 = article.tags;
+	while(_g < _g1.length) {
+		var tag = _g1[_g];
+		++_g;
+		var t = model_Tags.collection.findOne({ name : tag});
+		if(t != null) resolvedTags.push(t._id); else {
+			var created = model_Tags.create({ name : tag});
+			if(created != null) resolvedTags.push(created._id);
+		}
+	}
+	article.tags = resolvedTags;
+	if(article.comments == null) article.comments = [];
+	if(article.upvotes == null) article.upvotes = 0;
+	if(article.downvotes == null) article.downvotes = 0;
+	article.created = new Date();
+	article.modified = new Date();
+	model_Articles.collection.insert(article);
+	return article;
 };
 model_Articles.__super__ = Mongo.Collection;
 model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 });
-var model_Categories = function() {
-	Mongo.Collection.call(this,"categories");
-	model_Categories.collection = this;
+var model_TagGroups = function() {
+	Mongo.Collection.call(this,"tag_groups");
+	model_TagGroups.collection = this;
 };
-model_Categories.create = function(name,description,icon,parentId) {
-	return { name : name, description : description, icon : icon, parentId : parentId};
+model_TagGroups.create = function(tagGroup) {
+	model_TagGroups.collection.insert(tagGroup);
+	return tagGroup;
 };
-model_Categories.__super__ = Mongo.Collection;
-model_Categories.prototype = $extend(Mongo.Collection.prototype,{
+model_TagGroups.__super__ = Mongo.Collection;
+model_TagGroups.prototype = $extend(Mongo.Collection.prototype,{
+});
+var model_Tags = function() {
+	Mongo.Collection.call(this,"tags");
+	model_Tags.collection = this;
+};
+model_Tags.create = function(tag) {
+	model_Tags.collection.insert(tag);
+	return tag;
+};
+model_Tags.__super__ = Mongo.Collection;
+model_Tags.prototype = $extend(Mongo.Collection.prototype,{
 });
 var templates_ListArticles = function() { };
 templates_ListArticles.get_page = function() {
@@ -120,41 +178,69 @@ templates_NewArticle.init = function() {
 		js.JQuery("#previewContent").html(marked(content));
 	}});
 	Template.newArticle.helpers({ schema : function() {
-		return new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, autoform : { afFieldInput : { type : "url"}}}, content : { type : String, max : 30000, optional : true}, category : { type : String}, tags : { type : [String], autoform : { type : "tags", afFieldInput : { maxTags : 5, maxChars : 25}}}});
-	}, categories : function() {
-		return [{ label : "Cat1", value : 1},{ label : "Cat2", value : 2},{ label : "Cat3", value : 3},{ label : "Cat4", value : 4}];
+		return new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, autoform : { afFieldInput : { type : "url"}}}, content : { type : String, max : 30000, optional : true}, tags : { type : [String], autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}}});
 	}});
 };
 var templates_SideBar = function() { };
 templates_SideBar.init = function() {
-	Template.sidebar.helpers({ categories : function() {
-		var $final = [];
-		var cats = model_Categories.collection.find().fetch();
+	Template.sidebar.helpers({ tag_groups : function() {
+		var tags = model_Tags.collection.find().fetch();
+		var groups = model_TagGroups.collection.find().fetch();
 		var _g = 0;
-		while(_g < cats.length) {
-			var c = cats[_g];
+		while(_g < groups.length) {
+			var g = groups[_g];
 			++_g;
-			if(c.parentId == null) $final.push(c); else {
-				var _g1 = 0;
-				while(_g1 < cats.length) {
-					var parent = cats[_g1];
-					++_g1;
-					if(parent._id == c.parentId) {
-						if(parent.children == null) parent.children = [];
-						parent.children.push(c);
-						break;
-					}
+			var resolvedTags = [];
+			var _g1 = 0;
+			var _g2 = g.tags;
+			while(_g1 < _g2.length) {
+				var t = _g2[_g1];
+				++_g1;
+				var res = templates_SideBar.resolveTags(t,tags);
+				var _g3 = 0;
+				while(_g3 < res.length) {
+					var r = res[_g3];
+					++_g3;
+					if(HxOverrides.indexOf(resolvedTags,r,0) == -1) resolvedTags.push(r);
 				}
 			}
+			g.tags = resolvedTags;
 		}
-		return $final;
+		return groups;
 	}});
+};
+templates_SideBar.resolveTags = function(strOrRegex,tags) {
+	var resolved = [];
+	if(StringTools.startsWith(strOrRegex,"~")) {
+		var split = strOrRegex.split("/");
+		var reg = new EReg(split[1],split[2]);
+		var _g = 0;
+		while(_g < tags.length) {
+			var t = tags[_g];
+			++_g;
+			if(reg.match(t.name)) resolved.push(t);
+		}
+	} else {
+		var _g1 = 0;
+		while(_g1 < tags.length) {
+			var t1 = tags[_g1];
+			++_g1;
+			if(t1.name == strOrRegex) {
+				resolved = [t1];
+				break;
+			}
+		}
+	}
+	return resolved;
 };
 var templates_ViewArticle = function() { };
 templates_ViewArticle.get_page = function() {
 	return js.JQuery("#viewArticlePage");
 };
 templates_ViewArticle.init = function() {
+};
+if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
+	return Array.prototype.indexOf.call(a,o,i);
 };
 var q = window.jQuery;
 var js = js || {}
@@ -167,5 +253,8 @@ q.fn.iterator = function() {
 	}};
 };
 CRouter.FADE_DURATION = 500;
+model_Articles.NAME = "articles";
+model_TagGroups.NAME = "tag_groups";
+model_Tags.NAME = "tags";
 Client.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
