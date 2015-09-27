@@ -10,7 +10,7 @@ import templates.ViewArticle;
  */
 class CRouter {
 
-	static inline var FADE_DURATION = 500;
+	static public inline var FADE_DURATION = 500;
 	
 	static public function init() {
 		
@@ -20,10 +20,19 @@ class CRouter {
 		});
 		
 		Router.route('/', function() {
-			ListArticles.page.show(FADE_DURATION);
+			ListArticles.show(null, null, {});
 		}, {
 			onStop: function () {
-				ListArticles.page.hide(FADE_DURATION);
+				ListArticles.hide();
+			}
+		});
+		
+		Router.route('/tag/:_name', function() {
+			var tag = RouterCtx.params._name;
+			ListArticles.show(null, null, { tags: { '$in':[tag] }} );
+		}, {
+			onStop: function() {
+				ListArticles.hide();
 			}
 		});
 		

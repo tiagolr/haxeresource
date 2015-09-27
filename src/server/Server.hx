@@ -1,4 +1,6 @@
+import js.Lib;
 import meteor.Meteor;
+import meteor.packages.PublishCounts;
 import model.Articles;
 import model.TagGroups;
 import model.Tags;
@@ -20,17 +22,13 @@ class Server {
 			return Tags.collection.find();
 		});
 		
-		Meteor.publish(Articles.NAME, function() {
-			return Articles.collection.find();
+		Meteor.publish(Articles.NAME, function(selector, options) {
+			return Articles.collection.find(selector, options);
 		});
 		
-		// Test tags
-		if (Tags.collection.find().count() == 0) {
-			trace("Creating dummy tags");
-			Tags.create({name:'haxe-fuck'});
-			Tags.create({name:'haxe-tits'});
-			Tags.create({name:'haxe-mom'});
-		}
+		Meteor.publish('countArticles', function() {
+			PublishCounts.publish(Lib.nativeThis, 'countArticles', Articles.collection.find());
+		});
 		
 		// Test tag groups
 		if (TagGroups.collection.find().count() == 0) {

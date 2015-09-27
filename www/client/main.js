@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
 	for (var name in fields) proto[name] = fields[name];
@@ -10,9 +10,16 @@ CRouter.__name__ = true;
 CRouter.init = function() {
 	Router.configure({ loadingTemplate : "preload"});
 	Router.route("/",function() {
-		templates_ListArticles.get_page().show(500);
+		console.log("FOKING SHOW???");
+		templates_ListArticles.show(null,null,{ });
 	},{ onStop : function() {
-		templates_ListArticles.get_page().hide(500);
+		templates_ListArticles.hide();
+	}});
+	Router.route("/tag/:_name",function() {
+		var tag = this.params._name;
+		templates_ListArticles.show(null,null,{ tags : { '$in' : [tag]}});
+	},{ onStop : function() {
+		templates_ListArticles.hide();
 	}});
 	Router.route("/new",function() {
 		templates_NewArticle.get_page().show(500);
@@ -35,7 +42,7 @@ Client.main = function() {
 	window.groups = model_TagGroups.collection;
 	Meteor.subscribe("tags");
 	Meteor.subscribe("tag_groups");
-	Meteor.subscribe("articles",{ sort : { created : -1}, limit : 5});
+	Meteor.subscribe("countArticles");
 	templates_Navbar.init();
 	templates_SideBar.init();
 	templates_ListArticles.init();
@@ -337,14 +344,58 @@ model_Tags.__super__ = Mongo.Collection;
 model_Tags.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_Tags
 });
-var templates_ListArticles = function() { };
+var templates_ListArticles = $hx_exports.vaca = function() { };
 templates_ListArticles.__name__ = true;
 templates_ListArticles.get_page = function() {
 	return js.JQuery("#listArticlesPage");
 };
+templates_ListArticles.set_sort = function(val) {
+	Session.set("list_articles_sort",val);
+	return val;
+};
+templates_ListArticles.get_sort = function() {
+	return Session.get("list_articles_sort");
+};
+templates_ListArticles.set_limit = function(val) {
+	Session.set("list_articles_limit",val);
+	return val;
+};
+templates_ListArticles.get_limit = function() {
+	return Session.get("list_articles_limit");
+};
+templates_ListArticles.set_selector = function(val) {
+	Session.set("list_articles_selector",val);
+	return val;
+};
+templates_ListArticles.get_selector = function() {
+	return Session.get("list_articles_selector");
+};
+templates_ListArticles.show = function(_sort,_limit,_selector) {
+	if(_limit == null) _limit = 5;
+	templates_ListArticles.get_page().show(500);
+};
+templates_ListArticles.hide = function() {
+	templates_ListArticles.get_page().hide(500);
+};
+templates_ListArticles.fetchFromServer = function() {
+};
 templates_ListArticles.init = function() {
+	templates_ListArticles.set_sort({ created : -1});
+	templates_ListArticles.set_limit(5);
+	templates_ListArticles.set_selector({ });
 	Template.listArticles.helpers({ articles : function() {
-		return model_Articles.collection.find({ },{ sort : { created : -1}, limit : 5});
+		return null;
+	}, currentCount : function() {
+		return null;
+	}, totalCount : function() {
+		return null;
+	}, allEntriesLoaded : function() {
+		return null;
+	}});
+	Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
+		var _g = templates_ListArticles;
+		_g.set_limit(_g.get_limit() + 5);
+		templates_ListArticles.fetchFromServer();
 	}});
 	Template.articleRow.helpers({ formatDate : function(date) {
 		return vagueTime.get({ from : new Date(), to : date});
@@ -463,8 +514,9 @@ templates_ViewArticle.init = function() {
 	}});
 };
 templates_ViewArticle.show = function(articleId) {
+	Meteor.subscribe("articles",{ _id : articleId});
 	Session.set("currentArticle",model_Articles.collection.findOne({ _id : articleId}));
-	templates_ViewArticle.get_page().show();
+	templates_ViewArticle.get_page().show(500);
 };
 if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
 	return Array.prototype.indexOf.call(a,o,i);
@@ -497,7 +549,8 @@ js_Boot.__toStr = {}.toString;
 model_Articles.NAME = "articles";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
+templates_ListArticles.PAGE_SIZE = 5;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
 
 //# sourceMappingURL=main.js.map

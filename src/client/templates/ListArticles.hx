@@ -1,6 +1,9 @@
 package templates;
 import js.Browser;
 import js.JQuery;
+import meteor.Meteor;
+import meteor.packages.PublishCounts;
+import meteor.Session;
 import meteor.Template;
 import model.Articles;
 
@@ -8,21 +11,106 @@ import model.Articles;
  * ...
  * @author TiagoLr
  */
+@:expose("vaca")
 class ListArticles {
 
-	static public var page(get, null):JQuery;
+	public static inline var PAGE_SIZE = 5;
+	
+	static var page(get, null):JQuery;
 	static function get_page():JQuery {
 		return new JQuery('#listArticlesPage');
 	}
 	
+	// REACTIVE VARS --------------------------------------------------
+	static var sort(get, set): { };
+	static function set_sort(val) {
+		Session.set('list_articles_sort',val);
+		return val;
+	}
+	static function get_sort() {
+		return Session.get('list_articles_sort');
+	}
+	
+	static var limit(get, set):Int;
+	static function set_limit(val:Int) {
+		Session.set('list_articles_limit', val);
+		return val;
+	}
+	static function get_limit() {
+		return Session.get('list_articles_limit'); 
+	}
+	
+	static var selector(get, set): { };
+	static function set_selector(val) {
+		Session.set('list_articles_selector', val);
+		return val;
+	}
+	static function get_selector() {
+		return Session.get('list_articles_selector');
+	}
+	//-----------------------------------------------------------------
+	
+	static public function show(?_sort:{}, ?_limit:Int = PAGE_SIZE, _selector:Dynamic) {
+		page.show(CRouter.FADE_DURATION);
+		
+		/*if (_limit != null) {
+			limit = _limit;
+		}
+		
+		if (_selector != null) {
+			selector = _selector;
+		}
+		
+		if (_sort != null) {
+			sort = _sort;
+		}*/
+		
+		//fetchFromServer();
+	}
+	
+	static public function hide() {
+		page.hide(CRouter.FADE_DURATION);
+	}
+	
+	static function fetchFromServer() {
+		//trace("fetching using " + limit);
+		//Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
+	}
+	
 	static public function init() {
+		sort = { created: -1 };
+		limit = PAGE_SIZE;
+		selector = { };
 		
 		Template.get('listArticles').helpers( {
 			
 			articles:function() {
-				return Articles.collection.find({}, {sort: {created: -1}, limit: 5});
+				//return Articles.collection.find( selector, { sort:sort, limit:limit } );
+				return null;
 			},
 			
+			currentCount:function () {
+				//return Articles.collection.find( selector, { limit:limit } ).count();
+				return null;
+			},
+			
+			totalCount: function () {
+				//return PublishCounts.get('countArticles');
+				return null;
+			},
+			
+			allEntriesLoaded: function() {
+				//return PublishCounts.get('countArticles') == Articles.collection.find(selector, { limit:limit } ).count();
+				return null;
+			}
+			
+		});
+		
+		Template.get('listArticles').events( {
+			'click #btnLoadMoreResults': function () {
+				limit += 5;
+				fetchFromServer();
+			}
 		});
 		
 		Template.get('articleRow').helpers( {

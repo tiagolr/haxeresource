@@ -25,9 +25,9 @@
 				</tbody>
 			</table>
 			<div>
-				<p><small id="entriesNumText">Showing 123 of 234 Entries</small></p>
+				<p><small id="entriesNumText">Showing {{currentCount}} of {{totalCount}} Entries</small></p>
 				<div class="text-center">
-					<button id="btnLoadMoreResults" type="button" class="btn btn-primary">Load more results</button>
+					<button id="btnLoadMoreResults" type="button" class="btn btn-primary {{#if allEntriesLoaded}}disabled{{/if}}">Load more results</button>
 				</div>
 			</div>
 		</div>

@@ -1,5 +1,6 @@
 package templates;
 import js.JQuery;
+import meteor.Meteor;
 import meteor.Session;
 import meteor.Template;
 import model.Articles;
@@ -30,8 +31,9 @@ class ViewArticle {
 	}
 	
 	static public function show(articleId:String) {
+		Meteor.subscribe(Articles.NAME, {_id:articleId}); // fetch article with all fields
 		Session.set('currentArticle', Articles.collection.findOne( { _id:articleId } ));
-		page.show();
+		page.show(CRouter.FADE_DURATION);
 	}
 	
 }

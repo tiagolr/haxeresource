@@ -26,7 +26,7 @@ class Client {
 
 		Meteor.subscribe(Tags.NAME);
 		Meteor.subscribe(TagGroups.NAME);
-		Meteor.subscribe(Articles.NAME, {sort: {created:-1}, limit: 5});
+		Meteor.subscribe('countArticles');
 		
 		Navbar.init();
 		SideBar.init();

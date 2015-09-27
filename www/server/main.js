@@ -16,15 +16,12 @@ Server.main = function() {
 	Meteor.publish("tags",function() {
 		return model_Tags.collection.find();
 	});
-	Meteor.publish("articles",function() {
-		return model_Articles.collection.find();
+	Meteor.publish("articles",function(selector,options) {
+		return model_Articles.collection.find(selector,options);
 	});
-	if(model_Tags.collection.find().count() == 0) {
-		console.log("Creating dummy tags");
-		model_Tags.create({ name : "haxe-fuck"});
-		model_Tags.create({ name : "haxe-tits"});
-		model_Tags.create({ name : "haxe-mom"});
-	}
+	Meteor.publish("countArticles",function() {
+		Counts.publish(this,"countArticles",model_Articles.collection.find());
+	});
 	if(model_TagGroups.collection.find().count() == 0) {
 		console.log("Creating dummy tag groups");
 		model_TagGroups.create({ name : "haxe", tags : ["haxe","~/haxe-.*/"]});
