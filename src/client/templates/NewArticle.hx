@@ -1,8 +1,13 @@
 package templates;
 import js.JQuery;
+import meteor.Error;
+import meteor.packages.AutoForm;
+import meteor.packages.Router;
 import meteor.packages.SimpleSchema;
 import meteor.packages.SimpleSchema.SchemaDef;
 import meteor.Template;
+import model.Articles;
+import model.Tags;
 
 /**
  * ...
@@ -14,61 +19,50 @@ class NewArticle {
 	static function get_page():JQuery {
 		return new JQuery('#newArticlePage');
 	}
+	
 	static public function init() {
 		Template.get('newArticle').events( {
 			'click #btnPreviewArticle': function (evt) {
 				var title = new JQuery("#naf-articleTitle").val();
 				var content = new JQuery("#naf-articleContent").val();
+				var link = new JQuery("#naf-articleLink").val();
+				var desc = new JQuery("#naf-articleDescription").val();
 				
-				new JQuery('#previewTitle').html(title);
-				new JQuery('#previewContent').html(untyped marked(content));
+				new JQuery('#na-previewTitle').html(title);
+				new JQuery('#na-articleDescription').html(desc);
+				new JQuery('#na-previewLink').html('<a href="$link" target="_blank">$link</a>');
+				new JQuery('#na-previewContent').html(untyped marked(content));
+			},
+			
+			// Only accept valid tags
+			'beforeItemAdd input' : function (evt) {
+				
+				if (!Tags.regEx.test(evt.item)) {
+					evt.cancel = true;
+				}
 			}
+			
 		});
 		
 		Template.get('newArticle').helpers( {
-			
-			schema: function () {
-				return new SimpleSchema ({
-					title: {
-						type: String,
-						max:100
-					}, 
-					description: {
-						type:String,
-						max:512
-					},
-					link: {
-						type:String,
-						max:512,
-						//optional:true,
-						autoform: {
-							afFieldInput: {
-								type: "url"
-							}
-						}
-					},
-					content: {
-						type:String,
-						max:30000,
-						optional:true
-					},
-					tags: {
-						type:[String],
-						autoform: {
-							type: 'tags',
-							afFieldInput: {
-								maxTags:10,
-								maxChars:30,
-							}
-						}
-					}
-				});
-			}
-			
 		});
 		
-		/*untyped Template.registerHelper('schema', function () {
-			return schema;
-		});*/
+		untyped Template.registerHelper('schema', function () {
+			return Articles.schema;
+		});
+		
+		AutoForm.addHooks('newArticleForm', {
+			onSubmit: function (insertDoc, _, _) {
+				var id = null;
+				if (insertDoc != null) {
+					id = Articles.collection.insert(insertDoc);
+					Router.go('/view/$id');
+				}
+				
+				HookCtx.done(id);
+				return false;
+			},
+			
+		});
 	}
 }

@@ -20,8 +20,7 @@ class ListArticles {
 		Template.get('listArticles').helpers( {
 			
 			articles:function() {
-				//return ['a', 'b', 'ç'];
-				return Articles.collection.find();
+				return Articles.collection.find({}, {sort: {created: -1}, limit: 5});
 			},
 			
 		});
@@ -44,19 +43,19 @@ class ListArticles {
 			
 		});
 		
-		// Bootstrap does not work well with collapsible column rows
-		// override collapse rows functionality
-		//
-		// BUG - JQUERY NEEDS OVERLOAD ON ON() TO ALLOW SELECTORS
-		var t = new JQuery(untyped Browser.document).on('click', '.articleRowToggle', function (event) {
-			var target = new JQuery(event.target.getAttribute('data-target'));
-			var rows = new JQuery('.articleRowBody');
-			var isCollapsed = target.hasClass('collapsed');
+		Template.get('articleRow').events( {
 			
-			for (row in rows) {
-				row == target ?
-					untyped row.collapse(isCollapsed ? 'show' : 'hide'):
-					untyped row.collapse('hide');
+			// Expand / collapse row
+			'click .articleRowToggle':function (event) {
+				var target = new JQuery(event.target.getAttribute('data-target'));
+				var rows = new JQuery('.articleRowBody');
+				var isCollapsed = target.hasClass('collapsed');
+				
+				for (row in rows) {
+					row == target ?
+						untyped row.collapse(isCollapsed ? 'show' : 'hide'):
+						untyped row.collapse('hide');
+				}
 			}
 		});
 		

@@ -12,6 +12,18 @@ class Shared {
 		new TagGroups();
 		new Articles();
 		new Tags();
+		
+		Tags.collection.allow({
+			insert: function (name) {
+				return true;
+			}
+		});
+		
+		#if (server || debug)
+		untyped Articles.collection.attachSchema(Articles.schema);
+		untyped Tags.collection.attachSchema(Tags.schema);
+		untyped TagGroups.collection.attachSchema(TagGroups.schema);
+		#end
 	}
 	
 }

@@ -1,3 +1,9 @@
 <template name="viewArticle">
-	<p>AAAAAAAAAAAAAAAAAAAAAAAAAAA VIEW ARTICLE</p>
+	{{#with article}}
+		<h1 id="va-title">{{title}}</h1>
+		<div id="va-description">{{description}}</div>
+		<div id="va-link">{{link}}</div>
+		<hr>
+		<div id="va-content">{{content}}</div>
+	{{/with}}
 </template>

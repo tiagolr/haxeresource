@@ -1,7 +1,7 @@
 <template name="listArticles">
 	<div class="row">
 		<div class="col-lg-12 page-header">
-			<h1 class="">hxKnowlegeBase</h1><p>Find haxe related articles and tutorials here, also submit your own entries and rate them.</p>
+			<h1 class="">Haxe Resource</h1><p>Haxe tutorials and useful links.</p>
 		</div>
 		
 		
@@ -52,7 +52,7 @@
 				</div>
 				<div style="display:inline-block">
 					{{#if content}}
-					<button class="btn btn-info" onclick="Router.goto(Router.routes.viewArticle + '::article.id::')">
+					<button class="btn btn-info" onclick="Router.go('/view/{{_id}}')">
 						Read Here
 					</button>
 					{{/if}}

@@ -35,8 +35,9 @@ class CRouter {
 			},
 		});
 		
-		Router.route("/view", function () {
-			ViewArticle.page.show();
+		Router.route("/view/:_id", function () {
+			var id = RouterCtx.params._id;
+			ViewArticle.show(id);
 		}, {
 			onStop: function () {
 				ViewArticle.page.hide();

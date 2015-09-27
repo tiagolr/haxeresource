@@ -1,7 +1,9 @@
 -lib hxmeteor
+-debug
 --each
 
 #SERVER
+-D server
 -cp src/server
 -cp src/shared
 -main Server
@@ -10,6 +12,7 @@
 --next
 
 #CLIENT
+-D client
 -cp src/client
 -cp src/shared
 -main Client
