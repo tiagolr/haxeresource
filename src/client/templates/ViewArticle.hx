@@ -33,7 +33,7 @@ class ViewArticle {
 	static public function show(articleId:String) {
 		Meteor.subscribe(Articles.NAME, {_id:articleId}); // fetch article with all fields
 		Session.set('currentArticle', Articles.collection.findOne( { _id:articleId } ));
-		page.show(CRouter.FADE_DURATION);
+		page.show(Router.FADE_DURATION);
 	}
 	
 }

@@ -1,5 +1,4 @@
 package templates;
-import meteor.packages.Router;
 import meteor.Template;
 
 /**

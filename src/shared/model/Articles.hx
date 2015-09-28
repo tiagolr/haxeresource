@@ -56,7 +56,7 @@ class Articles extends Collection {
 					if (!SchemaCtx.field('link').isSet && !SchemaCtx.field('content').isSet) {
 						return "eitherArticleOrLink";
 					}
-					return null;
+					return Lib.undefined;
 				}
 			},
 			content: {
@@ -67,7 +67,7 @@ class Articles extends Collection {
 					if (!SchemaCtx.field('link').isSet && !SchemaCtx.field('content').isSet) {
 						return "eitherArticleOrLink";
 					}
-					return null;
+					return Lib.undefined;
 				}
 			},
 			tags: {
@@ -93,7 +93,7 @@ class Articles extends Collection {
 						}
 						return resolved;
 					}
-					return null;
+					return Lib.undefined;
 				}
 			},
 			user: {
@@ -115,7 +115,7 @@ class Articles extends Collection {
 						return Date.now();
 					} else {
 						SchemaCtx.unset();
-						return null; // TODO - verify if created is not modified by returning null
+						return Lib.undefined; // TODO - verify if created is not modified by returning null
 					}
 				}
 			},

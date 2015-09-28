@@ -203,10 +203,10 @@ var model_Articles = function() {
 	model_Articles.collection = this;
 	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
-		return null;
+		return undefined;
 	}}, content : { type : String, max : 30000, optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
-		return null;
+		return undefined;
 	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
@@ -220,13 +220,13 @@ var model_Articles = function() {
 			}
 			return resolved;
 		}
-		return null;
+		return undefined;
 	}}, user : { type : String, optional : true, autoValue : function() {
 		return this.userId;
 	}}, upvotes : { type : Number, defaultValue : 0}, created : { type : Date, optional : true, autoValue : function() {
 		if(this.isInsert) return new Date(); else {
 			this.unset();
-			return null;
+			return undefined;
 		}
 	}}, modified : { type : Date, optional : true, autoValue : function() {
 		return new Date();
@@ -266,7 +266,7 @@ var model_Tags = function() {
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
 	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 40, autoValue : function() {
 		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
-		return null;
+		return undefined;
 	}}});
 };
 model_Tags.__name__ = true;

@@ -24,6 +24,7 @@ class SideBar{
 					for (t in g.tags) {
 						var res = resolveTags(t, tags);
 						for (r in res) {
+							r.name = formatTagName(r.name);
 							if (resolvedTags.indexOf(r) == -1) {
 								resolvedTags.push(r);
 							}
@@ -62,6 +63,18 @@ class SideBar{
 		}
 		
 		return resolved;
+	}
+	
+	static function formatTagName(tag:String):String {
+		var split = tag.split('-');
+		if (split.length > 1) {
+			split.shift();
+			tag = split.join('-');
+		}
+		if (tag.length < 2) 
+			return tag; // bug prevention
+		
+		return tag.substr(0, 1).toUpperCase() + tag.substr(1); // first letter uppercase
 	}
 	
 }

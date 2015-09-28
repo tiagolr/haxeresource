@@ -1,4 +1,5 @@
 package model;
+import js.Lib;
 import js.RegExp;
 import meteor.Collection;
 import meteor.packages.SimpleSchema;
@@ -32,7 +33,7 @@ class Tags extends Collection {
 					if (SchemaCtx.field('name').isSet) {
 						return cast(SchemaCtx.field('name').value, String).toLowerCase();
 					}
-					return null;
+					return Lib.undefined;
 				}
 				
 			},

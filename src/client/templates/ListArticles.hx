@@ -51,9 +51,9 @@ class ListArticles {
 	//-----------------------------------------------------------------
 	
 	static public function show(?_sort:{}, ?_limit:Int = PAGE_SIZE, _selector:Dynamic) {
-		page.show(CRouter.FADE_DURATION);
+		page.show(Router.FADE_DURATION);
 		
-		/*if (_limit != null) {
+		if (_limit != null) {
 			limit = _limit;
 		}
 		
@@ -63,18 +63,17 @@ class ListArticles {
 		
 		if (_sort != null) {
 			sort = _sort;
-		}*/
+		}
 		
-		//fetchFromServer();
+		fetchFromServer();
 	}
 	
 	static public function hide() {
-		page.hide(CRouter.FADE_DURATION);
+		page.hide(Router.FADE_DURATION);
 	}
 	
 	static function fetchFromServer() {
-		//trace("fetching using " + limit);
-		//Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
+		Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
 	}
 	
 	static public function init() {
@@ -85,23 +84,19 @@ class ListArticles {
 		Template.get('listArticles').helpers( {
 			
 			articles:function() {
-				//return Articles.collection.find( selector, { sort:sort, limit:limit } );
-				return null;
+				return Articles.collection.find( selector, { sort:sort, limit:limit } );
 			},
 			
 			currentCount:function () {
-				//return Articles.collection.find( selector, { limit:limit } ).count();
-				return null;
+				return Articles.collection.find( selector, { limit:limit } ).count();
 			},
 			
 			totalCount: function () {
-				//return PublishCounts.get('countArticles');
-				return null;
+				return PublishCounts.get('countArticles');
 			},
 			
 			allEntriesLoaded: function() {
-				//return PublishCounts.get('countArticles') == Articles.collection.find(selector, { limit:limit } ).count();
-				return null;
+				return PublishCounts.get('countArticles') == Articles.collection.find(selector, { limit:limit } ).count();
 			}
 			
 		});
@@ -145,6 +140,10 @@ class ListArticles {
 						untyped row.collapse('hide');
 				}
 			}
+		});
+		
+		Template.get('articleRow').onRendered(function () {
+			new JQuery(TemplateCtx.find('.articleRowHeader')).show(500);
 		});
 		
 	}

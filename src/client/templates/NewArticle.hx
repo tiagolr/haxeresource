@@ -2,7 +2,7 @@ package templates;
 import js.JQuery;
 import meteor.Error;
 import meteor.packages.AutoForm;
-import meteor.packages.Router;
+import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
 import meteor.packages.SimpleSchema.SchemaDef;
 import meteor.Template;
@@ -56,7 +56,7 @@ class NewArticle {
 				var id = null;
 				if (insertDoc != null) {
 					id = Articles.collection.insert(insertDoc);
-					Router.go('/view/$id');
+					FlowRouter.go('/view/$id');
 				}
 				
 				HookCtx.done(id);

@@ -1,6 +1,7 @@
 import js.Browser;
 import meteor.Meteor;
 import meteor.packages.AutoForm;
+import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
 import model.Articles;
 import model.TagGroups;
@@ -34,7 +35,12 @@ class Client {
 		NewArticle.init();
 		ViewArticle.init();
 		
-		CRouter.init();
+		FlowRouter.wait();
+		Router.init();
+		
+		Meteor.startup(function () {
+			FlowRouter.initialize();
+		});
 		
 		// schema custom error messages
 		SimpleSchema.messages_({eitherArticleOrLink: "An article must link to an external resource, or have embed contents, or both."});

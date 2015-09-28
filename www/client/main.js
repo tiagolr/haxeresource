@@ -5,34 +5,6 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
-var CRouter = function() { };
-CRouter.__name__ = true;
-CRouter.init = function() {
-	Router.configure({ loadingTemplate : "preload"});
-	Router.route("/",function() {
-		console.log("FOKING SHOW???");
-		templates_ListArticles.show(null,null,{ });
-	},{ onStop : function() {
-		templates_ListArticles.hide();
-	}});
-	Router.route("/tag/:_name",function() {
-		var tag = this.params._name;
-		templates_ListArticles.show(null,null,{ tags : { '$in' : [tag]}});
-	},{ onStop : function() {
-		templates_ListArticles.hide();
-	}});
-	Router.route("/new",function() {
-		templates_NewArticle.get_page().show(500);
-	},{ onStop : function() {
-		templates_NewArticle.get_page().hide(500);
-	}});
-	Router.route("/view/:_id",function() {
-		var id = this.params._id;
-		templates_ViewArticle.show(id);
-	},{ onStop : function() {
-		templates_ViewArticle.get_page().hide();
-	}});
-};
 var Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
@@ -48,7 +20,11 @@ Client.main = function() {
 	templates_ListArticles.init();
 	templates_NewArticle.init();
 	templates_ViewArticle.init();
-	CRouter.init();
+	FlowRouter.wait();
+	Router.init();
+	Meteor.startup(function() {
+		FlowRouter.initialize();
+	});
 	SimpleSchema.messages({ eitherArticleOrLink : "An article must link to an external resource, or have embed contents, or both."});
 	marked.setOptions({ highlight : function(code) {
 		return hljs.highlightAuto(code).value;
@@ -93,6 +69,34 @@ HxOverrides.indexOf = function(a,obj,i) {
 	return -1;
 };
 Math.__name__ = true;
+var Router = function() { };
+Router.__name__ = true;
+Router.init = function() {
+	FlowRouter.route("/",{ action : function() {
+		console.log("MAIN");
+		templates_ListArticles.show(null,null,{ });
+	}, triggersExit : [function() {
+		templates_ListArticles.hide();
+	}]});
+	FlowRouter.route("/tag/:_name",{ action : function() {
+		var tag = FlowRouter.getParam("_name");
+		templates_ListArticles.show(null,null,{ tags : { '$in' : [tag]}});
+	}, triggersExit : [function() {
+		templates_ListArticles.hide();
+	}]});
+	FlowRouter.route("/new",{ action : function() {
+		console.log("NEW");
+		templates_NewArticle.get_page().show(500);
+	}, triggersExit : [function() {
+		templates_NewArticle.get_page().hide(500);
+	}]});
+	FlowRouter.route("/view/:_id",{ action : function() {
+		var id = FlowRouter.getParam("_id");
+		templates_ViewArticle.show(id);
+	}, triggersExit : [function() {
+		templates_ViewArticle.get_page().hide();
+	}]});
+};
 var Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
@@ -269,10 +273,10 @@ var model_Articles = function() {
 	model_Articles.collection = this;
 	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
-		return null;
+		return undefined;
 	}}, content : { type : String, max : 30000, optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
-		return null;
+		return undefined;
 	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
@@ -286,13 +290,13 @@ var model_Articles = function() {
 			}
 			return resolved;
 		}
-		return null;
+		return undefined;
 	}}, user : { type : String, optional : true, autoValue : function() {
 		return this.userId;
 	}}, upvotes : { type : Number, defaultValue : 0}, created : { type : Date, optional : true, autoValue : function() {
 		if(this.isInsert) return new Date(); else {
 			this.unset();
-			return null;
+			return undefined;
 		}
 	}}, modified : { type : Date, optional : true, autoValue : function() {
 		return new Date();
@@ -323,7 +327,7 @@ var model_Tags = function() {
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
 	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 40, autoValue : function() {
 		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
-		return null;
+		return undefined;
 	}}});
 };
 model_Tags.__name__ = true;
@@ -373,24 +377,29 @@ templates_ListArticles.get_selector = function() {
 templates_ListArticles.show = function(_sort,_limit,_selector) {
 	if(_limit == null) _limit = 5;
 	templates_ListArticles.get_page().show(500);
+	if(_limit != null) templates_ListArticles.set_limit(_limit);
+	if(_selector != null) templates_ListArticles.set_selector(_selector);
+	if(_sort != null) templates_ListArticles.set_sort(_sort);
+	templates_ListArticles.fetchFromServer();
 };
 templates_ListArticles.hide = function() {
 	templates_ListArticles.get_page().hide(500);
 };
 templates_ListArticles.fetchFromServer = function() {
+	Meteor.subscribe("articles",templates_ListArticles.get_selector(),{ sort : templates_ListArticles.get_sort(), limit : templates_ListArticles.get_limit()});
 };
 templates_ListArticles.init = function() {
 	templates_ListArticles.set_sort({ created : -1});
 	templates_ListArticles.set_limit(5);
 	templates_ListArticles.set_selector({ });
 	Template.listArticles.helpers({ articles : function() {
-		return null;
+		return model_Articles.collection.find(templates_ListArticles.get_selector(),{ sort : templates_ListArticles.get_sort(), limit : templates_ListArticles.get_limit()});
 	}, currentCount : function() {
-		return null;
+		return model_Articles.collection.find(templates_ListArticles.get_selector(),{ limit : templates_ListArticles.get_limit()}).count();
 	}, totalCount : function() {
-		return null;
+		return Counts.get("countArticles");
 	}, allEntriesLoaded : function() {
-		return null;
+		return Counts.get("countArticles") == model_Articles.collection.find(templates_ListArticles.get_selector(),{ limit : templates_ListArticles.get_limit()}).count();
 	}});
 	Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
 		var _g = templates_ListArticles;
@@ -413,6 +422,9 @@ templates_ListArticles.init = function() {
 			if(row == target) row.collapse(isCollapsed?"show":"hide"); else row.collapse("hide");
 		}
 	}});
+	Template.articleRow.onRendered(function() {
+		js.JQuery(this.find(".articleRowHeader")).show(500);
+	});
 };
 var templates_Navbar = function() { };
 templates_Navbar.__name__ = true;
@@ -444,7 +456,7 @@ templates_NewArticle.init = function() {
 		var id = null;
 		if(insertDoc != null) {
 			id = model_Articles.collection.insert(insertDoc);
-			Router.go("/view/" + id);
+			FlowRouter.go("/view/" + id);
 		}
 		this.done(null,id);
 		return false;
@@ -471,6 +483,7 @@ templates_SideBar.init = function() {
 				while(_g3 < res.length) {
 					var r = res[_g3];
 					++_g3;
+					r.name = templates_SideBar.formatTagName(r.name);
 					if(HxOverrides.indexOf(resolvedTags,r,0) == -1) resolvedTags.push(r);
 				}
 			}
@@ -502,6 +515,15 @@ templates_SideBar.resolveTags = function(strOrRegex,tags) {
 		}
 	}
 	return resolved;
+};
+templates_SideBar.formatTagName = function(tag) {
+	var split = tag.split("-");
+	if(split.length > 1) {
+		split.shift();
+		tag = split.join("-");
+	}
+	if(tag.length < 2) return tag;
+	return HxOverrides.substr(tag,0,1).toUpperCase() + HxOverrides.substr(tag,1,null);
 };
 var templates_ViewArticle = function() { };
 templates_ViewArticle.__name__ = true;
@@ -544,7 +566,7 @@ q.fn.iterator = function() {
 		return $(this.j[this.pos++]);
 	}};
 };
-CRouter.FADE_DURATION = 500;
+Router.FADE_DURATION = 500;
 js_Boot.__toStr = {}.toString;
 model_Articles.NAME = "articles";
 model_TagGroups.NAME = "tag_groups";
