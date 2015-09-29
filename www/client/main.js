@@ -73,7 +73,6 @@ var Router = function() { };
 Router.__name__ = true;
 Router.init = function() {
 	FlowRouter.route("/",{ action : function() {
-		console.log("MAIN");
 		templates_ListArticles.show(null,null,{ });
 	}, triggersExit : [function() {
 		templates_ListArticles.hide();
@@ -85,7 +84,6 @@ Router.init = function() {
 		templates_ListArticles.hide();
 	}]});
 	FlowRouter.route("/new",{ action : function() {
-		console.log("NEW");
 		templates_NewArticle.get_page().show(500);
 	}, triggersExit : [function() {
 		templates_NewArticle.get_page().hide(500);

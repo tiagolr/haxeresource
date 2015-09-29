@@ -1,0 +1,72 @@
+
+// Vars
+SB_WIDTH = 250px
+SB_BACKGROUND = #f8f8f8
+
+// imports
+@import "sidebar.import.styl"
+@import "page-content.import.styl"
+@import "table-articles.import.styl"
+
+#wrapper
+    padding-left: 0
+    -webkit-transition: all 0.5s ease
+    -moz-transition: all 0.5s ease
+    -o-transition: all 0.5s ease
+    transition: all 0.5s ease
+
+	.toggled 
+    	padding-left: SB_WIDTH
+    	
+    	#sidebar-wrapper 
+   			width: SB_WIDTH
+   		
+   		#page-content-wrapper 
+    		position: absolute
+    		margin-right: SB_WIDTH * -1
+
+
+#sidebar-wrapper 
+    z-index: 1000
+    position: fixed
+    left: SB_WIDTH
+    width: 0
+    height: 100%
+    margin-left: SB_WIDTH * -1
+    overflow-y: auto
+    background: SB_BACKGROUND
+    -webkit-transition: all 0.5s ease
+    -moz-transition: all 0.5s ease
+    -o-transition: all 0.5s ease
+    transition: all 0.5s ease
+
+
+#page-content-wrapper 
+    width: 100%
+    position: absolute
+    padding: 15px
+	margin-top: 50px
+
+
+@media(min-width:768px) 
+    #wrapper 
+        padding-left: SB_WIDTH
+        
+        .toggled 
+        	padding-left: 0
+        	
+        	#sidebar-wrapper 
+        		width: 0
+        		
+        	#page-content-wrapper 
+        		position: relative
+        		margin-right: 0
+    
+    #sidebar-wrapper
+        width: SB_WIDTH
+        
+	#page-content-wrapper 
+        padding: 20px
+        position: relative
+
+    
