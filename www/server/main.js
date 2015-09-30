@@ -24,12 +24,9 @@ Server.main = function() {
 	});
 	Meteor.publish("countArticlesTag",function(tagName) {
 		var tag = model_Tags.collection.findOne({ name : tagName});
-		if(tag != null) {
-			console.log("publishing " + tagName);
-			Counts.publish(this,"countArticlesTag" + tagName,model_Articles.collection.find({ tags : { '$in' : [tagName]}}));
-		}
+		if(tag != null) Counts.publish(this,"countArticlesTag" + tagName,model_Articles.collection.find({ tags : { '$in' : [tagName]}}));
 	});
-	if(model_TagGroups.collection.find().count() == 0) model_TagGroups.create({ name : "haxe", tags : ["haxe","~/haxe-.*/"]});
+	if(model_TagGroups.collection.find().count() == 0) model_TagGroups.create({ name : "Haxe", mainTag : "haxe", tags : ["~/haxe-.*/"]});
 	if(model_Articles.collection.find().count() == 0) {
 		console.log("Creating dummy articles");
 		model_Articles.create({ title : "Test Article1", description : "This is the first article Description", link : "http://www.haxedomain.com", content : "This is the article content, nothing special of course", user : "", tags : ["haxe-fuck"]});
@@ -253,7 +250,7 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, max : 40}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, tags : { optional : true, type : [String]}});
 };
 model_TagGroups.__name__ = true;
 model_TagGroups.create = function(tagGroup) {
@@ -268,7 +265,7 @@ var model_Tags = function() {
 	Mongo.Collection.call(this,"tags");
 	model_Tags.collection = this;
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
-	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 40, autoValue : function() {
+	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 30, autoValue : function() {
 		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
 		return undefined;
 	}}});
@@ -308,6 +305,7 @@ js_Boot.__toStr = {}.toString;
 model_Articles.NAME = "articles";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
+model_Tags.MAX_CHARS = 30;
 Server.main();
 })(typeof console != "undefined" ? console : {log:function(){}});
 

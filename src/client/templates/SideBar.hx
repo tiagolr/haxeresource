@@ -1,4 +1,8 @@
 package templates;
+import js.html.Element;
+import js.html.Event;
+import js.JQuery;
+import js.Lib;
 import meteor.Meteor;
 import meteor.packages.PublishCounts;
 import meteor.Template;
@@ -12,6 +16,7 @@ import model.Tags.Tag;
  * @author TiagoLr
  */
 class SideBar{
+	static var ignoreDivClick:Bool = false; // flag to hack the event propagation of <a></a> inside a clickable <div></div>
 
 	static public function init() {
 		Template.get('sidebar').helpers( {
@@ -40,11 +45,48 @@ class SideBar{
 			},
 		});
 		
-		Template.get('tag_group').helpers( {
+		Template.get('tagGroup').helpers( {
 			countArticlesTag: function (tag) {
-				trace("returning count for " + tag);
 				return PublishCounts.get('countArticlesTag$tag');
 			},
+			
+			countArticlesGroup: function (name) {
+				var g:TagGroup = TagGroups.collection.findOne( { name:name } );
+				if (g == null) return null;
+				
+				var total = PublishCounts.get('countArticlesTag' + g.mainTag);
+				for (t in g.tags) {
+					total += PublishCounts.get('countArticlesTag' + t);
+				}
+				return total;
+			}
+		});
+		
+		Template.get('tagGroup').events( {
+			'click .nav-tag-group > div': function (evt) {
+				if (ignoreDivClick) {
+					ignoreDivClick = false;
+					return;
+				}
+				
+				var trigger = new JQuery(evt.target);
+				var collapsables : JQuery = new JQuery('.sidebar-groups .collapse');
+				var isCollapsed = trigger.hasClass('collapsed');
+				
+				for (el in collapsables) {
+					if (el.attr('id') == trigger.data('trigger') && el.hasClass('collapsed')) {
+						untyped el.collapse('show');
+						untyped el.removeClass('collapsed');
+					} else {
+						untyped el.collapse('hide');
+						untyped el.addClass('collapsed');
+					}
+				}
+			},
+			
+			'click .nav-tag-group > div > a': function (evt) {
+				ignoreDivClick = true;
+			}
 		});
 	}
 	

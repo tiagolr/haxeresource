@@ -46,19 +46,20 @@ SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 			:hover
 				background-color SB_GROUP_HOVER_COLOR
 			
-			> a
-				padding-left SB_PADDING
+			> div
 				display block
-				text-decoration none
-				color #999999
-	
-				:hover
-					text-decoration none
-					color #fff
-					background rgba(255,255,255,0.2)
+				padding-left SB_PADDING
 				
-				:focus
+				> a 
 					text-decoration none
+					color #999999
+		
+						// :hover
+							// text-decoration none
+							// background rgba(255,255,255,0.2)
+						
+						// :focus
+							// text-decoration none
 					
 		.sidebar-subgroup
 			list-style-type: none

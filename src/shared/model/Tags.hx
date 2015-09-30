@@ -15,6 +15,8 @@ typedef Tag = {
 class Tags extends Collection {
 
 	public static inline var NAME = 'tags';
+	public static inline var MAX_CHARS = 30;
+	
 	public static var regEx(default, null):RegExp;
 	public static var schema(default, null):SimpleSchema;
 	
@@ -28,7 +30,7 @@ class Tags extends Collection {
 				type: String,
 				unique:true,
 				regEx:regEx,
-				max:40,
+				max:MAX_CHARS,
 				autoValue: function() { 
 					if (SchemaCtx.field('name').isSet) {
 						return cast(SchemaCtx.field('name').value, String).toLowerCase();

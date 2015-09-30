@@ -77,7 +77,7 @@ class Articles extends Collection {
 					type: 'tags',
 					afFieldInput: {
 						maxTags:10,
-						maxChars:30,
+						maxChars:Tags.MAX_CHARS,
 					}
 				},
 				autoValue: function() {

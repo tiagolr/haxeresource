@@ -3,7 +3,7 @@
 		<h4 class="sidebar-headline">Topics</h4>
 		<ul class="sidebar-groups">
 			{{#each tag_groups}}
-				{{> tag_group}}
+				{{> tagGroup}}
 			{{/each}}
 			<li class="nav-tag-group">
 				<a href="#">Another</a>
@@ -29,11 +29,12 @@
 	</div>
 </template>
 	
-<template name="tag_group">
+<template name="tagGroup">
+	<!-- collapse triggering is made via code -->
 	<li class="nav-tag-group">
-		<a href="#" data-toggle="collapse" data-target="#subg-collapse-{{name}}">{{name}}</a>
+		<div href="#" data-trigger="collapse-{{name}}" data-toggle><a href="#">{{name}} <span class="badge pull-right">{{countArticlesGroup name}}</span></a></div>
 	</li>
-	<div id="subg-collapse-{{name}}" class="collapse">
+	<div id="collapse-{{name}}" class="collapse collapsed">
 		<ul class="sidebar-subgroup">
 			{{#each tags}}
 			<li class="nav-tag"><a href="/tag/{{original}}">{{name}} <span class="badge pull-right">{{countArticlesTag original}}</span></a></li>

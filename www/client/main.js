@@ -308,7 +308,7 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, max : 40}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, tags : { optional : true, type : [String]}});
 };
 model_TagGroups.__name__ = true;
 model_TagGroups.create = function(tagGroup) {
@@ -323,7 +323,7 @@ var model_Tags = function() {
 	Mongo.Collection.call(this,"tags");
 	model_Tags.collection = this;
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
-	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 40, autoValue : function() {
+	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 30, autoValue : function() {
 		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
 		return undefined;
 	}}});
@@ -490,9 +490,42 @@ templates_SideBar.init = function() {
 		}
 		return groups;
 	}});
-	Template.tag_group.helpers({ countArticlesTag : function(tag) {
-		console.log("returning count for " + tag);
+	Template.tagGroup.helpers({ countArticlesTag : function(tag) {
 		return Counts.get("countArticlesTag" + tag);
+	}, countArticlesGroup : function(name) {
+		var g1 = model_TagGroups.collection.findOne({ name : name});
+		if(g1 == null) return null;
+		var total = Counts.get("countArticlesTag" + g1.mainTag);
+		var _g4 = 0;
+		var _g11 = g1.tags;
+		while(_g4 < _g11.length) {
+			var t1 = _g11[_g4];
+			++_g4;
+			total += Counts.get("countArticlesTag" + t1);
+		}
+		return total;
+	}});
+	Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
+		if(templates_SideBar.ignoreDivClick) {
+			templates_SideBar.ignoreDivClick = false;
+			return;
+		}
+		var trigger = js.JQuery(evt.target);
+		var collapsables = js.JQuery(".sidebar-groups .collapse");
+		var isCollapsed = trigger.hasClass("collapsed");
+		var $it0 = (collapsables.iterator)();
+		while( $it0.hasNext() ) {
+			var el = $it0.next();
+			if(el.attr("id") == trigger.data("trigger") && el.hasClass("collapsed")) {
+				el.collapse("show");
+				el.removeClass("collapsed");
+			} else {
+				el.collapse("hide");
+				el.addClass("collapsed");
+			}
+		}
+	}, 'click .nav-tag-group > div > a' : function(evt1) {
+		templates_SideBar.ignoreDivClick = true;
 	}});
 };
 templates_SideBar.resolveTags = function(strOrRegex,tags) {
@@ -574,7 +607,9 @@ js_Boot.__toStr = {}.toString;
 model_Articles.NAME = "articles";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
+model_Tags.MAX_CHARS = 30;
 templates_ListArticles.PAGE_SIZE = 5;
+templates_SideBar.ignoreDivClick = false;
 Client.main();
 })(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
 

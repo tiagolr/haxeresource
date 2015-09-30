@@ -33,14 +33,13 @@ class Server {
 		Meteor.publish('countArticlesTag', function (tagName) {
 			var tag = Tags.collection.findOne({name : tagName});
 			if (tag != null) {
-				trace("publishing " + tagName);
 				PublishCounts.publish(Lib.nativeThis, 'countArticlesTag$tagName', Articles.collection.find( { tags: { '$in':[tagName] }} ));
 			}
 		});
 		
 		// Test tag groups
 		if (TagGroups.collection.find().count() == 0) {
-			TagGroups.create({name:'haxe', tags: ['haxe', '~/haxe-.*/'] });
+			TagGroups.create({name:'Haxe', mainTag:'haxe', tags: ['~/haxe-.*/'] });
 		}
 		
 		// Test articles

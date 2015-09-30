@@ -8,6 +8,7 @@ typedef TagGroup = {
 	?icon:String,
 	?description:String,
 	tags:Array<String>, // tag names or regexes (eg: ~/.*/i)
+	mainTag:String,
 }
 /**
  * Categories
@@ -25,8 +26,16 @@ class TagGroups extends Collection {
 		schema = new SimpleSchema({
 			name: {
 				type: String,
-				max:40,
+				unique: true,
 			},
+			mainTag: {
+				type: String,
+				max:Tags.MAX_CHARS,
+			},
+			tags: {
+				optional: true,
+				type: [String],
+			}
 		});
 	}
 	
