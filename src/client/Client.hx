@@ -1,3 +1,4 @@
+import haxe.DynamicAccess;
 import js.Browser;
 import meteor.Meteor;
 import meteor.packages.AutoForm;
@@ -18,6 +19,10 @@ import templates.ViewArticle;
  */
 class Client {
 	
+	static var preloadReqs = {
+		tagGroups:false,
+	}
+	
 	public static function main() {
 		Shared.init();
 
@@ -26,7 +31,7 @@ class Client {
 		untyped Browser.window.groups = untyped TagGroups.collection;
 
 		Meteor.subscribe(Tags.NAME);
-		Meteor.subscribe(TagGroups.NAME);
+		Meteor.subscribe(TagGroups.NAME, { onReady : function() { preloadReqs.tagGroups = true; checkPreload(); }} );
 		Meteor.subscribe('countArticles');
 		
 		Navbar.init();
@@ -37,10 +42,6 @@ class Client {
 		
 		FlowRouter.wait();
 		Router.init();
-		
-		Meteor.startup(function () {
-			FlowRouter.initialize();
-		});
 		
 		// schema custom error messages
 		SimpleSchema.messages_({eitherArticleOrLink: "An article must link to an external resource, or have embed contents, or both."});
@@ -56,6 +57,18 @@ class Client {
 		AutoForm.debug();
 		#end
 		
+	}
+	
+	static function checkPreload() {
+		var reqs : DynamicAccess<Bool> = preloadReqs;
+		for (req in reqs.keys()) {
+			if (reqs[req] != true) {
+				return;
+			}
+		}
+		
+		// all requirements are ready
+		FlowRouter.initialize();
 	}
 
 }

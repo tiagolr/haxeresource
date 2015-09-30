@@ -32,12 +32,16 @@
 <template name="tagGroup">
 	<!-- collapse triggering is made via code -->
 	<li class="nav-tag-group">
-		<div href="#" data-trigger="collapse-{{name}}" data-toggle><a href="#">{{name}} <span class="badge pull-right">{{countArticlesGroup name}}</span></a></div>
+		<div href="#" data-trigger="collapse-{{name}}" data-toggle>
+			<a href="/tag/group/{{name}}">{{name}} 
+				<span class="badge pull-right">{{countArticlesGroup name}}</span>
+			</a>
+		</div>
 	</li>
 	<div id="collapse-{{name}}" class="collapse collapsed">
 		<ul class="sidebar-subgroup">
-			{{#each tags}}
-			<li class="nav-tag"><a href="/tag/{{original}}">{{name}} <span class="badge pull-right">{{countArticlesTag original}}</span></a></li>
+			{{#each resolvedTags}}
+			<li class="nav-tag"><a href="/tag/{{name}}">{{formattedName}} <span class="badge pull-right">{{countArticlesTag name}}</span></a></li>
 			{{/each}}
 		</ul>
 	</div>

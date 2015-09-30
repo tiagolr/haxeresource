@@ -27,18 +27,14 @@ class SideBar{
 				
 				// resolve each group tags from tag names and regular expressions
 				for (g in groups) {
-					var resolvedTags = [];
-					for (t in g.tags) {
-						var res = resolveTags(t, tags);
-						for (r in res) {
-							r.name = formatTagName(r.name); // format name
-							if (resolvedTags.indexOf(r) == -1) {
-								resolvedTags.push(r);
-							}
-							Meteor.subscribe('countArticlesTag', r.original);
-						}
+					var final = new Array<{name:String, formattedName:String}>();
+					var resolved = Shared.resolveTags(g);
+					for (name in resolved) {
+						final.push( { name:name, formattedName:formatTagName(name) } ); // format name
+						Meteor.subscribe('countArticlesTag', name);
 					}
-					untyped g.tags = resolvedTags;
+					Meteor.subscribe('countArticlesGroup', g.name);
+					untyped g.resolvedTags = final;
 				}
 				
 				return groups;
@@ -50,15 +46,8 @@ class SideBar{
 				return PublishCounts.get('countArticlesTag$tag');
 			},
 			
-			countArticlesGroup: function (name) {
-				var g:TagGroup = TagGroups.collection.findOne( { name:name } );
-				if (g == null) return null;
-				
-				var total = PublishCounts.get('countArticlesTag' + g.mainTag);
-				for (t in g.tags) {
-					total += PublishCounts.get('countArticlesTag' + t);
-				}
-				return total;
+			countArticlesGroup: function (groupName:String) {
+				return PublishCounts.get('countArticlesGroup$groupName');
 			}
 		});
 		
@@ -88,32 +77,6 @@ class SideBar{
 				ignoreDivClick = true;
 			}
 		});
-	}
-	
-	// return existing tag names from name or regular expression
-	static public function resolveTags(strOrRegex:String, tags:Array<Tag>) {
-		var resolved = new Array<{name:String, original:String}>();
-		
-		if (StringTools.startsWith(strOrRegex, '~')) {
-			var split = strOrRegex.split('/');
-			var reg = new EReg(split[1], split[2]);
-			
-			for (t in tags) {
-				if (reg.match(t.name)) { 
-					resolved.push({name:t.name, original:t.name});
-				}
-			}
-			
-		} else { // if selector is not a regex, find an exact match
-			for (t in tags) { 
-				if (t.name == strOrRegex) {
-					resolved = [{name:t.name, original:t.name}];
-					break;
-				}
-			}
-		}
-		
-		return resolved;
 	}
 	
 	static function formatTagName(tag:String):String {

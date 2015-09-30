@@ -5,6 +5,48 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var EReg = function(r,opt) {
+	opt = opt.split("u").join("");
+	this.r = new RegExp(r,opt);
+};
+EReg.__name__ = true;
+EReg.prototype = {
+	match: function(s) {
+		if(this.r.global) this.r.lastIndex = 0;
+		this.r.m = this.r.exec(s);
+		this.r.s = s;
+		return this.r.m != null;
+	}
+	,__class__: EReg
+};
+var HxOverrides = function() { };
+HxOverrides.__name__ = true;
+HxOverrides.substr = function(s,pos,len) {
+	if(pos != null && pos != 0 && len != null && len < 0) return "";
+	if(len == null) len = s.length;
+	if(pos < 0) {
+		pos = s.length + pos;
+		if(pos < 0) pos = 0;
+	} else if(len < 0) len = s.length + len - pos;
+	return s.substr(pos,len);
+};
+HxOverrides.iter = function(a) {
+	return { cur : 0, arr : a, hasNext : function() {
+		return this.cur < this.arr.length;
+	}, next : function() {
+		return this.arr[this.cur++];
+	}};
+};
+var Lambda = function() { };
+Lambda.__name__ = true;
+Lambda.has = function(it,elt) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(x == elt) return true;
+	}
+	return false;
+};
 Math.__name__ = true;
 var Server = function() { };
 Server.__name__ = true;
@@ -26,6 +68,14 @@ Server.main = function() {
 		var tag = model_Tags.collection.findOne({ name : tagName});
 		if(tag != null) Counts.publish(this,"countArticlesTag" + tagName,model_Articles.collection.find({ tags : { '$in' : [tagName]}}));
 	});
+	Meteor.publish("countArticlesGroup",function(name) {
+		var group = model_TagGroups.collection.findOne({ name : name});
+		if(group != null) {
+			var tags = Shared.resolveTags(group);
+			tags.push(group.mainTag);
+			Counts.publish(this,"countArticlesGroup" + group.name,model_Articles.collection.find({ tags : { '$in' : tags}}));
+		}
+	});
 	if(model_TagGroups.collection.find().count() == 0) model_TagGroups.create({ name : "Haxe", mainTag : "haxe", tags : ["~/haxe-.*/"]});
 	if(model_Articles.collection.find().count() == 0) {
 		console.log("Creating dummy articles");
@@ -46,10 +96,46 @@ Shared.init = function() {
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
 };
+Shared.resolveTags = function(g) {
+	var tags = model_Tags.collection.find().fetch();
+	var resolved = [];
+	var _g = 0;
+	var _g1 = g.tags;
+	while(_g < _g1.length) {
+		var entry = _g1[_g];
+		++_g;
+		if(StringTools.startsWith(entry,"~")) {
+			var split = entry.split("/");
+			var reg = new EReg(split[1],split[2]);
+			var _g2 = 0;
+			while(_g2 < tags.length) {
+				var t = tags[_g2];
+				++_g2;
+				if(reg.match(t.name) && !Lambda.has(resolved,t.name)) resolved.push(t.name);
+			}
+		} else {
+			var _g21 = 0;
+			while(_g21 < tags.length) {
+				var t1 = tags[_g21];
+				++_g21;
+				if(t1.name == entry && !Lambda.has(resolved,t1.name)) {
+					resolved = [t1.name];
+					break;
+				}
+			}
+		}
+	}
+	return resolved;
+};
 var Std = function() { };
 Std.__name__ = true;
 Std.string = function(s) {
 	return js_Boot.__string_rec(s,"");
+};
+var StringTools = function() { };
+StringTools.__name__ = true;
+StringTools.startsWith = function(s,start) {
+	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
 };
 var js__$Boot_HaxeError = function(val) {
 	Error.call(this);
@@ -288,6 +374,9 @@ model_Tags.__super__ = Mongo.Collection;
 model_Tags.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_Tags
 });
+function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
+var $_, $fid = 0;
+function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
 String.prototype.__class__ = String;
 String.__name__ = true;
 Array.__name__ = true;

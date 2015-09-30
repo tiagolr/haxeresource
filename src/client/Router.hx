@@ -1,4 +1,5 @@
 import meteor.packages.FlowRouter;
+import model.TagGroups;
 import templates.ListArticles;
 import templates.NewArticle;
 import templates.ViewArticle;
@@ -29,6 +30,19 @@ class Router {
 			triggersExit:[function() {
 				ListArticles.hide();
 			}]
+		});
+		
+		FlowRouter.route('/tag/group/:_name', {
+			action: function () {
+				var g:TagGroup = TagGroups.collection.findOne({name:FlowRouter.getParam('_name')});
+				if (g != null) {
+					var tags = Shared.resolveTags(g);
+					tags.push(g.mainTag);
+					ListArticles.show(null, null, { tags: { '$in':tags }} );
+				} else {
+					// TODO - goto index
+				}
+			}
 		});
 		
 		FlowRouter.route("/new", {

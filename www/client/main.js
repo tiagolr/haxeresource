@@ -13,8 +13,14 @@ Client.main = function() {
 	window.articles = model_Articles.collection;
 	window.groups = model_TagGroups.collection;
 	Meteor.subscribe("tags");
-	Meteor.subscribe("tag_groups");
+	Meteor.subscribe("tag_groups",{ onReady : function() {
+		Client.preloadReqs.tagGroups = true;
+		Client.checkPreload();
+	}});
 	Meteor.subscribe("countArticles");
+	Meteor.startup(function() {
+		Client.preloadReqs.domReady = true;
+	});
 	templates_Navbar.init();
 	templates_SideBar.init();
 	templates_ListArticles.init();
@@ -22,14 +28,23 @@ Client.main = function() {
 	templates_ViewArticle.init();
 	FlowRouter.wait();
 	Router.init();
-	Meteor.startup(function() {
-		FlowRouter.initialize();
-	});
 	SimpleSchema.messages({ eitherArticleOrLink : "An article must link to an external resource, or have embed contents, or both."});
 	marked.setOptions({ highlight : function(code) {
 		return hljs.highlightAuto(code).value;
 	}});
 	AutoForm.debug();
+};
+Client.checkPreload = function() {
+	console.log("CHECKING PRELOAD");
+	var reqs = Client.preloadReqs;
+	var _g = 0;
+	var _g1 = Reflect.fields(reqs);
+	while(_g < _g1.length) {
+		var req = _g1[_g];
+		++_g;
+		if(reqs[req] != true) return; else console.log("key " + req + " " + Std.string(reqs[req]));
+	}
+	FlowRouter.initialize();
 };
 var EReg = function(r,opt) {
 	opt = opt.split("u").join("");
@@ -56,19 +71,36 @@ HxOverrides.substr = function(s,pos,len) {
 	} else if(len < 0) len = s.length + len - pos;
 	return s.substr(pos,len);
 };
-HxOverrides.indexOf = function(a,obj,i) {
-	var len = a.length;
-	if(i < 0) {
-		i += len;
-		if(i < 0) i = 0;
+HxOverrides.iter = function(a) {
+	return { cur : 0, arr : a, hasNext : function() {
+		return this.cur < this.arr.length;
+	}, next : function() {
+		return this.arr[this.cur++];
+	}};
+};
+var Lambda = function() { };
+Lambda.__name__ = true;
+Lambda.has = function(it,elt) {
+	var $it0 = $iterator(it)();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(x == elt) return true;
 	}
-	while(i < len) {
-		if(a[i] === obj) return i;
-		i++;
-	}
-	return -1;
+	return false;
 };
 Math.__name__ = true;
+var Reflect = function() { };
+Reflect.__name__ = true;
+Reflect.fields = function(o) {
+	var a = [];
+	if(o != null) {
+		var hasOwnProperty = Object.prototype.hasOwnProperty;
+		for( var f in o ) {
+		if(f != "__id__" && f != "hx__closures__" && hasOwnProperty.call(o,f)) a.push(f);
+		}
+	}
+	return a;
+};
 var Router = function() { };
 Router.__name__ = true;
 Router.init = function() {
@@ -83,6 +115,15 @@ Router.init = function() {
 	}, triggersExit : [function() {
 		templates_ListArticles.hide();
 	}]});
+	FlowRouter.route("/tag/group/:_name",{ action : function() {
+		var g = model_TagGroups.collection.findOne({ name : FlowRouter.getParam("_name")});
+		if(g != null) {
+			var tags = Shared.resolveTags(g);
+			tags.push(g.mainTag);
+			templates_ListArticles.show(null,null,{ tags : { '$in' : tags}});
+		} else {
+		}
+	}});
 	FlowRouter.route("/new",{ action : function() {
 		templates_NewArticle.get_page().show(500);
 	}, triggersExit : [function() {
@@ -107,6 +148,37 @@ Shared.init = function() {
 	model_Articles.collection.attachSchema(model_Articles.schema);
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
+};
+Shared.resolveTags = function(g) {
+	var tags = model_Tags.collection.find().fetch();
+	var resolved = [];
+	var _g = 0;
+	var _g1 = g.tags;
+	while(_g < _g1.length) {
+		var entry = _g1[_g];
+		++_g;
+		if(StringTools.startsWith(entry,"~")) {
+			var split = entry.split("/");
+			var reg = new EReg(split[1],split[2]);
+			var _g2 = 0;
+			while(_g2 < tags.length) {
+				var t = tags[_g2];
+				++_g2;
+				if(reg.match(t.name) && !Lambda.has(resolved,t.name)) resolved.push(t.name);
+			}
+		} else {
+			var _g21 = 0;
+			while(_g21 < tags.length) {
+				var t1 = tags[_g21];
+				++_g21;
+				if(t1.name == entry && !Lambda.has(resolved,t1.name)) {
+					resolved = [t1.name];
+					break;
+				}
+			}
+		}
+	}
+	return resolved;
 };
 var Std = function() { };
 Std.__name__ = true;
@@ -470,40 +542,24 @@ templates_SideBar.init = function() {
 		while(_g < groups.length) {
 			var g = groups[_g];
 			++_g;
-			var resolvedTags = [];
+			var $final = [];
+			var resolved = Shared.resolveTags(g);
 			var _g1 = 0;
-			var _g2 = g.tags;
-			while(_g1 < _g2.length) {
-				var t = _g2[_g1];
+			while(_g1 < resolved.length) {
+				var name = resolved[_g1];
 				++_g1;
-				var res = templates_SideBar.resolveTags(t,tags);
-				var _g3 = 0;
-				while(_g3 < res.length) {
-					var r = res[_g3];
-					++_g3;
-					r.name = templates_SideBar.formatTagName(r.name);
-					if(HxOverrides.indexOf(resolvedTags,r,0) == -1) resolvedTags.push(r);
-					Meteor.subscribe("countArticlesTag",r.original);
-				}
+				$final.push({ name : name, formattedName : templates_SideBar.formatTagName(name)});
+				Meteor.subscribe("countArticlesTag",name);
 			}
-			g.tags = resolvedTags;
+			Meteor.subscribe("countArticlesGroup",g.name);
+			g.resolvedTags = $final;
 		}
 		return groups;
 	}});
 	Template.tagGroup.helpers({ countArticlesTag : function(tag) {
 		return Counts.get("countArticlesTag" + tag);
-	}, countArticlesGroup : function(name) {
-		var g1 = model_TagGroups.collection.findOne({ name : name});
-		if(g1 == null) return null;
-		var total = Counts.get("countArticlesTag" + g1.mainTag);
-		var _g4 = 0;
-		var _g11 = g1.tags;
-		while(_g4 < _g11.length) {
-			var t1 = _g11[_g4];
-			++_g4;
-			total += Counts.get("countArticlesTag" + t1);
-		}
-		return total;
+	}, countArticlesGroup : function(groupName) {
+		return Counts.get("countArticlesGroup" + groupName);
 	}});
 	Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
 		if(templates_SideBar.ignoreDivClick) {
@@ -527,30 +583,6 @@ templates_SideBar.init = function() {
 	}, 'click .nav-tag-group > div > a' : function(evt1) {
 		templates_SideBar.ignoreDivClick = true;
 	}});
-};
-templates_SideBar.resolveTags = function(strOrRegex,tags) {
-	var resolved = [];
-	if(StringTools.startsWith(strOrRegex,"~")) {
-		var split = strOrRegex.split("/");
-		var reg = new EReg(split[1],split[2]);
-		var _g = 0;
-		while(_g < tags.length) {
-			var t = tags[_g];
-			++_g;
-			if(reg.match(t.name)) resolved.push({ name : t.name, original : t.name});
-		}
-	} else {
-		var _g1 = 0;
-		while(_g1 < tags.length) {
-			var t1 = tags[_g1];
-			++_g1;
-			if(t1.name == strOrRegex) {
-				resolved = [{ name : t1.name, original : t1.name}];
-				break;
-			}
-		}
-	}
-	return resolved;
 };
 templates_SideBar.formatTagName = function(tag) {
 	var split = tag.split("-");
@@ -576,9 +608,9 @@ templates_ViewArticle.show = function(articleId) {
 	Session.set("currentArticle",model_Articles.collection.findOne({ _id : articleId}));
 	templates_ViewArticle.get_page().show(500);
 };
-if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
-	return Array.prototype.indexOf.call(a,o,i);
-};
+function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
+var $_, $fid = 0;
+function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
 String.prototype.__class__ = String;
 String.__name__ = true;
 Array.__name__ = true;
@@ -602,6 +634,7 @@ q.fn.iterator = function() {
 		return $(this.j[this.pos++]);
 	}};
 };
+Client.preloadReqs = { domReady : false, tagGroups : false};
 Router.FADE_DURATION = 500;
 js_Boot.__toStr = {}.toString;
 model_Articles.NAME = "articles";
