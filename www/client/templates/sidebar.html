@@ -1,25 +1,43 @@
 <template name="sidebar">
 	<div id="sidebar-wrapper">
-		<ul class="sidebar-nav">
-			<li class="sidebar-brand">
-				<a href="#">
-					Topics
-				</a>
-			</li>
+		<h4 class="sidebar-headline">Topics</h4>
+		<ul class="sidebar-groups">
 			{{#each tag_groups}}
 				{{> tag_group}}
 			{{/each}}
+			<li class="nav-tag-group">
+				<a href="#">Another</a>
+			</li>
+			<li class="nav-tag-group">
+				<a href="#">Other</a>
+			</li>
+			<li class="nav-tag-group">
+				<a href="#" data-toggle="collapse" data-target="#ccc">Okay</a>
+
+				<div id="ccc" class="collapse ">
+					<ul>
+						<li class="nav-tag"><a href="#">Syntax</a></li>
+						<li class="nav-tag"><a href="#">Macros</a></li>
+						<li class="nav-tag"><a href="#">Tonis</a></li>
+					</ul>
+				</div>
+			</li>
+			<li class="nav-tag-group">
+				<a href="#" class="togglerrr">OneMore</a>
+			</li>
 		</ul>
 	</div>
 </template>
 	
 <template name="tag_group">
-	<li>
-		<a href="#" class="togglerrr">{{name}}</a>
-		<ul>
+	<li class="nav-tag-group">
+		<a href="#" data-toggle="collapse" data-target="#subg-collapse-{{name}}">{{name}}</a>
+	</li>
+	<div id="subg-collapse-{{name}}" class="collapse">
+		<ul class="sidebar-subgroup">
 			{{#each tags}}
-			<li><a href="#">{{name}}</a></li>
+			<li class="nav-tag"><a href="/tag/{{original}}">{{name}} <span class="badge pull-right">{{countArticlesTag original}}</span></a></li>
 			{{/each}}
 		</ul>
-	</li>
+	</div>
 </template>

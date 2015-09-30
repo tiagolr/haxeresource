@@ -22,10 +22,14 @@ Server.main = function() {
 	Meteor.publish("countArticles",function() {
 		Counts.publish(this,"countArticles",model_Articles.collection.find());
 	});
-	if(model_TagGroups.collection.find().count() == 0) {
-		console.log("Creating dummy tag groups");
-		model_TagGroups.create({ name : "haxe", tags : ["haxe","~/haxe-.*/"]});
-	}
+	Meteor.publish("countArticlesTag",function(tagName) {
+		var tag = model_Tags.collection.findOne({ name : tagName});
+		if(tag != null) {
+			console.log("publishing " + tagName);
+			Counts.publish(this,"countArticlesTag" + tagName,model_Articles.collection.find({ tags : { '$in' : [tagName]}}));
+		}
+	});
+	if(model_TagGroups.collection.find().count() == 0) model_TagGroups.create({ name : "haxe", tags : ["haxe","~/haxe-.*/"]});
 	if(model_Articles.collection.find().count() == 0) {
 		console.log("Creating dummy articles");
 		model_Articles.create({ title : "Test Article1", description : "This is the first article Description", link : "http://www.haxedomain.com", content : "This is the article content, nothing special of course", user : "", tags : ["haxe-fuck"]});

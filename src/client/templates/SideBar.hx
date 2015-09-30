@@ -1,4 +1,6 @@
 package templates;
+import meteor.Meteor;
+import meteor.packages.PublishCounts;
 import meteor.Template;
 import model.TagGroups;
 import model.TagGroups.TagGroup;
@@ -24,24 +26,31 @@ class SideBar{
 					for (t in g.tags) {
 						var res = resolveTags(t, tags);
 						for (r in res) {
-							r.name = formatTagName(r.name);
+							r.name = formatTagName(r.name); // format name
 							if (resolvedTags.indexOf(r) == -1) {
 								resolvedTags.push(r);
 							}
+							Meteor.subscribe('countArticlesTag', r.original);
 						}
 					}
 					untyped g.tags = resolvedTags;
 				}
 				
 				return groups;
-			}
-			
+			},
+		});
+		
+		Template.get('tag_group').helpers( {
+			countArticlesTag: function (tag) {
+				trace("returning count for " + tag);
+				return PublishCounts.get('countArticlesTag$tag');
+			},
 		});
 	}
 	
 	// return existing tag names from name or regular expression
 	static public function resolveTags(strOrRegex:String, tags:Array<Tag>) {
-		var resolved = new Array<Tag>();
+		var resolved = new Array<{name:String, original:String}>();
 		
 		if (StringTools.startsWith(strOrRegex, '~')) {
 			var split = strOrRegex.split('/');
@@ -49,14 +58,14 @@ class SideBar{
 			
 			for (t in tags) {
 				if (reg.match(t.name)) { 
-					resolved.push(t);
+					resolved.push({name:t.name, original:t.name});
 				}
 			}
 			
-		} else {
-			for (t in tags) {
+		} else { // if selector is not a regex, find an exact match
+			for (t in tags) { 
 				if (t.name == strOrRegex) {
-					resolved = [t];
+					resolved = [{name:t.name, original:t.name}];
 					break;
 				}
 			}

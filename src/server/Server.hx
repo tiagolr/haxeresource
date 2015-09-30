@@ -30,9 +30,16 @@ class Server {
 			PublishCounts.publish(Lib.nativeThis, 'countArticles', Articles.collection.find());
 		});
 		
+		Meteor.publish('countArticlesTag', function (tagName) {
+			var tag = Tags.collection.findOne({name : tagName});
+			if (tag != null) {
+				trace("publishing " + tagName);
+				PublishCounts.publish(Lib.nativeThis, 'countArticlesTag$tagName', Articles.collection.find( { tags: { '$in':[tagName] }} ));
+			}
+		});
+		
 		// Test tag groups
 		if (TagGroups.collection.find().count() == 0) {
-			trace("Creating dummy tag groups");
 			TagGroups.create({name:'haxe', tags: ['haxe', '~/haxe-.*/'] });
 		}
 		

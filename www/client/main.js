@@ -483,11 +483,16 @@ templates_SideBar.init = function() {
 					++_g3;
 					r.name = templates_SideBar.formatTagName(r.name);
 					if(HxOverrides.indexOf(resolvedTags,r,0) == -1) resolvedTags.push(r);
+					Meteor.subscribe("countArticlesTag",r.original);
 				}
 			}
 			g.tags = resolvedTags;
 		}
 		return groups;
+	}});
+	Template.tag_group.helpers({ countArticlesTag : function(tag) {
+		console.log("returning count for " + tag);
+		return Counts.get("countArticlesTag" + tag);
 	}});
 };
 templates_SideBar.resolveTags = function(strOrRegex,tags) {
@@ -499,7 +504,7 @@ templates_SideBar.resolveTags = function(strOrRegex,tags) {
 		while(_g < tags.length) {
 			var t = tags[_g];
 			++_g;
-			if(reg.match(t.name)) resolved.push(t);
+			if(reg.match(t.name)) resolved.push({ name : t.name, original : t.name});
 		}
 	} else {
 		var _g1 = 0;
@@ -507,7 +512,7 @@ templates_SideBar.resolveTags = function(strOrRegex,tags) {
 			var t1 = tags[_g1];
 			++_g1;
 			if(t1.name == strOrRegex) {
-				resolved = [t1];
+				resolved = [{ name : t1.name, original : t1.name}];
 				break;
 			}
 		}

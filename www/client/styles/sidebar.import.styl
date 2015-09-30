@@ -1,46 +1,78 @@
-/* Sidebar Styles */
+// spacing
+SB_PADDING = 20px
+SB_SUBGROUP_PADDING_L = SB_PADDING * 2 - 5px
+SB_GROUP_SPACEY = 40px
+SB_SUBGROUP_SPACEY = SB_GROUP_SPACEY - 10px
 
-.sidebar-nav 
-    position: absolute
-    top: 0
-    width: SB_WIDTH
-    margin: 0
-    padding: 0
-    list-style: none
+// color
+SB_COLOR = #f8f8f8
+SB_GROUP_COLOR = SB_COLOR
+SB_GROUP_HOVER_COLOR = SB_GROUP_COLOR - 5%
+SB_SUBGROUP_COLOR = SB_COLOR
+SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 
+#sidebar-wrapper 
+	z-index 1000
+	position fixed
+	left SB_WIDTH
+	height 100%
+	margin-left SB_WIDTH * -1
+	overflow-y auto
+	background SB_COLOR
+	-webkit-transition all 0.5s ease
+	-moz-transition all 0.5s ease
+	-o-transition all 0.5s ease
+	transition all 0.5s ease
+	
+	.sidebar-headline
+		padding SB_PADDING
+		padding-bottom SB_PADDING - 10px
 
-.sidebar-nav li 
-    text-indent: 20px
-    line-height: 40px
+	.sidebar-groups 
+		position absolute
+		width SB_WIDTH
+		margin 0
+		padding 0
+		list-style none
+		
+		> li:first-child
+			border-top: SB_GROUP_BORDER
+	
+		> li
+			line-height SB_GROUP_SPACEY
+			border-bottom SB_GROUP_BORDER
+			background-color SB_GROUP_COLOR
+			
+			:hover
+				background-color SB_GROUP_HOVER_COLOR
+			
+			> a
+				padding-left SB_PADDING
+				display block
+				text-decoration none
+				color #999999
+	
+				:hover
+					text-decoration none
+					color #fff
+					background rgba(255,255,255,0.2)
+				
+				:focus
+					text-decoration none
+					
+		.sidebar-subgroup
+			list-style-type: none
+			padding-left 0px
+			border-bottom  SB_GROUP_BORDER
+			background-color SB_SUBGROUP_COLOR
+		
+			> li
+				padding-left  SB_SUBGROUP_PADDING_L
+				line-height  SB_SUBGROUP_SPACEY
+			
+				> a 
+					text-decoration none
 
-
-.sidebar-nav li a 
-    display: block
-    text-decoration: none
-    color: #999999
-
-
-.sidebar-nav li a:hover 
-    text-decoration: none
-    color: #fff
-    background: rgba(255,255,255,0.2)
-
-
-.sidebar-nav li a:active,
-.sidebar-nav li a:focus 
-    text-decoration: none
-
-
-.sidebar-nav > .sidebar-brand 
-    height: 65px
-    font-size: 18px
-    line-height: 60px
-
-
-.sidebar-nav > .sidebar-brand a 
-    color: #999999
-
-
-.sidebar-nav > .sidebar-brand a:hover 
-    color: #fff
-    background: none
+			.badge
+				margin-right 20px
+				margin-top 5px
