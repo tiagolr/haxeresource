@@ -19,6 +19,8 @@ import templates.ViewArticle;
  */
 class Client {
 	
+	static public var utils = new ClientUtils();
+	
 	static var preloadReqs = {
 		tagGroups:false,
 	}
@@ -32,7 +34,7 @@ class Client {
 
 		Meteor.subscribe(Tags.NAME);
 		Meteor.subscribe(TagGroups.NAME, { onReady : function() { preloadReqs.tagGroups = true; checkPreload(); }} );
-		Meteor.subscribe('countArticles');
+		utils.subscribeCountArticles(); // subscribe to count all articles	
 		
 		Navbar.init();
 		SideBar.init();
@@ -56,7 +58,6 @@ class Client {
 		#if debug
 		AutoForm.debug();
 		#end
-		
 	}
 	
 	static function checkPreload() {

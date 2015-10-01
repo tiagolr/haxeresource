@@ -92,11 +92,11 @@ class ListArticles {
 			},
 			
 			totalCount: function () {
-				return PublishCounts.get('countArticles');
+				return Client.utils.retrieveArticleCount(selector);
 			},
 			
 			allEntriesLoaded: function() {
-				return PublishCounts.get('countArticles') == Articles.collection.find(selector, { limit:limit } ).count();
+				return Client.utils.retrieveArticleCount(selector) == Articles.collection.find(selector, { limit:limit } ).count();
 			}
 			
 		});

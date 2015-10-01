@@ -1,11 +1,7 @@
 package templates;
-import js.html.Element;
-import js.html.Event;
 import js.JQuery;
-import js.Lib;
-import meteor.Meteor;
-import meteor.packages.PublishCounts;
 import meteor.Template;
+import model.Articles;
 import model.TagGroups;
 import model.TagGroups.TagGroup;
 import model.Tags;
@@ -27,13 +23,15 @@ class SideBar{
 				
 				// resolve each group tags from tag names and regular expressions
 				for (g in groups) {
+					var resolved = Shared.utils.resolveTags(g);
 					var final = new Array<{name:String, formattedName:String}>();
-					var resolved = Shared.resolveTags(g);
 					for (name in resolved) {
 						final.push( { name:name, formattedName:formatTagName(name) } ); // format name
-						Meteor.subscribe('countArticlesTag', name);
+						Client.utils.subscribeCountArticles( Articles.queryFromTags([name]));
 					}
-					Meteor.subscribe('countArticlesGroup', g.name);
+					
+					resolved.push(g.mainTag);
+					Client.utils.subscribeCountArticles( Articles.queryFromTags(resolved));
 					untyped g.resolvedTags = final;
 				}
 				
@@ -43,11 +41,14 @@ class SideBar{
 		
 		Template.get('tagGroup').helpers( {
 			countArticlesTag: function (tag) {
-				return PublishCounts.get('countArticlesTag$tag');
+				return Client.utils.retrieveArticleCount( Articles.queryFromTags([tag]) );
 			},
 			
-			countArticlesGroup: function (groupName:String) {
-				return PublishCounts.get('countArticlesGroup$groupName');
+			countArticlesGroup: function (mainTag:String, tags:Array<{name:String}>) {
+				var final = [for (t in tags) t.name];
+				final.push(mainTag);
+				
+				return Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
 			}
 		});
 		

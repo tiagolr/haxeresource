@@ -150,4 +150,8 @@ class Articles extends Collection {
 	}
 	#end
 	
+	public static function queryFromTags(tags:Array<String>): { } {
+		return { tags: { '$in':tags }}
+	}
+	
 }

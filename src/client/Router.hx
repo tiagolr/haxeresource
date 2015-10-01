@@ -1,4 +1,5 @@
 import meteor.packages.FlowRouter;
+import model.Articles;
 import model.TagGroups;
 import templates.ListArticles;
 import templates.NewArticle;
@@ -25,7 +26,11 @@ class Router {
 		FlowRouter.route('/tag/:_name', {
 			action: function () {
 				var tag = FlowRouter.getParam('_name');
-				ListArticles.show(null, null, { tags: { '$in':[tag] }} );
+				
+				var selector = Articles.queryFromTags([tag]);
+				Client.utils.subscribeCountArticles(selector);
+				
+				ListArticles.show(null, null, selector);
 			}, 
 			triggersExit:[function() {
 				ListArticles.hide();
@@ -36,13 +41,17 @@ class Router {
 			action: function () {
 				var g:TagGroup = TagGroups.collection.findOne({name:FlowRouter.getParam('_name')});
 				if (g != null) {
-					var tags = Shared.resolveTags(g);
+					var tags = Shared.utils.resolveTags(g);
 					tags.push(g.mainTag);
-					ListArticles.show(null, null, { tags: { '$in':tags }} );
+					
+					ListArticles.show(null, null, Articles.queryFromTags(tags));
 				} else {
 					// TODO - goto index
 				}
-			}
+			}, 
+			triggersExit:[function() {
+				ListArticles.hide();
+			}]
 		});
 		
 		FlowRouter.route("/new", {
@@ -64,5 +73,4 @@ class Router {
 			}]
 		});
 	}
-	
 }

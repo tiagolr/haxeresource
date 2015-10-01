@@ -3,7 +3,6 @@ import meteor.Meteor;
 import meteor.packages.PublishCounts;
 import model.Articles;
 import model.TagGroups;
-import model.TagGroups.TagGroup;
 import model.Tags;
 
 /**
@@ -27,23 +26,14 @@ class Server {
 			return Articles.collection.find(selector, options);
 		});
 		
-		Meteor.publish('countArticles', function() {
-			PublishCounts.publish(Lib.nativeThis, 'countArticles', Articles.collection.find());
+		Meteor.publish('countArticles', function(id:String , selector:{}) {
+			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
 		});
 		
-		Meteor.publish('countArticlesTag', function (tagName:String) {
-			var tag = Tags.collection.findOne({name : tagName});
-			if (tag != null) {
-				PublishCounts.publish(Lib.nativeThis, 'countArticlesTag$tagName', Articles.collection.find( { tags: { '$in':[tagName] }} ));
-			}
-		});
 		
-		Meteor.publish('countArticlesGroup', function (name:String) {
-			var group:TagGroup = TagGroups.collection.findOne( { name:name } );
-			if (group != null) {
-				var tags = Shared.resolveTags(group);
-				tags.push(group.mainTag);
-				PublishCounts.publish(Lib.nativeThis, 'countArticlesGroup${group.name}', Articles.collection.find( { tags: { '$in':tags }} ));
+		Tags.collection.allow({
+			insert: function (name) {
+				return true;
 			}
 		});
 		
