@@ -15,12 +15,13 @@ import model.Tags;
  */
 class NewArticle {
 
-	static public var page(get, null):JQuery;
-	static function get_page():JQuery {
+	public var page(get, null):JQuery;
+	function get_page():JQuery {
 		return new JQuery('#newArticlePage');
 	}
 	
-	static public function init() {
+	public function new() {}
+	public function init() {
 		Template.get('newArticle').events( {
 			'click #btnPreviewArticle': function (evt) {
 				var title = new JQuery("#naf-articleTitle").val();

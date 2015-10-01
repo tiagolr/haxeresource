@@ -68,7 +68,7 @@ Server.main = function() {
 		return model_Articles.collection.find(selector,options);
 	});
 	Meteor.publish("countArticles",function(id,selector1) {
-		Counts.publish(this,"countArticles" + id,model_Articles.collection.find(selector1));
+		Counts.publish(this,"countArticles" + id,model_Articles.collection.find(selector1),{ noReady : false});
 	});
 	model_Tags.collection.allow({ insert : function(name) {
 		return true;

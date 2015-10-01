@@ -17,9 +17,18 @@ import templates.ViewArticle;
  * Client
  * @author TiagoLr
  */
+#if debug
+@:expose("Client")
+#end
 class Client {
 	
-	static public var utils = new ClientUtils();
+	static public var utils:ClientUtils = new ClientUtils();
+	static public var navbar:Navbar = new Navbar();
+	static public var sidebar:SideBar = new SideBar();
+	static public var listArticles:ListArticles = new ListArticles();
+	static public var newArticle:NewArticle = new NewArticle();
+	static public var viewArticle:ViewArticle = new ViewArticle();
+	static public var router:Router = new Router();
 	
 	static var preloadReqs = {
 		tagGroups:false,
@@ -34,16 +43,15 @@ class Client {
 
 		Meteor.subscribe(Tags.NAME);
 		Meteor.subscribe(TagGroups.NAME, { onReady : function() { preloadReqs.tagGroups = true; checkPreload(); }} );
-		utils.subscribeCountArticles(); // subscribe to count all articles	
 		
-		Navbar.init();
-		SideBar.init();
-		ListArticles.init();
-		NewArticle.init();
-		ViewArticle.init();
+		navbar.init();
+		sidebar.init();
+		listArticles.init();
+		newArticle.init();
+		viewArticle.init();
 		
 		FlowRouter.wait();
-		Router.init();
+		router.init();
 		
 		// schema custom error messages
 		SimpleSchema.messages_({eitherArticleOrLink: "An article must link to an external resource, or have embed contents, or both."});

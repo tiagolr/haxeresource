@@ -13,15 +13,16 @@ import model.Articles.Article;
 class ViewArticle {
 
 	// Current article to display
-	static public var currentArticle(default, null):Article;
+	public var currentArticle(default, null):Article;
 	
 	// Html Page
-	static public var page(get, null):JQuery;
-	static function get_page():JQuery {
+	public var page(get, null):JQuery;
+	function get_page():JQuery {
 		return new JQuery('#viewArticlePage');
 	}
 	
-	static public function init() {
+	public function new() {}
+	public function init() {
 		Template.get('viewArticle').helpers( {
 			article : function () {
 				return Session.get('currentArticle');
@@ -30,7 +31,7 @@ class ViewArticle {
 		
 	}
 	
-	static public function show(articleId:String) {
+	public function show(articleId:String) {
 		Meteor.subscribe(Articles.NAME, {_id:articleId}); // fetch article with all fields
 		Session.set('currentArticle', Articles.collection.findOne( { _id:articleId } ));
 		page.show(Router.FADE_DURATION);

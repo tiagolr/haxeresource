@@ -6,25 +6,287 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var templates_ListArticles = $hx_exports.vaca = function() {
+};
+templates_ListArticles.__name__ = true;
+templates_ListArticles.prototype = {
+	get_page: function() {
+		return js.JQuery("#listArticlesPage");
+	}
+	,set_sort: function(val) {
+		Session.set("list_articles_sort",val);
+		return val;
+	}
+	,get_sort: function() {
+		return Session.get("list_articles_sort");
+	}
+	,set_limit: function(val) {
+		Session.set("list_articles_limit",val);
+		return val;
+	}
+	,get_limit: function() {
+		return Session.get("list_articles_limit");
+	}
+	,set_selector: function(val) {
+		Session.set("list_articles_selector",val);
+		return val;
+	}
+	,get_selector: function() {
+		return Session.get("list_articles_selector");
+	}
+	,show: function(_sort,_limit,_selector) {
+		if(_limit == null) _limit = 5;
+		this.get_page().show(500);
+		if(_limit != null) this.set_limit(_limit);
+		if(_selector != null) this.set_selector(_selector);
+		if(_sort != null) this.set_sort(_sort);
+		this.fetchFromServer();
+	}
+	,hide: function() {
+		this.get_page().hide(500);
+	}
+	,fetchFromServer: function() {
+		if(this.subscription != null) this.subscription.stop();
+		this.subscription = Meteor.subscribe("articles",this.get_selector(),{ sort : this.get_sort(), limit : this.get_limit()});
+	}
+	,init: function() {
+		var _g = this;
+		this.set_sort({ created : -1});
+		this.set_limit(5);
+		this.set_selector({ });
+		Template.listArticles.helpers({ articles : function() {
+			return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+		}, currentCount : function() {
+			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+		}, totalCount : function() {
+			return Client.utils.retrieveArticleCount(_g.get_selector());
+		}, allEntriesLoaded : function() {
+			return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+		}});
+		Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
+			var _g1 = _g;
+			_g1.set_limit(_g1.get_limit() + 5);
+			_g.fetchFromServer();
+		}});
+		Template.articleRow.helpers({ formatDate : function(date) {
+			return vagueTime.get({ from : new Date(), to : date});
+		}, formatLink : function(link) {
+			if(!StringTools.startsWith(link,"http://")) link = "http://" + link;
+			return link;
+		}});
+		Template.articleRow.events({ 'click .articleRowToggle' : function(event) {
+			var target = js.JQuery(event.target.getAttribute("data-target"));
+			var rows = js.JQuery(".articleRowBody");
+			var isCollapsed = target.hasClass("collapsed");
+			var $it0 = (rows.iterator)();
+			while( $it0.hasNext() ) {
+				var row = $it0.next();
+				if(row == target) row.collapse(isCollapsed?"show":"hide"); else row.collapse("hide");
+			}
+		}});
+		Template.articleRow.onRendered(function() {
+			js.JQuery(this.find(".articleRowHeader")).show(500);
+		});
+	}
+	,__class__: templates_ListArticles
+};
+var templates_Navbar = function() {
+};
+templates_Navbar.__name__ = true;
+templates_Navbar.prototype = {
+	init: function() {
+	}
+	,__class__: templates_Navbar
+};
+var templates_NewArticle = function() {
+};
+templates_NewArticle.__name__ = true;
+templates_NewArticle.prototype = {
+	get_page: function() {
+		return js.JQuery("#newArticlePage");
+	}
+	,init: function() {
+		Template.newArticle.events({ 'click #btnPreviewArticle' : function(evt) {
+			var title = js.JQuery("#naf-articleTitle").val();
+			var content = js.JQuery("#naf-articleContent").val();
+			var link = js.JQuery("#naf-articleLink").val();
+			var desc = js.JQuery("#naf-articleDescription").val();
+			js.JQuery("#na-previewTitle").html(title);
+			js.JQuery("#na-articleDescription").html(desc);
+			js.JQuery("#na-previewLink").html("<a href=\"" + link + "\" target=\"_blank\">" + link + "</a>");
+			js.JQuery("#na-previewContent").html(marked(content));
+		}, 'beforeItemAdd input' : function(evt1) {
+			if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
+		}});
+		Template.newArticle.helpers({ });
+		Template.registerHelper("schema",function() {
+			return model_Articles.schema;
+		});
+		AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,_,_1) {
+			var id = null;
+			if(insertDoc != null) {
+				id = model_Articles.collection.insert(insertDoc);
+				FlowRouter.go("/view/" + id);
+			}
+			this.done(null,id);
+			return false;
+		}});
+	}
+	,__class__: templates_NewArticle
+};
+var Router = function() {
+};
+Router.__name__ = true;
+Router.prototype = {
+	init: function() {
+		FlowRouter.route("/",{ action : function() {
+			Client.listArticles.show(null,null,{ });
+		}, triggersExit : [function() {
+			Client.listArticles.hide();
+		}]});
+		FlowRouter.route("/tag/:_name",{ action : function() {
+			var tag = FlowRouter.getParam("_name");
+			var selector = model_Articles.queryFromTags([tag]);
+			Client.listArticles.show(null,null,selector);
+		}, triggersExit : [function() {
+			Client.listArticles.hide();
+		}]});
+		FlowRouter.route("/tag/group/:_name",{ action : function() {
+			var g = model_TagGroups.collection.findOne({ name : FlowRouter.getParam("_name")});
+			if(g != null) {
+				var tags = Shared.utils.resolveTags(g);
+				tags.push(g.mainTag);
+				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags));
+			} else {
+			}
+		}, triggersExit : [function() {
+			Client.listArticles.hide();
+		}]});
+		FlowRouter.route("/new",{ action : function() {
+			Client.newArticle.get_page().show(500);
+		}, triggersExit : [function() {
+			Client.newArticle.get_page().hide(500);
+		}]});
+		FlowRouter.route("/view/:_id",{ action : function() {
+			var id = FlowRouter.getParam("_id");
+			Client.viewArticle.show(id);
+		}, triggersExit : [function() {
+			Client.viewArticle.get_page().hide();
+		}]});
+	}
+	,__class__: Router
+};
+var templates_SideBar = function() {
+	this.ignoreDivClick = false;
+};
+templates_SideBar.__name__ = true;
+templates_SideBar.formatTagName = function(tag) {
+	var split = tag.split("-");
+	if(split.length > 1) {
+		split.shift();
+		tag = split.join("-");
+	}
+	if(tag.length < 2) return tag;
+	return HxOverrides.substr(tag,0,1).toUpperCase() + HxOverrides.substr(tag,1,null);
+};
+templates_SideBar.prototype = {
+	init: function() {
+		var _g = this;
+		Template.sidebar.helpers({ tag_groups : function() {
+			var tags = model_Tags.collection.find().fetch();
+			var groups = model_TagGroups.collection.find().fetch();
+			var _g1 = 0;
+			while(_g1 < groups.length) {
+				var g = groups[_g1];
+				++_g1;
+				var resolved = Shared.utils.resolveTags(g);
+				var $final = [];
+				var _g11 = 0;
+				while(_g11 < resolved.length) {
+					var name = resolved[_g11];
+					++_g11;
+					$final.push({ name : name, formattedName : templates_SideBar.formatTagName(name)});
+				}
+				resolved.push(g.mainTag);
+				g.resolvedTags = $final;
+			}
+			return groups;
+		}});
+		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
+			return Client.utils.retrieveArticleCount(model_Articles.queryFromTags([tag]));
+		}, countArticlesGroup : function(mainTag,tags1) {
+			var final1;
+			var _g2 = [];
+			var _g12 = 0;
+			while(_g12 < tags1.length) {
+				var t = tags1[_g12];
+				++_g12;
+				_g2.push(t.name);
+			}
+			final1 = _g2;
+			final1.push(mainTag);
+			var f = Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
+			console.log("OK " + f);
+			return f;
+		}});
+		Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
+			if(_g.ignoreDivClick) {
+				_g.ignoreDivClick = false;
+				return;
+			}
+			var trigger = js.JQuery(evt.target);
+			var collapsables = js.JQuery(".sidebar-groups .collapse");
+			var isCollapsed = trigger.hasClass("collapsed");
+			var $it0 = (collapsables.iterator)();
+			while( $it0.hasNext() ) {
+				var el = $it0.next();
+				if(el.attr("id") == trigger.data("trigger") && el.hasClass("collapsed")) {
+					el.collapse("show");
+					el.removeClass("collapsed");
+				} else {
+					el.collapse("hide");
+					el.addClass("collapsed");
+				}
+			}
+		}, 'click .nav-tag-group > div > a' : function(evt1) {
+			_g.ignoreDivClick = true;
+		}});
+	}
+	,__class__: templates_SideBar
+};
 var ClientUtils = function() {
 	this.articleCountSubs = [];
 };
 ClientUtils.__name__ = true;
 ClientUtils.prototype = {
-	subscribeCountArticles: function(selector) {
+	retrieveArticleCount: function(selector) {
 		if(selector == null) selector = { };
 		var id = Shared.utils.objectToHash(selector);
-		if(Lambda.has(this.articleCountSubs,id)) return; else this.articleCountSubs.push(id);
 		Meteor.subscribe("countArticles",id,selector);
-	}
-	,retrieveArticleCount: function(selector) {
-		if(selector == null) selector = { };
-		var id = Shared.utils.objectToHash(selector);
 		return Counts.get("countArticles" + id);
 	}
 	,__class__: ClientUtils
 };
-var Client = function() { };
+var templates_ViewArticle = function() {
+};
+templates_ViewArticle.__name__ = true;
+templates_ViewArticle.prototype = {
+	get_page: function() {
+		return js.JQuery("#viewArticlePage");
+	}
+	,init: function() {
+		Template.viewArticle.helpers({ article : function() {
+			return Session.get("currentArticle");
+		}});
+	}
+	,show: function(articleId) {
+		Meteor.subscribe("articles",{ _id : articleId});
+		Session.set("currentArticle",model_Articles.collection.findOne({ _id : articleId}));
+		this.get_page().show(500);
+	}
+	,__class__: templates_ViewArticle
+};
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
@@ -36,14 +298,13 @@ Client.main = function() {
 		Client.preloadReqs.tagGroups = true;
 		Client.checkPreload();
 	}});
-	Client.utils.subscribeCountArticles();
-	templates_Navbar.init();
-	templates_SideBar.init();
-	templates_ListArticles.init();
-	templates_NewArticle.init();
-	templates_ViewArticle.init();
+	Client.navbar.init();
+	Client.sidebar.init();
+	Client.listArticles.init();
+	Client.newArticle.init();
+	Client.viewArticle.init();
 	FlowRouter.wait();
-	Router.init();
+	Client.router.init();
 	SimpleSchema.messages({ eitherArticleOrLink : "An article must link to an external resource, or have embed contents, or both."});
 	marked.setOptions({ highlight : function(code) {
 		return hljs.highlightAuto(code).value;
@@ -121,46 +382,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var Router = function() { };
-Router.__name__ = true;
-Router.init = function() {
-	FlowRouter.route("/",{ action : function() {
-		templates_ListArticles.show(null,null,{ });
-	}, triggersExit : [function() {
-		templates_ListArticles.hide();
-	}]});
-	FlowRouter.route("/tag/:_name",{ action : function() {
-		var tag = FlowRouter.getParam("_name");
-		var selector = model_Articles.queryFromTags([tag]);
-		Client.utils.subscribeCountArticles(selector);
-		templates_ListArticles.show(null,null,selector);
-	}, triggersExit : [function() {
-		templates_ListArticles.hide();
-	}]});
-	FlowRouter.route("/tag/group/:_name",{ action : function() {
-		var g = model_TagGroups.collection.findOne({ name : FlowRouter.getParam("_name")});
-		if(g != null) {
-			var tags = Shared.utils.resolveTags(g);
-			tags.push(g.mainTag);
-			templates_ListArticles.show(null,null,model_Articles.queryFromTags(tags));
-		} else {
-		}
-	}, triggersExit : [function() {
-		templates_ListArticles.hide();
-	}]});
-	FlowRouter.route("/new",{ action : function() {
-		templates_NewArticle.get_page().show(500);
-	}, triggersExit : [function() {
-		templates_NewArticle.get_page().hide(500);
-	}]});
-	FlowRouter.route("/view/:_id",{ action : function() {
-		var id = FlowRouter.getParam("_id");
-		templates_ViewArticle.show(id);
-	}, triggersExit : [function() {
-		templates_ViewArticle.get_page().hide();
-	}]});
-};
-var SharedUtils = function() {
+var SharedUtils = $hx_exports.sharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -206,7 +428,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -874,207 +1096,6 @@ model_Tags.__super__ = Mongo.Collection;
 model_Tags.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_Tags
 });
-var templates_ListArticles = $hx_exports.vaca = function() { };
-templates_ListArticles.__name__ = true;
-templates_ListArticles.get_page = function() {
-	return js.JQuery("#listArticlesPage");
-};
-templates_ListArticles.set_sort = function(val) {
-	Session.set("list_articles_sort",val);
-	return val;
-};
-templates_ListArticles.get_sort = function() {
-	return Session.get("list_articles_sort");
-};
-templates_ListArticles.set_limit = function(val) {
-	Session.set("list_articles_limit",val);
-	return val;
-};
-templates_ListArticles.get_limit = function() {
-	return Session.get("list_articles_limit");
-};
-templates_ListArticles.set_selector = function(val) {
-	Session.set("list_articles_selector",val);
-	return val;
-};
-templates_ListArticles.get_selector = function() {
-	return Session.get("list_articles_selector");
-};
-templates_ListArticles.show = function(_sort,_limit,_selector) {
-	if(_limit == null) _limit = 5;
-	templates_ListArticles.get_page().show(500);
-	if(_limit != null) templates_ListArticles.set_limit(_limit);
-	if(_selector != null) templates_ListArticles.set_selector(_selector);
-	if(_sort != null) templates_ListArticles.set_sort(_sort);
-	templates_ListArticles.fetchFromServer();
-};
-templates_ListArticles.hide = function() {
-	templates_ListArticles.get_page().hide(500);
-};
-templates_ListArticles.fetchFromServer = function() {
-	Meteor.subscribe("articles",templates_ListArticles.get_selector(),{ sort : templates_ListArticles.get_sort(), limit : templates_ListArticles.get_limit()});
-};
-templates_ListArticles.init = function() {
-	templates_ListArticles.set_sort({ created : -1});
-	templates_ListArticles.set_limit(5);
-	templates_ListArticles.set_selector({ });
-	Template.listArticles.helpers({ articles : function() {
-		return model_Articles.collection.find(templates_ListArticles.get_selector(),{ sort : templates_ListArticles.get_sort(), limit : templates_ListArticles.get_limit()});
-	}, currentCount : function() {
-		return model_Articles.collection.find(templates_ListArticles.get_selector(),{ limit : templates_ListArticles.get_limit()}).count();
-	}, totalCount : function() {
-		return Client.utils.retrieveArticleCount(templates_ListArticles.get_selector());
-	}, allEntriesLoaded : function() {
-		return Client.utils.retrieveArticleCount(templates_ListArticles.get_selector()) == model_Articles.collection.find(templates_ListArticles.get_selector(),{ limit : templates_ListArticles.get_limit()}).count();
-	}});
-	Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
-		var _g = templates_ListArticles;
-		_g.set_limit(_g.get_limit() + 5);
-		templates_ListArticles.fetchFromServer();
-	}});
-	Template.articleRow.helpers({ formatDate : function(date) {
-		return vagueTime.get({ from : new Date(), to : date});
-	}, formatLink : function(link) {
-		if(!StringTools.startsWith(link,"http://")) link = "http://" + link;
-		return link;
-	}});
-	Template.articleRow.events({ 'click .articleRowToggle' : function(event) {
-		var target = js.JQuery(event.target.getAttribute("data-target"));
-		var rows = js.JQuery(".articleRowBody");
-		var isCollapsed = target.hasClass("collapsed");
-		var $it0 = (rows.iterator)();
-		while( $it0.hasNext() ) {
-			var row = $it0.next();
-			if(row == target) row.collapse(isCollapsed?"show":"hide"); else row.collapse("hide");
-		}
-	}});
-	Template.articleRow.onRendered(function() {
-		js.JQuery(this.find(".articleRowHeader")).show(500);
-	});
-};
-var templates_Navbar = function() { };
-templates_Navbar.__name__ = true;
-templates_Navbar.init = function() {
-};
-var templates_NewArticle = function() { };
-templates_NewArticle.__name__ = true;
-templates_NewArticle.get_page = function() {
-	return js.JQuery("#newArticlePage");
-};
-templates_NewArticle.init = function() {
-	Template.newArticle.events({ 'click #btnPreviewArticle' : function(evt) {
-		var title = js.JQuery("#naf-articleTitle").val();
-		var content = js.JQuery("#naf-articleContent").val();
-		var link = js.JQuery("#naf-articleLink").val();
-		var desc = js.JQuery("#naf-articleDescription").val();
-		js.JQuery("#na-previewTitle").html(title);
-		js.JQuery("#na-articleDescription").html(desc);
-		js.JQuery("#na-previewLink").html("<a href=\"" + link + "\" target=\"_blank\">" + link + "</a>");
-		js.JQuery("#na-previewContent").html(marked(content));
-	}, 'beforeItemAdd input' : function(evt1) {
-		if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
-	}});
-	Template.newArticle.helpers({ });
-	Template.registerHelper("schema",function() {
-		return model_Articles.schema;
-	});
-	AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,_,_1) {
-		var id = null;
-		if(insertDoc != null) {
-			id = model_Articles.collection.insert(insertDoc);
-			FlowRouter.go("/view/" + id);
-		}
-		this.done(null,id);
-		return false;
-	}});
-};
-var templates_SideBar = function() { };
-templates_SideBar.__name__ = true;
-templates_SideBar.init = function() {
-	Template.sidebar.helpers({ tag_groups : function() {
-		var tags = model_Tags.collection.find().fetch();
-		var groups = model_TagGroups.collection.find().fetch();
-		var _g = 0;
-		while(_g < groups.length) {
-			var g = groups[_g];
-			++_g;
-			var resolved = Shared.utils.resolveTags(g);
-			var $final = [];
-			var _g1 = 0;
-			while(_g1 < resolved.length) {
-				var name = resolved[_g1];
-				++_g1;
-				$final.push({ name : name, formattedName : templates_SideBar.formatTagName(name)});
-				Client.utils.subscribeCountArticles(model_Articles.queryFromTags([name]));
-			}
-			resolved.push(g.mainTag);
-			Client.utils.subscribeCountArticles(model_Articles.queryFromTags(resolved));
-			g.resolvedTags = $final;
-		}
-		return groups;
-	}});
-	Template.tagGroup.helpers({ countArticlesTag : function(tag) {
-		return Client.utils.retrieveArticleCount(model_Articles.queryFromTags([tag]));
-	}, countArticlesGroup : function(mainTag,tags1) {
-		var final1;
-		var _g2 = [];
-		var _g11 = 0;
-		while(_g11 < tags1.length) {
-			var t = tags1[_g11];
-			++_g11;
-			_g2.push(t.name);
-		}
-		final1 = _g2;
-		final1.push(mainTag);
-		return Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
-	}});
-	Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
-		if(templates_SideBar.ignoreDivClick) {
-			templates_SideBar.ignoreDivClick = false;
-			return;
-		}
-		var trigger = js.JQuery(evt.target);
-		var collapsables = js.JQuery(".sidebar-groups .collapse");
-		var isCollapsed = trigger.hasClass("collapsed");
-		var $it0 = (collapsables.iterator)();
-		while( $it0.hasNext() ) {
-			var el = $it0.next();
-			if(el.attr("id") == trigger.data("trigger") && el.hasClass("collapsed")) {
-				el.collapse("show");
-				el.removeClass("collapsed");
-			} else {
-				el.collapse("hide");
-				el.addClass("collapsed");
-			}
-		}
-	}, 'click .nav-tag-group > div > a' : function(evt1) {
-		templates_SideBar.ignoreDivClick = true;
-	}});
-};
-templates_SideBar.formatTagName = function(tag) {
-	var split = tag.split("-");
-	if(split.length > 1) {
-		split.shift();
-		tag = split.join("-");
-	}
-	if(tag.length < 2) return tag;
-	return HxOverrides.substr(tag,0,1).toUpperCase() + HxOverrides.substr(tag,1,null);
-};
-var templates_ViewArticle = function() { };
-templates_ViewArticle.__name__ = true;
-templates_ViewArticle.get_page = function() {
-	return js.JQuery("#viewArticlePage");
-};
-templates_ViewArticle.init = function() {
-	Template.viewArticle.helpers({ article : function() {
-		return Session.get("currentArticle");
-	}});
-};
-templates_ViewArticle.show = function(articleId) {
-	Meteor.subscribe("articles",{ _id : articleId});
-	Session.set("currentArticle",model_Articles.collection.findOne({ _id : articleId}));
-	templates_ViewArticle.get_page().show(500);
-};
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
@@ -1105,9 +1126,16 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-Client.utils = new ClientUtils();
-Client.preloadReqs = { tagGroups : false};
+templates_ListArticles.PAGE_SIZE = 5;
 Router.FADE_DURATION = 500;
+Client.utils = new ClientUtils();
+Client.navbar = new templates_Navbar();
+Client.sidebar = new templates_SideBar();
+Client.listArticles = new templates_ListArticles();
+Client.newArticle = new templates_NewArticle();
+Client.viewArticle = new templates_ViewArticle();
+Client.router = new Router();
+Client.preloadReqs = { tagGroups : false};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;
@@ -1121,8 +1149,6 @@ model_Articles.NAME = "articles";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
-templates_ListArticles.PAGE_SIZE = 5;
-templates_SideBar.ignoreDivClick = false;
 Client.main();
 })(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
 

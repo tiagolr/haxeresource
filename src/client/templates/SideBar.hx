@@ -12,9 +12,10 @@ import model.Tags.Tag;
  * @author TiagoLr
  */
 class SideBar{
-	static var ignoreDivClick:Bool = false; // flag to hack the event propagation of <a></a> inside a clickable <div></div>
+	var ignoreDivClick:Bool = false; // flag to hack the event propagation of <a></a> inside a clickable <div></div>
 
-	static public function init() {
+	public function new() {}
+	public function init() {
 		Template.get('sidebar').helpers( {
 			
 			tag_groups:function() {
@@ -27,11 +28,11 @@ class SideBar{
 					var final = new Array<{name:String, formattedName:String}>();
 					for (name in resolved) {
 						final.push( { name:name, formattedName:formatTagName(name) } ); // format name
-						Client.utils.subscribeCountArticles( Articles.queryFromTags([name]));
+						//Client.utils.subscribeCountArticles( Articles.queryFromTags([name]));
 					}
 					
 					resolved.push(g.mainTag);
-					Client.utils.subscribeCountArticles( Articles.queryFromTags(resolved));
+					//Client.utils.subscribeCountArticles( Articles.queryFromTags(resolved));
 					untyped g.resolvedTags = final;
 				}
 				
@@ -48,7 +49,10 @@ class SideBar{
 				var final = [for (t in tags) t.name];
 				final.push(mainTag);
 				
-				return Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
+				var f = Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
+				
+				trace("OK " + f);
+				return f;
 			}
 		});
 		

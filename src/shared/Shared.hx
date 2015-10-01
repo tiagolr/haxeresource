@@ -6,6 +6,9 @@ import model.Tags;
  * Shared
  * @author TiagoLr
  */
+#if (debug && client)
+@:expose("Shared")
+#end
 class Shared {
 
 	public static var utils:SharedUtils = new SharedUtils();

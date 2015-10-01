@@ -7,7 +7,8 @@ import meteor.Template;
  */
 class Navbar{
 
-	static public function init() {
+	public function new() {}
+	public function init() {
 		/*Template.get('navbar').events( {
 			'click #btn-test' : function () {
 				//CRouter.showArticle("HAHAHAHAHAHAHA");

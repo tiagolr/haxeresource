@@ -16,41 +16,44 @@ class ListArticles {
 
 	public static inline var PAGE_SIZE = 5;
 	
-	static var page(get, null):JQuery;
-	static function get_page():JQuery {
+	var subscription:{};
+	
+	var page(get, null):JQuery;
+	function get_page():JQuery {
 		return new JQuery('#listArticlesPage');
 	}
 	
 	// REACTIVE VARS --------------------------------------------------
-	static var sort(get, set): { };
-	static function set_sort(val) {
+	var sort(get, set): { };
+	function set_sort(val) {
 		Session.set('list_articles_sort',val);
 		return val;
 	}
-	static function get_sort() {
+	function get_sort() {
 		return Session.get('list_articles_sort');
 	}
 	
-	static var limit(get, set):Int;
-	static function set_limit(val:Int) {
+	var limit(get, set):Int;
+	function set_limit(val:Int) {
 		Session.set('list_articles_limit', val);
 		return val;
 	}
-	static function get_limit() {
+	function get_limit() {
 		return Session.get('list_articles_limit'); 
 	}
 	
-	static var selector(get, set): { };
-	static function set_selector(val) {
+	var selector(get, set): { };
+	function set_selector(val) {
 		Session.set('list_articles_selector', val);
 		return val;
 	}
-	static function get_selector() {
+	function get_selector() {
 		return Session.get('list_articles_selector');
 	}
 	//-----------------------------------------------------------------
 	
-	static public function show(?_sort:{}, ?_limit:Int = PAGE_SIZE, _selector:Dynamic) {
+	
+	public function show(?_sort:{}, ?_limit:Int = PAGE_SIZE, _selector:Dynamic) {
 		page.show(Router.FADE_DURATION);
 		
 		if (_limit != null) {
@@ -68,15 +71,19 @@ class ListArticles {
 		fetchFromServer();
 	}
 	
-	static public function hide() {
+	public function hide() {
 		page.hide(Router.FADE_DURATION);
 	}
 	
-	static function fetchFromServer() {
-		Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
+	function fetchFromServer() {
+		if (subscription != null) {
+			untyped subscription.stop();
+		}
+		subscription = Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
 	}
 	
-	static public function init() {
+	public function new() {}
+	public function init() {
 		sort = { created: -1 };
 		limit = PAGE_SIZE;
 		selector = { };

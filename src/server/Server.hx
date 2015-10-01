@@ -26,8 +26,8 @@ class Server {
 			return Articles.collection.find(selector, options);
 		});
 		
-		Meteor.publish('countArticles', function(id:String , selector:{}) {
-			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
+		Meteor.publish('countArticles', function(id:String , selector: { } ) {
+			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector), { noReady:false } );
 		});
 		
 		

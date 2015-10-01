@@ -7,6 +7,9 @@ using Lambda;
  * ...
  * @author TiagoLr
  */
+#if (debug && client)
+@:expose("sharedUtils")
+#end
 class SharedUtils{
 
 	public function new() { }

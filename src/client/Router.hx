@@ -12,14 +12,15 @@ class Router {
 
 	static public inline var FADE_DURATION = 500;
 	
-	static public function init() {
+	public function new() {}
+	public function init() {
 		
 		FlowRouter.route('/', {
 			action: function() {
-				ListArticles.show(null, null, {});
+				Client.listArticles.show(null, null, {});
 			},
 			triggersExit: [function() {
-				ListArticles.hide();
+				Client.listArticles.hide();
 			}]
 		});
 		
@@ -28,12 +29,12 @@ class Router {
 				var tag = FlowRouter.getParam('_name');
 				
 				var selector = Articles.queryFromTags([tag]);
-				Client.utils.subscribeCountArticles(selector);
+				//Client.utils.subscribeCountArticles(selector);
 				
-				ListArticles.show(null, null, selector);
+				Client.listArticles.show(null, null, selector);
 			}, 
 			triggersExit:[function() {
-				ListArticles.hide();
+				Client.listArticles.hide();
 			}]
 		});
 		
@@ -44,32 +45,34 @@ class Router {
 					var tags = Shared.utils.resolveTags(g);
 					tags.push(g.mainTag);
 					
-					ListArticles.show(null, null, Articles.queryFromTags(tags));
+					//Client.utils.subscribeCountArticles(selector);
+					
+					Client.listArticles.show(null, null, Articles.queryFromTags(tags));
 				} else {
 					// TODO - goto index
 				}
 			}, 
 			triggersExit:[function() {
-				ListArticles.hide();
+				Client.listArticles.hide();
 			}]
 		});
 		
 		FlowRouter.route("/new", {
 			action:function () {
-				NewArticle.page.show(FADE_DURATION);
+				Client.newArticle.page.show(FADE_DURATION);
 			},
 			triggersExit: [function () {
-				NewArticle.page.hide(FADE_DURATION);
+				Client.newArticle.page.hide(FADE_DURATION);
 			}]
 		});
 		
 		FlowRouter.route("/view/:_id", {
 			action: function () {
 				var id = FlowRouter.getParam('_id');
-				ViewArticle.show(id);
+				Client.viewArticle.show(id);
 			}, 
 			triggersExit: [function () {
-				ViewArticle.page.hide();
+				Client.viewArticle.page.hide();
 			}]
 		});
 	}
