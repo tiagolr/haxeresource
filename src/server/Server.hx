@@ -37,31 +37,69 @@ class Server {
 			}
 		});
 		
+		#if debug
+		
 		// Test tag groups
 		if (TagGroups.collection.find().count() == 0) {
-			TagGroups.create({name:'Haxe', mainTag:'haxe', tags: ['~/haxe-.*/'] });
+			TagGroups.create({name:'Haxe', mainTag:'haxe', tags: ["~/^haxe-..*$/"] });
+			TagGroups.create({name:'Openfl', mainTag:'openfl', tags: ["~/^openfl-..*$/"] });
 		}
 		
 		// Test articles
 		if (Articles.collection.find().count() == 0) {
-			trace("Creating dummy articles");
 			Articles.create({
-				title: "Test Article1",
-				description: "This is the first article Description",
+				title: "Test Haxe Article1",
+				description: "Has no link, has content, tags to: haxe-syntax",
 				link: "http://www.haxedomain.com",
-				content: "This is the article content, nothing special of course", 
+				content: "This article has some content.", 
 				user: "",
-				tags: ["haxe-fuck"],
+				tags: ["haxe-syntax"],
 			});
 			
 			Articles.create({
-				title: "Test Article2",
-				description: "This is the second article Description",
-				link: "http://www.haxedomain.com",
-				content: "This is the article content, nothing special of course", 
+				title: "Test Haxe Article2",
+				description: "Has link, has content, tags to: haxe, haxe-macros",
+				link: "http://www.google.com",
+				content: "This article has some content.", 
 				user: "",
-				tags: ["haxe-tits"],
+				tags: ["haxe", "haxe-macros"],
+			});
+			
+			Articles.create({
+				title: "Test Haxe Article3",
+				description: "Has link, has content, tags: none",
+				link: "http://www.google.com",
+				content: "This article has some content.", 
+				user: "",
+				tags: ["haxe", "haxe-macros"],
+			});
+			
+			Articles.create({
+				title: "Test Openfl Article1",
+				description: "Has link, has content, tags: openfl, openfl-gamedev",
+				link: "http://www.google.com",
+				content: "This article has some content.", 
+				user: "",
+				tags: ["openfl", "openfl-gamedev"],
+			});
+			
+			Articles.create({
+				title: "Test Openfl Article2",
+				description: "Has no link, has content, tags: openfl, opEnfl-gaMeDev",
+				content: "This article has some content.", 
+				user: "",
+				tags: ["openfl", "opEnfl-gaMeDev"],
+			});
+			
+			Articles.create({
+				title: "Test Openfl Article3",
+				description: "Has link, has no content, tags: openfl, openfl-gamedev",
+				link: "http://www.google.com",
+				user: "",
+				tags: ["oPenFl", "openfl-gamedev"],
 			});
 		}
+		
+		#end
 	}
 }

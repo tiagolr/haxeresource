@@ -51,7 +51,6 @@ class SideBar{
 				
 				var f = Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
 				
-				trace("OK " + f);
 				return f;
 			}
 		});

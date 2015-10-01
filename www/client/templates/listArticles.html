@@ -13,9 +13,36 @@
 				<thead>
 				<tr>
 					<th class="text-center" style="width:10px"></th> 
-					<th class="" style=""><a href="#">TITLE</a></th>
-					<th class="text-center" style="width:90px"><a href="#">STARS</a></th>
-					<th class="text-center" style="width:120px"><a href="#">AGE</a></th>
+					<th class="" style="">
+						<a id="btnSortByTitle" href="#">TITLE 
+							{{#if sortTitleUp}}
+							<span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+							{{/if}}
+							{{#if sortTitleDown}}
+							<span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+							{{/if}}
+						</a>
+					</th>
+					<th class="text-center" style="width:90px">
+						<a id="btnSortByVotes" href="#">STARS 
+							{{#if sortVotesUp}}
+							<span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+							{{/if}}
+							{{#if sortVotesDown}}
+							<span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+							{{/if}}
+						</a>
+					</th>
+					<th class="text-center" style="width:120px">
+						<a id="btnSortByAge" href="#">AGE
+							{{#if sortAgeUp}}
+							<span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+							{{/if}}
+							{{#if sortAgeDown}}
+							<span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span>
+							{{/if}}
+						</a>
+					</th>
 				</tr>
 				</thead>
 				<tbody id="dataParent">
@@ -62,6 +89,13 @@
 						External Link
 					</button>
 					{{/if}}
+					
+					<p>
+					Tags: 
+					{{#each tags}}
+					<a href="/tag/{{this}}">{{this}} </a> 
+					{{/each}}
+					</p>
 				</div>
 				</div> 
 			</div> 

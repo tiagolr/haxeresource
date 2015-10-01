@@ -73,11 +73,17 @@ Server.main = function() {
 	model_Tags.collection.allow({ insert : function(name) {
 		return true;
 	}});
-	if(model_TagGroups.collection.find().count() == 0) model_TagGroups.create({ name : "Haxe", mainTag : "haxe", tags : ["~/haxe-.*/"]});
+	if(model_TagGroups.collection.find().count() == 0) {
+		model_TagGroups.create({ name : "Haxe", mainTag : "haxe", tags : ["~/^haxe-..*$/"]});
+		model_TagGroups.create({ name : "Openfl", mainTag : "openfl", tags : ["~/^openfl-..*$/"]});
+	}
 	if(model_Articles.collection.find().count() == 0) {
-		console.log("Creating dummy articles");
-		model_Articles.create({ title : "Test Article1", description : "This is the first article Description", link : "http://www.haxedomain.com", content : "This is the article content, nothing special of course", user : "", tags : ["haxe-fuck"]});
-		model_Articles.create({ title : "Test Article2", description : "This is the second article Description", link : "http://www.haxedomain.com", content : "This is the article content, nothing special of course", user : "", tags : ["haxe-tits"]});
+		model_Articles.create({ title : "Test Haxe Article1", description : "Has no link, has content, tags to: haxe-syntax", link : "http://www.haxedomain.com", content : "This article has some content.", user : "", tags : ["haxe-syntax"]});
+		model_Articles.create({ title : "Test Haxe Article2", description : "Has link, has content, tags to: haxe, haxe-macros", link : "http://www.google.com", content : "This article has some content.", user : "", tags : ["haxe","haxe-macros"]});
+		model_Articles.create({ title : "Test Haxe Article3", description : "Has link, has content, tags: none", link : "http://www.google.com", content : "This article has some content.", user : "", tags : ["haxe","haxe-macros"]});
+		model_Articles.create({ title : "Test Openfl Article1", description : "Has link, has content, tags: openfl, openfl-gamedev", link : "http://www.google.com", content : "This article has some content.", user : "", tags : ["openfl","openfl-gamedev"]});
+		model_Articles.create({ title : "Test Openfl Article2", description : "Has no link, has content, tags: openfl, opEnfl-gaMeDev", content : "This article has some content.", user : "", tags : ["openfl","opEnfl-gaMeDev"]});
+		model_Articles.create({ title : "Test Openfl Article3", description : "Has link, has no content, tags: openfl, openfl-gamedev", link : "http://www.google.com", user : "", tags : ["oPenFl","openfl-gamedev"]});
 	}
 };
 var SharedUtils = function() {

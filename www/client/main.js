@@ -40,14 +40,9 @@ templates_ListArticles.prototype = {
 		if(_limit != null) this.set_limit(_limit);
 		if(_selector != null) this.set_selector(_selector);
 		if(_sort != null) this.set_sort(_sort);
-		this.fetchFromServer();
 	}
 	,hide: function() {
 		this.get_page().hide(500);
-	}
-	,fetchFromServer: function() {
-		if(this.subscription != null) this.subscription.stop();
-		this.subscription = Meteor.subscribe("articles",this.get_selector(),{ sort : this.get_sort(), limit : this.get_limit()});
 	}
 	,init: function() {
 		var _g = this;
@@ -62,11 +57,33 @@ templates_ListArticles.prototype = {
 			return Client.utils.retrieveArticleCount(_g.get_selector());
 		}, allEntriesLoaded : function() {
 			return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+		}, sortAgeUp : function() {
+			return _g.get_sort().created == 1;
+		}, sortAgeDown : function() {
+			return _g.get_sort().created == -1;
+		}, sortVotesUp : function() {
+			return _g.get_sort().upvotes == 1;
+		}, sortVotesDown : function() {
+			return _g.get_sort().upvotes == -1;
+		}, sortTitleUp : function() {
+			return _g.get_sort().title == 1;
+		}, sortTitleDown : function() {
+			return _g.get_sort().title == -1;
 		}});
+		Template.listArticles.onCreated(function() {
+			this.autorun(function() {
+				_g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+			});
+		});
 		Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
 			var _g1 = _g;
 			_g1.set_limit(_g1.get_limit() + 5);
-			_g.fetchFromServer();
+		}, 'click #btnSortByAge' : function() {
+			if(_g.get_sort().created == null) _g.set_sort({ created : 1}); else _g.set_sort({ created : _g.get_sort().created * -1});
+		}, 'click #btnSortByTitle' : function() {
+			if(_g.get_sort().title == null) _g.set_sort({ title : 1}); else _g.set_sort({ title : _g.get_sort().title * -1});
+		}, 'click #btnSortByVotes' : function() {
+			if(_g.get_sort().upvotes == null) _g.set_sort({ upvotes : 1}); else _g.set_sort({ upvotes : _g.get_sort().upvotes * -1});
 		}});
 		Template.articleRow.helpers({ formatDate : function(date) {
 			return vagueTime.get({ from : new Date(), to : date});
