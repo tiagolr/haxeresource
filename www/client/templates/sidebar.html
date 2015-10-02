@@ -13,7 +13,9 @@
 	<!-- collapse triggering is made via code -->
 	<li class="nav-tag-group">
 		<div href="#" data-trigger="collapse-{{name}}" data-toggle>
-			<a href="/tag/group/{{name}}">{{name}} 
+			<a href="/tag/group/{{name}}">
+				<img src="{{icon}}" alt="{{name}}-logo">
+				{{name}} 
 				<span class="badge pull-right">{{countArticlesGroup mainTag resolvedTags}}</span>
 			</a>
 		</div>

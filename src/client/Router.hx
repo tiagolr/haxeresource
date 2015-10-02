@@ -59,10 +59,20 @@ class Router {
 		
 		FlowRouter.route("/new", {
 			action:function () {
-				Client.newArticle.page.show(FADE_DURATION);
+				Client.newArticle.show();
 			},
 			triggersExit: [function () {
-				Client.newArticle.page.hide(FADE_DURATION);
+				Client.newArticle.hide();
+			}]
+		});
+		
+		FlowRouter.route("/edit/:_id", {
+			action:function () {
+				var id = FlowRouter.getParam('_id');
+				Client.newArticle.show(id);
+			},
+			triggersExit: [function () {
+				Client.newArticle.hide();
 			}]
 		});
 		
@@ -72,7 +82,7 @@ class Router {
 				Client.viewArticle.show(id);
 			}, 
 			triggersExit: [function () {
-				Client.viewArticle.page.hide();
+				Client.viewArticle.hide();
 			}]
 		});
 	}

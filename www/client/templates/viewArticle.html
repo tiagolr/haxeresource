@@ -2,8 +2,10 @@
 	{{#with article}}
 		<h1 id="va-title">{{title}}</h1>
 		<div id="va-description">{{description}}</div>
-		<div id="va-link">{{link}}</div>
+		<a href="{{link}}" target="_blank">{{link}}</a>
+		<p>Tags: {{#each tags}}<a href="/tag/{{this}}">{{this}} </a>{{/each}}</p>
+		<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}')">Edit</button>
 		<hr>
-		<div id="va-content">{{content}}</div>
 	{{/with}}
+		<div id="va-content">{{{parsedContent}}}</div>
 </template>

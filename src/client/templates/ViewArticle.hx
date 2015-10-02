@@ -13,10 +13,17 @@ import model.Articles.Article;
 class ViewArticle {
 
 	// Current article to display
-	public var currentArticle(default, null):Article;
+	var currentArticle(get, set):Article;
+	function get_currentArticle() {
+		return Session.get('currentViewArticle');
+	}
+	function set_currentArticle(a:Article) {
+		Session.set('currentViewArticle', a);
+		return a;
+	}
 	
 	// Html Page
-	public var page(get, null):JQuery;
+	var page(get, null):JQuery;
 	function get_page():JQuery {
 		return new JQuery('#viewArticlePage');
 	}
@@ -25,16 +32,28 @@ class ViewArticle {
 	public function init() {
 		Template.get('viewArticle').helpers( {
 			article : function () {
-				return Session.get('currentArticle');
+				return currentArticle;
+			},
+			parsedContent: function () {
+				return currentArticle == null ? 
+					"" :
+					Client.utils.parseMarkdown(currentArticle.content);
 			}
 		});
-		
 	}
 	
 	public function show(articleId:String) {
-		Meteor.subscribe(Articles.NAME, {_id:articleId}); // fetch article with all fields
-		Session.set('currentArticle', Articles.collection.findOne( { _id:articleId } ));
+		Meteor.subscribe(Articles.NAME, { _id:articleId }, null, {
+			onReady: function () {
+				currentArticle = Articles.collection.findOne( { _id:articleId } );
+			}
+			// TODO on error
+		});
 		page.show(Router.FADE_DURATION);
+	}
+	
+	public function hide() {
+		page.hide(Router.FADE_DURATION);
 	}
 	
 }

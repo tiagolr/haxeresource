@@ -28,11 +28,9 @@ class SideBar{
 					var final = new Array<{name:String, formattedName:String}>();
 					for (name in resolved) {
 						final.push( { name:name, formattedName:formatTagName(name) } ); // format name
-						//Client.utils.subscribeCountArticles( Articles.queryFromTags([name]));
 					}
 					
 					resolved.push(g.mainTag);
-					//Client.utils.subscribeCountArticles( Articles.queryFromTags(resolved));
 					untyped g.resolvedTags = final;
 				}
 				
@@ -89,10 +87,8 @@ class SideBar{
 			split.shift();
 			tag = split.join('-');
 		}
-		if (tag.length < 2) 
-			return tag; // bug prevention
 		
-		return tag.substr(0, 1).toUpperCase() + tag.substr(1); // first letter uppercase
+		return tag;
 	}
 	
 }

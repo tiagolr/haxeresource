@@ -28,6 +28,10 @@ class ClientUtils{
 		return PublishCounts.get('countArticles$id');
 	}
 	
+	public function parseMarkdown(raw:String):String {
+		return untyped marked(raw);
+	}
+	
 	
 	
 }

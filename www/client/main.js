@@ -6,7 +6,7 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
-var templates_ListArticles = $hx_exports.vaca = function() {
+var templates_ListArticles = function() {
 };
 templates_ListArticles.__name__ = true;
 templates_ListArticles.prototype = {
@@ -122,7 +122,18 @@ templates_NewArticle.prototype = {
 	get_page: function() {
 		return js.JQuery("#newArticlePage");
 	}
+	,get_editArticle: function() {
+		return Session.get("editArticle");
+	}
+	,set_editArticle: function(val) {
+		Session.set("editArticle",val);
+		return val;
+	}
 	,init: function() {
+		var _g = this;
+		Template.newArticle.helpers({ editArticle : function() {
+			return Session.get("editArticle");
+		}, titlePlaceholder : "Title goes here", descriptionPlaceholder : "Brief description about the subject", linkPlaceholder : "Url to the original article, ex: http://www.site.com/article", contentPlaceholder : "Text contents using github flavored markdown", tagsPlaceholder : ""});
 		Template.newArticle.events({ 'click #btnPreviewArticle' : function(evt) {
 			var title = js.JQuery("#naf-articleTitle").val();
 			var content = js.JQuery("#naf-articleContent").val();
@@ -131,23 +142,46 @@ templates_NewArticle.prototype = {
 			js.JQuery("#na-previewTitle").html(title);
 			js.JQuery("#na-articleDescription").html(desc);
 			js.JQuery("#na-previewLink").html("<a href=\"" + link + "\" target=\"_blank\">" + link + "</a>");
-			js.JQuery("#na-previewContent").html(marked(content));
+			js.JQuery("#na-previewContent").html(Client.utils.parseMarkdown(content));
 		}, 'beforeItemAdd input' : function(evt1) {
 			if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
 		}});
-		Template.newArticle.helpers({ });
-		Template.registerHelper("schema",function() {
-			return model_Articles.schema;
-		});
-		AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,_,_1) {
+		AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,updateDoc,_) {
+			this.event.preventDefault();
 			var id = null;
-			if(insertDoc != null) {
-				id = model_Articles.collection.insert(insertDoc);
-				FlowRouter.go("/view/" + id);
+			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc); else {
+				id = _g.get_editArticle()._id;
+				model_Articles.collection.update({ _id : id},updateDoc);
 			}
+			FlowRouter.go("/view/" + id);
 			this.done(null,id);
-			return false;
 		}});
+	}
+	,show: function(articleId) {
+		var _g = this;
+		if(articleId != null) Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
+			var article = model_Articles.collection.findOne({ _id : articleId});
+			if(article != null) {
+				_g.set_editArticle(article);
+				_g.get_page().show(500);
+				var _g1 = 0;
+				var _g2 = _g.get_editArticle().tags;
+				while(_g1 < _g2.length) {
+					var t = _g2[_g1];
+					++_g1;
+					js.JQuery("#naf-articleTags").tagsinput("add",t);
+				}
+			} else {
+				console.log("NewArticle.show: Could not find article " + articleId + " to edit");
+				FlowRouter.go("/");
+			}
+		}, onError : function(e) {
+			console.log("Error: " + e);
+		}}); else this.get_page().show(500);
+	}
+	,hide: function() {
+		if(Session.get("editArticle") != null) Session.set("editArticle",null);
+		this.get_page().hide(500);
 	}
 	,__class__: templates_NewArticle
 };
@@ -180,15 +214,21 @@ Router.prototype = {
 			Client.listArticles.hide();
 		}]});
 		FlowRouter.route("/new",{ action : function() {
-			Client.newArticle.get_page().show(500);
+			Client.newArticle.show();
 		}, triggersExit : [function() {
-			Client.newArticle.get_page().hide(500);
+			Client.newArticle.hide();
+		}]});
+		FlowRouter.route("/edit/:_id",{ action : function() {
+			var id = FlowRouter.getParam("_id");
+			Client.newArticle.show(id);
+		}, triggersExit : [function() {
+			Client.newArticle.hide();
 		}]});
 		FlowRouter.route("/view/:_id",{ action : function() {
-			var id = FlowRouter.getParam("_id");
-			Client.viewArticle.show(id);
+			var id1 = FlowRouter.getParam("_id");
+			Client.viewArticle.show(id1);
 		}, triggersExit : [function() {
-			Client.viewArticle.get_page().hide();
+			Client.viewArticle.hide();
 		}]});
 	}
 	,__class__: Router
@@ -204,7 +244,7 @@ templates_SideBar.formatTagName = function(tag) {
 		tag = split.join("-");
 	}
 	if(tag.length < 2) return tag;
-	return HxOverrides.substr(tag,0,1).toUpperCase() + HxOverrides.substr(tag,1,null);
+	return tag;
 };
 templates_SideBar.prototype = {
 	init: function() {
@@ -243,7 +283,6 @@ templates_SideBar.prototype = {
 			final1 = _g2;
 			final1.push(mainTag);
 			var f = Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
-			console.log("OK " + f);
 			return f;
 		}});
 		Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
@@ -282,24 +321,42 @@ ClientUtils.prototype = {
 		Meteor.subscribe("countArticles",id,selector);
 		return Counts.get("countArticles" + id);
 	}
+	,parseMarkdown: function(raw) {
+		return marked(raw);
+	}
 	,__class__: ClientUtils
 };
 var templates_ViewArticle = function() {
 };
 templates_ViewArticle.__name__ = true;
 templates_ViewArticle.prototype = {
-	get_page: function() {
+	get_currentArticle: function() {
+		return Session.get("currentViewArticle");
+	}
+	,set_currentArticle: function(a) {
+		Session.set("currentViewArticle",a);
+		return a;
+	}
+	,get_page: function() {
 		return js.JQuery("#viewArticlePage");
 	}
 	,init: function() {
+		var _g = this;
 		Template.viewArticle.helpers({ article : function() {
-			return Session.get("currentArticle");
+			return _g.get_currentArticle();
+		}, parsedContent : function() {
+			if(_g.get_currentArticle() == null) return ""; else return Client.utils.parseMarkdown(_g.get_currentArticle().content);
 		}});
 	}
 	,show: function(articleId) {
-		Meteor.subscribe("articles",{ _id : articleId});
-		Session.set("currentArticle",model_Articles.collection.findOne({ _id : articleId}));
+		var _g = this;
+		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
+			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
+		}});
 		this.get_page().show(500);
+	}
+	,hide: function() {
+		this.get_page().hide(500);
 	}
 	,__class__: templates_ViewArticle
 };
@@ -1033,13 +1090,13 @@ js_html_compat_Uint8Array._subarray = function(start,end) {
 var model_Articles = function() {
 	Mongo.Collection.call(this,"articles");
 	model_Articles.collection = this;
-	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
+	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, label : "Link (optional)", regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, content : { type : String, max : 30000, optional : true, custom : function() {
+	}}, content : { type : String, max : 30000, label : "Content (optional)", optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
+	}}, tags : { label : "Tags (optional)", type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
 			var resolved = [];

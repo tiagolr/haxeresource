@@ -23,18 +23,21 @@ class Server {
 		});
 		
 		Meteor.publish(Articles.NAME, function(selector, options) {
+			if (selector == null) selector = { }; // FIX - calling meteor.subscribe with a parameter set to null causes error
+			if (options == null) options = { }; // FIX - calling meteor.subscribe with a parameter set to null causes error
 			return Articles.collection.find(selector, options);
 		});
 		
 		Meteor.publish('countArticles', function(id:String , selector: { } ) {
-			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector), { noReady:false } );
+			if (selector == null) selector = { }// FIX - calling meteor.subscribe with a parameter set to null causes error
+			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
 		});
 		
 		
 		Tags.collection.allow({
 			insert: function (name) {
 				return true;
-			}
+			}, 
 		});
 		
 		#if debug

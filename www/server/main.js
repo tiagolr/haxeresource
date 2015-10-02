@@ -65,10 +65,13 @@ Server.main = function() {
 		return model_Tags.collection.find();
 	});
 	Meteor.publish("articles",function(selector,options) {
+		if(selector == null) selector = { };
+		if(options == null) options = { };
 		return model_Articles.collection.find(selector,options);
 	});
 	Meteor.publish("countArticles",function(id,selector1) {
-		Counts.publish(this,"countArticles" + id,model_Articles.collection.find(selector1),{ noReady : false});
+		if(selector1 == null) selector1 = { };
+		Counts.publish(this,"countArticles" + id,model_Articles.collection.find(selector1));
 	});
 	model_Tags.collection.allow({ insert : function(name) {
 		return true;
@@ -720,13 +723,13 @@ js_html_compat_Uint8Array._subarray = function(start,end) {
 var model_Articles = function() {
 	Mongo.Collection.call(this,"articles");
 	model_Articles.collection = this;
-	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
+	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, label : "Link (optional)", regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, content : { type : String, max : 30000, optional : true, custom : function() {
+	}}, content : { type : String, max : 30000, label : "Content (optional)", optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
+	}}, tags : { label : "Tags (optional)", type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
 			var resolved = [];

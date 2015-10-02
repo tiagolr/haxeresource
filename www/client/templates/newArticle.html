@@ -6,13 +6,13 @@
 	
 	<div class="tab-content">
 		<div class="tab-pane fade active in" id="editPanel">
-			{{#autoForm collection="articles" id="newArticleForm" type="normal"}}
+			{{#autoForm collection="articles" id="newArticleForm" doc=editArticle type="normal"}}
 				<fieldset>
-				{{> afQuickField name='title' id='naf-articleTitle'}}
-				{{> afQuickField name='description' id='naf-articleDescription' rows=2}}
-				{{> afQuickField name='link' id='naf-articleLink'}}
-				{{> afQuickField name='content' id='naf-articleContent' rows=20}}
-				{{> afQuickField name='tags'}}
+				{{> afQuickField name='title' id='naf-articleTitle' placeholder=titlePlaceholder}}
+				{{> afQuickField name='description' id='naf-articleDescription' rows=2 placeholder=descriptionPlaceholder}}
+				{{> afQuickField name='link' id='naf-articleLink' placeholder=linkPlaceholder}}
+				{{> afQuickField name='content' id='naf-articleContent' rows=20 placeholder=contentPlaceholder}}
+				{{> afQuickField name='tags' id='naf-articleTags' placeholder=tagsPlaceholder}}
 				<div style="margin-top:-20px;margin-bottom:20px"><a href="#">Select featured tags from list. ( TODO )</a></div>
 				</fieldset>
 				<button type="submit" class="btn btn-primary">Submit</button>

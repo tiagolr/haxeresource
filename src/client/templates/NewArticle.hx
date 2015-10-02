@@ -1,12 +1,17 @@
 package templates;
+import haxe.Timer;
 import js.JQuery;
+import js.Lib;
 import meteor.Error;
+import meteor.Meteor;
 import meteor.packages.AutoForm;
 import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
 import meteor.packages.SimpleSchema.SchemaDef;
+import meteor.Session;
 import meteor.Template;
 import model.Articles;
+import model.Articles.Article;
 import model.Tags;
 
 /**
@@ -15,13 +20,40 @@ import model.Tags;
  */
 class NewArticle {
 
-	public var page(get, null):JQuery;
+	var page(get, null):JQuery;
 	function get_page():JQuery {
 		return new JQuery('#newArticlePage');
 	}
 	
+	var editArticle(get, set):Article;
+	function get_editArticle() {
+		return Session.get('editArticle');
+	}
+	function set_editArticle(val:Article) {
+		Session.set('editArticle', val);
+		return val;
+	}
+	
 	public function new() {}
 	public function init() {
+		Template.get('newArticle').helpers( {
+			editArticle: function() {
+				return Session.get('editArticle');
+			},
+			titlePlaceholder: "Title goes here",
+			descriptionPlaceholder: "Brief description about the subject",
+			linkPlaceholder: "Url to the original article, ex: http://www.site.com/article",
+			contentPlaceholder: "Text contents using github flavored markdown",
+			tagsPlaceholder: "",
+		});
+		
+		// TODO add tooltips, not working after a bit
+		/*Template.get('autoForm').onRendered(function () {
+			new JQuery("#naf-articleContent").siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
+			new JQuery("#naf-articleLink").siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
+			new JQuery("#naf-articleTags").parent().siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
+		});*/
+		
 		Template.get('newArticle').events( {
 			'click #btnPreviewArticle': function (evt) {
 				var title = new JQuery("#naf-articleTitle").val();
@@ -32,12 +64,11 @@ class NewArticle {
 				new JQuery('#na-previewTitle').html(title);
 				new JQuery('#na-articleDescription').html(desc);
 				new JQuery('#na-previewLink').html('<a href="$link" target="_blank">$link</a>');
-				new JQuery('#na-previewContent').html(untyped marked(content));
+				new JQuery('#na-previewContent').html(Client.utils.parseMarkdown(content));
 			},
 			
 			// Only accept valid tags
 			'beforeItemAdd input' : function (evt) {
-				
 				if (!Tags.regEx.test(evt.item)) {
 					evt.cancel = true;
 				}
@@ -45,25 +76,62 @@ class NewArticle {
 			
 		});
 		
-		Template.get('newArticle').helpers( {
-		});
-		
-		untyped Template.registerHelper('schema', function () {
-			return Articles.schema;
-		});
-		
 		AutoForm.addHooks('newArticleForm', {
-			onSubmit: function (insertDoc, _, _) {
+			onSubmit: function (insertDoc, updateDoc, _) {
+				Lib.nativeThis.event.preventDefault();
 				var id = null;
-				if (insertDoc != null) {
+				if (Session.get('editArticle') == null) { 
+					// insert new document
 					id = Articles.collection.insert(insertDoc);
-					FlowRouter.go('/view/$id');
+				} else {
+					// update existing document
+					id = editArticle._id;
+					Articles.collection.update( { _id:id }, updateDoc);
 				}
 				
+				FlowRouter.go('/view/$id');
 				HookCtx.done(id);
-				return false;
 			},
 			
 		});
+	}
+	
+	public function show(articleId:String = null) {
+		
+		if (articleId != null) {
+			//AutoForm.resetForm('newArticleForm');
+			Meteor.subscribe(Articles.NAME, { _id:articleId }, null, {
+				
+				onReady:function () {
+					var article:Article = Articles.collection.findOne( { _id:articleId } );
+					if (article != null) {
+						editArticle = article;
+						page.show(Router.FADE_DURATION);
+						
+						// FIX - force tags to show in input tags
+						for (t in editArticle.tags) 
+							untyped new JQuery("#naf-articleTags").tagsinput('add', t);
+					} else {
+						// TODO show flash error
+						trace('NewArticle.show: Could not find article $articleId to edit');
+						FlowRouter.go('/');
+					}
+				}, onError: function(e) {
+					trace("Error: " + e);
+					// TODO on error
+				}
+				
+			});
+		} else {
+			page.show(Router.FADE_DURATION);
+		}
+	}
+	
+	public function hide() {
+		if (Session.get('editArticle') != null) {
+			Session.set('editArticle', null);
+			//AutoForm.resetForm('newArticleForm');
+		}
+		page.hide(Router.FADE_DURATION);
 	}
 }
