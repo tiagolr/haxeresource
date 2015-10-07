@@ -1,8 +1,11 @@
 package model;
 import js.Lib;
+import meteor.Accounts;
 import meteor.Collection;
+import meteor.Meteor;
 import meteor.packages.AutoForm;
 import meteor.packages.SimpleSchema;
+import model.Articles.Article;
 
 typedef Article = {
 	?_id:String,
@@ -10,10 +13,9 @@ typedef Article = {
 	description:String,
 	?link:String,
 	?content:String,
-	?comments:Array<{message:String, user:String}>,
-	?upvotes:Int,
-	?downvotes:Int,
 	user:String,
+	?votes:Int,
+	?username:String,
 	?created:Date,
 	?modified:Date,
 	?tags:Array<String>,
@@ -31,6 +33,7 @@ class Articles extends Collection {
 	public static var collection(default, null):Articles;
 	
 	public function new() {
+		
 		super(NAME);
 		collection = this;
 		schema = new SimpleSchema({
@@ -103,12 +106,37 @@ class Articles extends Collection {
 				type: String,
 				optional:true,
 				autoValue: function () {
-					return SchemaCtx.userId;
+					if (SchemaCtx.isInsert) {
+						return Meteor.userId();
+					} else {
+						SchemaCtx.unset();
+						return Lib.undefined;
+					}
 				}
 			},
-			upvotes: {
+			username: {
+				type: String,
+				optional:true,
+				autoValue: function () {
+					if (SchemaCtx.isInsert && Meteor.user() != null) {
+						return Meteor.user().username;
+					} else {
+						SchemaCtx.unset();
+						return Lib.undefined;
+					}
+				}
+			},
+			votes: {
 				type: untyped Number,
-				defaultValue: 0,
+				optional:true,
+				autoValue: function () {
+					if (SchemaCtx.isInsert) {
+						return 0;
+					} else {
+						SchemaCtx.unset();
+						return Lib.undefined;
+					}
+				}
 			},
 			created: {
 				type:Date,
@@ -118,7 +146,7 @@ class Articles extends Collection {
 						return Date.now();
 					} else {
 						SchemaCtx.unset();
-						return Lib.undefined; // TODO - verify if created is not modified by returning null
+						return Lib.undefined;
 					}
 				}
 			},
@@ -134,27 +162,17 @@ class Articles extends Collection {
 	
 	#if server
 	public static function create(article:Article):Article {
-		if (article.comments == null)
-			article.comments = [];
-			
-		if (article.upvotes == null) {
-			article.upvotes = 0;
-		}
-		
-		if (article.downvotes == null) {
-			article.downvotes = 0;
-		}
-		
-		article.created = Date.now();
-		article.modified = Date.now();
-		
 		Articles.collection.insert(article);
 		return article;
 	}
 	#end
 	
-	public static function queryFromTags(tags:Array<String>): { } {
-		return { tags: { '$in':tags }}
+	static public function isOwner(document:Article) {
+		return document.user != null && Meteor.userId() != null && document.user == cast Meteor.userId();
+	}
+	
+	public static function queryFromTags(_tags:Array<String>): { } {
+		return { tags: { '$in':_tags }}
 	}
 	
 }

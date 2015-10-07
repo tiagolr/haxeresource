@@ -69,8 +69,8 @@ class NewArticle {
 			
 			// Only accept valid tags
 			'beforeItemAdd input' : function (evt) {
-				if (!Tags.regEx.test(evt.item)) {
-					evt.cancel = true;
+				if (!Tags.regEx.test(untyped evt.item)) {
+					untyped evt.cancel = true;
 				}
 			}
 			
@@ -79,21 +79,35 @@ class NewArticle {
 		AutoForm.addHooks('newArticleForm', {
 			onSubmit: function (insertDoc, updateDoc, _) {
 				Lib.nativeThis.event.preventDefault();
+				var ctx:Dynamic = Lib.nativeThis;
 				var id = null;
 				if (Session.get('editArticle') == null) { 
 					// insert new document
-					id = Articles.collection.insert(insertDoc);
+					id = Articles.collection.insert(insertDoc, function (error) {
+						if (error != null) {
+							Client.utils.handleServerError(cast error);
+							ctx.done(error);
+						} else {
+							FlowRouter.go('/view/$id');
+							ctx.done();
+						}
+					});
 				} else {
 					// update existing document
 					id = editArticle._id;
-					Articles.collection.update( { _id:id }, updateDoc);
+					Articles.collection.update( { _id:id }, updateDoc, null, function(error) {
+						if (error != null) {
+							Client.utils.handleServerError(cast error);
+							ctx.done(error);
+						} else {
+							FlowRouter.go('/view/$id');
+							ctx.done(id);
+						}
+					});
 				}
-				
-				FlowRouter.go('/view/$id');
-				HookCtx.done(id);
 			},
-			
 		});
+		
 	}
 	
 	public function show(articleId:String = null) {
@@ -106,11 +120,15 @@ class NewArticle {
 					var article:Article = Articles.collection.findOne( { _id:articleId } );
 					if (article != null) {
 						editArticle = article;
-						page.show(Router.FADE_DURATION);
+						page.show(Configs.client.PAGE_FADEIN_DURATION);
 						
 						// FIX - force tags to show in input tags
-						for (t in editArticle.tags) 
-							untyped new JQuery("#naf-articleTags").tagsinput('add', t);
+						var tags = editArticle.tags;
+						if (tags != null) {
+							for (t in editArticle.tags) {
+								untyped new JQuery("#naf-articleTags").tagsinput('add', t);
+							}
+						}
 					} else {
 						// TODO show flash error
 						trace('NewArticle.show: Could not find article $articleId to edit');
@@ -123,7 +141,7 @@ class NewArticle {
 				
 			});
 		} else {
-			page.show(Router.FADE_DURATION);
+			page.show(Configs.client.PAGE_FADEIN_DURATION);
 		}
 	}
 	
@@ -132,6 +150,6 @@ class NewArticle {
 			Session.set('editArticle', null);
 			//AutoForm.resetForm('newArticleForm');
 		}
-		page.hide(Router.FADE_DURATION);
+		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 }

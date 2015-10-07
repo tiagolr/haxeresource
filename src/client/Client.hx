@@ -1,9 +1,13 @@
 import haxe.DynamicAccess;
 import js.Browser;
+import js.html.Event;
+import meteor.Accounts;
+import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.AutoForm;
 import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
+import meteor.packages.Toastr;
 import model.Articles;
 import model.TagGroups;
 import model.Tags;
@@ -36,10 +40,10 @@ class Client {
 	
 	public static function main() {
 		Shared.init();
-
-		untyped Browser.window.tags = untyped Tags.collection;
-		untyped Browser.window.articles = untyped Articles.collection;
-		untyped Browser.window.groups = untyped TagGroups.collection;
+		
+		untyped Browser.window[Tags.NAME] 		= untyped Tags.collection;
+		untyped Browser.window[Articles.NAME] 	= untyped Articles.collection;
+		untyped Browser.window[TagGroups.NAME] 	= untyped TagGroups.collection;
 
 		Meteor.subscribe(Tags.NAME);
 		Meteor.subscribe(TagGroups.NAME, { onReady : function() { preloadReqs.tagGroups = true; checkPreload(); }} );
@@ -62,6 +66,19 @@ class Client {
 				return hljs.highlightAuto(code).value;
 			}
 		});
+		
+		// Setup accounts login ui
+		Accounts.ui.config( {
+			passwordSignupFields: PasswordSignupFields.USERNAME_AND_EMAIL,
+		});
+		
+		// Setup toastr notifications
+		Toastr.options = {
+			closeButton:true,
+			progressBar:true,
+			//timeOut: 5000,
+			//extendedTimeOut:2500,
+		}
 		
 		#if debug
 		AutoForm.debug();

@@ -1,6 +1,8 @@
 package templates;
 import js.Browser;
+import js.html.Event;
 import js.JQuery;
+import js.JQuery.JqEvent;
 import js.Lib;
 import meteor.Meteor;
 import meteor.packages.PublishCounts;
@@ -13,8 +15,6 @@ import model.Articles;
  * @author TiagoLr
  */
 class ListArticles {
-
-	public static inline var PAGE_SIZE = 5;
 	
 	var subscription:{};
 	
@@ -50,11 +50,24 @@ class ListArticles {
 	function get_selector() {
 		return Session.get('list_articles_selector');
 	}
+	
+	
+	var captionMsg(get, set):String;
+	function get_captionMsg():String {
+		return Session.get('la_captionMsg');
+	}
+	function set_captionMsg(val:String):String {
+		Session.set('la_captionMsg', val);
+		return val;
+	}
 	//-----------------------------------------------------------------
 	
 	
-	public function show(?_sort:{}, ?_limit:Int = PAGE_SIZE, _selector:Dynamic) {
-		page.show(Router.FADE_DURATION);
+	public function show(?_sort: { }, ?_limit:Int = -1, _selector:Dynamic, captionMsg:String) {
+		if (_limit == -1) {
+			_limit = Configs.client.PAGE_SIZE;
+		}
+		page.show(Configs.client.PAGE_FADEIN_DURATION);
 		
 		if (_limit != null) {
 			limit = _limit;
@@ -67,19 +80,25 @@ class ListArticles {
 		if (_sort != null) {
 			sort = _sort;
 		}
+		
+		this.captionMsg = captionMsg;
 	}
 	
 	public function hide() {
-		page.hide(Router.FADE_DURATION);
+		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 	
 	public function new() {}
 	public function init() {
 		sort = { created: -1 };
-		limit = PAGE_SIZE;
+		limit = Configs.client.PAGE_SIZE;
 		selector = { };
 		
 		Template.get('listArticles').helpers( {
+			
+			captionMsg: function () {
+				return captionMsg;
+			},
 			
 			articles:function() {
 				return Articles.collection.find( selector, { sort:sort, limit:limit } );
@@ -99,8 +118,8 @@ class ListArticles {
 			
 			sortAgeUp: function() { return sort.created == 1;},
 			sortAgeDown: function() { return sort.created == -1;},
-			sortVotesUp: function() { return sort.upvotes == 1;},
-			sortVotesDown: function() { return sort.upvotes == -1;},
+			sortVotesUp: function() { return sort.votes == 1;},
+			sortVotesDown: function() { return sort.votes == -1;},
 			sortTitleUp: function() { return sort.title == 1; },
 			sortTitleDown: function() { return sort.title == -1; },
 		});
@@ -113,37 +132,47 @@ class ListArticles {
 		
 		Template.get('listArticles').events( {
 			
-			'click #btnLoadMoreResults': function () {
-				limit += 5;
+			'click #btnLoadMoreResults': function (_) {
+				limit += Configs.client.PAGE_SIZE;
 			},
 			
-			'click #btnSortByAge' : function () {
+			'click #btnSortByAge' : function (_) {
 				sort.created == null ? 
 					sort = { created : 1 } :
 					sort = { created : sort.created * -1 };	
 			},
 			
-			'click #btnSortByTitle' : function () {
+			'click #btnSortByTitle' : function (_) {
 				sort.title == null ? 
 					sort = { title : 1 } :
 					sort = { title : sort.title * -1 };
 			},
 			
-			'click #btnSortByVotes' : function() {
-				sort.upvotes == null ? 
-					sort = { upvotes : 1 } :
-					sort = { upvotes : sort.upvotes * -1 };
+			'click #btnSortByVotes' : function(_) {
+				sort.votes == null ? 
+					sort = { votes : 1 } :
+					sort = { votes : sort.votes * -1 };
 			},
 			
 		});
 		
 		Template.get('articleRow').helpers( {
 			
+			hasUserVote: function(id) {
+				if (Meteor.userId() == null) return false;
+				
+				var votes = Meteor.user().profile.votes;
+				return votes != null && votes.indexOf(id) != -1;
+			},
+			
 			formatDate: function( date ) {
-				return untyped vagueTime.get( {
+				var s = untyped vagueTime.get( {
 					from:Date.now(),
 					to:date
 				});
+				
+				s = StringTools.replace(s, ' ago', '');
+				return s;
 			},
 			
 			formatLink: function( link:String ) {
@@ -168,6 +197,17 @@ class ListArticles {
 						untyped row.collapse(isCollapsed ? 'show' : 'hide'):
 						untyped row.collapse('hide');
 				}
+			},
+			
+			'click .articleVoteLink':function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				event.stopImmediatePropagation();
+				
+				Meteor.call('toggleArticleVote', articleId, function (error) {
+					if (error != null) {
+						Client.utils.handleServerError(error);
+					}
+				});
 			}
 		});
 		

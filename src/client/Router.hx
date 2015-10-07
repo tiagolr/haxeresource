@@ -10,44 +10,45 @@ import templates.ViewArticle;
  */
 class Router {
 
-	static public inline var FADE_DURATION = 500;
+	
 	
 	public function new() {}
 	public function init() {
 		
 		FlowRouter.route('/', {
 			action: function() {
-				Client.listArticles.show(null, null, {});
+				Client.listArticles.show(null, null, {}, Configs.client.MSG_SHOWING_ALL);
 			},
 			triggersExit: [function() {
 				Client.listArticles.hide();
 			}]
 		});
 		
-		FlowRouter.route('/tag/:_name', {
+		FlowRouter.route('/tag/:name', {
 			action: function () {
-				var tag = FlowRouter.getParam('_name');
+				var tag = FlowRouter.getParam('name');
 				
 				var selector = Articles.queryFromTags([tag]);
 				//Client.utils.subscribeCountArticles(selector);
 				
-				Client.listArticles.show(null, null, selector);
+				Client.listArticles.show(null, null, selector, Configs.client.MSG_SHOWING_TAG(tag));
 			}, 
 			triggersExit:[function() {
 				Client.listArticles.hide();
 			}]
 		});
 		
-		FlowRouter.route('/tag/group/:_name', {
+		FlowRouter.route('/tag/group/:name', {
 			action: function () {
-				var g:TagGroup = TagGroups.collection.findOne({name:FlowRouter.getParam('_name')});
+				var groupName = FlowRouter.getParam('name');
+				var g:TagGroup = TagGroups.collection.findOne({name:groupName});
 				if (g != null) {
 					var tags = Shared.utils.resolveTags(g);
 					tags.push(g.mainTag);
 					
 					//Client.utils.subscribeCountArticles(selector);
 					
-					Client.listArticles.show(null, null, Articles.queryFromTags(tags));
+					Client.listArticles.show(null, null, Articles.queryFromTags(tags), Configs.client.MSG_SHOWING_GROUP(groupName));
 				} else {
 					// TODO - goto index
 				}

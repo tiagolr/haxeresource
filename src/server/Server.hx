@@ -1,9 +1,16 @@
+import haxe.crypto.Md5;
 import js.Lib;
+import meteor.Accounts;
+import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.PublishCounts;
+import meteor.packages.Roles;
 import model.Articles;
+import model.Articles.Article;
 import model.TagGroups;
+import model.TagGroups.TagGroup;
 import model.Tags;
+import model.Tags.Tag;
 
 /**
  * Server
@@ -13,6 +20,10 @@ class Server {
 
 	public static function main() {
 		Shared.init();
+		
+		//-----------------------------------------------
+		// Setup publishes
+		//-----------------------------------------------
 		
 		Meteor.publish(TagGroups.NAME, function() {
 			return TagGroups.collection.find();
@@ -33,22 +44,158 @@ class Server {
 			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
 		});
 		
+		//-------------------------------------------
+		// Setup Permissions
+		//-------------------------------------------
 		
 		Tags.collection.allow({
-			insert: function (name) {
-				return true;
-			}, 
+			insert: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canInsertTags());
+			},
+			update: function (_, _, _, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canUpdateTags());
+			},
+			remove: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canRemoveTags());
+			}
 		});
 		
-		#if debug
+		TagGroups.collection.allow({
+			insert: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canInsertTagGroups());
+			},
+			update: function (_, _, _, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canUpdateTagGroups());
+			},
+			remove: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canRemoveTagGroups());
+			}
+		});
 		
-		// Test tag groups
-		if (TagGroups.collection.find().count() == 0) {
-			TagGroups.create({name:'Haxe', mainTag:'haxe', tags: ["~/^haxe-..*$/"] });
-			TagGroups.create({name:'Openfl', mainTag:'openfl', tags: ["~/^openfl-..*$/"] });
+		Articles.collection.allow({
+			insert: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canInsertArticles());
+			},
+			update: function (_, document:Article, fields:Array<Dynamic>, modifier:Dynamic) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canUpdateArticles(document, fields));
+			},
+			remove: function (_, document:Article) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canRemoveArticles(document));
+			}
+		});
+		
+		
+		// remove default user ability to change profile
+		Meteor.users.deny( { 
+			update: function (_, _, _, _) { 
+				return true; 
+			}
+		});
+		
+		Meteor.users.allow({
+			update: function (_, document:Dynamic, fields:Array<Dynamic>, modifier:Dynamic) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.canUpdateUsers(document, fields));
+			},
+		});
+		
+		//-----------------------------------------------
+		// Define methods
+		//-----------------------------------------------
+		Meteor.methods( {
+			
+			toggleArticleVote: function (id:String) {
+				Permissions.requireLogin();
+				if (Articles.collection.findOne( { _id:id } ) == null) {
+					var err = Configs.server.error.ARG_ARTICLE_NOT_FOUND;
+					Error.throw_(new Error(err.code, err.reason, err.details));
+				}
+				
+				var votes:Array<String> = Meteor.user().profile.votes;
+				if (votes == null) {
+					votes = new Array<String>();
+				}
+				
+				if (votes.indexOf(id) == -1) {
+					// add article vote
+					votes.push(id);
+					Articles.collection.update( { _id:id }, { '$inc': { votes: 1 }}, { getAutoValues:false } );
+				} else {
+					// remove article vote
+					votes.remove(id);
+					Articles.collection.update( { _id:id }, { '$inc': { votes: -1 }}, { getAutoValues:false } );
+				}
+					
+				Meteor.users.update({_id: Meteor.userId()}, {'$set': {"profile.votes": votes}}, { getAutoValues:false});
+			},
+			
+			
+			removeUser: function (id:String) {
+				Permissions.requireLogin();
+				Permissions.requirePermission(Permissions.canRemoveUser(Meteor.users.findOne( { _id:id } )));
+				
+				var user = Meteor.users.findOne( { _id:id } );
+				if (user == null) {
+					var err = Configs.server.error.ARG_USER_NOT_FOUND;
+					Error.throw_(new Error(err.code, err.reason, err.details));
+				}
+				
+				// remove user votes
+				var votes = user.profile.votes;
+				if (votes != null && votes.length > 0) {
+					for (articleId in votes) {
+						Articles.collection.update( { _id:articleId }, { '$dec': { votes: 1 }}, { getAutoValues:false } );
+					}
+				}
+				
+				Meteor.users.remove( { _id:id } );
+				
+				// TODO
+				// remove user articles?
+				// remove user comments?
+				// remove user tags
+			}
+		});
+		
+		//-----------------------------------------------
+		
+		// create admin account if there is none
+		if (Meteor.users.findOne( { roles: { '$in':[Permissions.roles.ADMIN] }} ) == null) {
+			var pwd = Md5.encode(Std.string(Math.random()));
+			trace('creating admin with pw : $pwd');
+			var adminId = Accounts.createUser( {
+				username:'hxresadmin',
+				password:pwd,
+			});
+			
+			if (adminId != null) {
+				Meteor.users.update(adminId, { '$set': { initPwd: pwd }} ); // store initial admin pass in database unencrypted
+				Roles.setUserRoles(adminId, [Permissions.roles.ADMIN]);
+			} else {
+				trace('Error occurred, failed to create admin user account');
+			}
 		}
 		
-		// Test articles
+		// Create tag groups
+		if (TagGroups.collection.findOne({name:'Haxe'}) == null)
+			TagGroups.create( { name:'Haxe', mainTag:'haxe', tags: ["~/^haxe-..*$/"], icon:'/img/haxe-logo-50x50.png' } );
+		if (TagGroups.collection.findOne({name:'Openfl'}) == null)
+			TagGroups.create( { name:'Openfl', mainTag:'openfl', tags: ["~/^openfl-..*$/"], icon:'/img/openfl-logo-50x50.png' } );
+		
+			
+		#if debug
+		//-----------------------------------------------
+		// Create testing documents
+		//-----------------------------------------------
 		if (Articles.collection.find().count() == 0) {
 			Articles.create({
 				title: "Test Haxe Article1",
@@ -102,7 +249,6 @@ class Server {
 				tags: ["oPenFl", "openfl-gamedev"],
 			});
 		}
-		
 		#end
 	}
 }

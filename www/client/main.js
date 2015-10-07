@@ -1,4 +1,4 @@
-(function (console, $hx_exports) { "use strict";
+(function (console) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -34,22 +34,33 @@ templates_ListArticles.prototype = {
 	,get_selector: function() {
 		return Session.get("list_articles_selector");
 	}
-	,show: function(_sort,_limit,_selector) {
-		if(_limit == null) _limit = 5;
-		this.get_page().show(500);
+	,get_captionMsg: function() {
+		return Session.get("la_captionMsg");
+	}
+	,set_captionMsg: function(val) {
+		Session.set("la_captionMsg",val);
+		return val;
+	}
+	,show: function(_sort,_limit,_selector,captionMsg) {
+		if(_limit == null) _limit = -1;
+		if(_limit == -1) _limit = Configs.client.PAGE_SIZE;
+		this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
 		if(_limit != null) this.set_limit(_limit);
 		if(_selector != null) this.set_selector(_selector);
 		if(_sort != null) this.set_sort(_sort);
+		this.set_captionMsg(captionMsg);
 	}
 	,hide: function() {
-		this.get_page().hide(500);
+		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 	,init: function() {
 		var _g = this;
 		this.set_sort({ created : -1});
-		this.set_limit(5);
+		this.set_limit(Configs.client.PAGE_SIZE);
 		this.set_selector({ });
-		Template.listArticles.helpers({ articles : function() {
+		Template.listArticles.helpers({ captionMsg : function() {
+			return _g.get_captionMsg();
+		}, articles : function() {
 			return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 		}, currentCount : function() {
 			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
@@ -57,14 +68,16 @@ templates_ListArticles.prototype = {
 			return Client.utils.retrieveArticleCount(_g.get_selector());
 		}, allEntriesLoaded : function() {
 			return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+		}, test : function() {
+			return { cunt : "cunt"};
 		}, sortAgeUp : function() {
 			return _g.get_sort().created == 1;
 		}, sortAgeDown : function() {
 			return _g.get_sort().created == -1;
 		}, sortVotesUp : function() {
-			return _g.get_sort().upvotes == 1;
+			return _g.get_sort().votes == 1;
 		}, sortVotesDown : function() {
-			return _g.get_sort().upvotes == -1;
+			return _g.get_sort().votes == -1;
 		}, sortTitleUp : function() {
 			return _g.get_sort().title == 1;
 		}, sortTitleDown : function() {
@@ -75,18 +88,24 @@ templates_ListArticles.prototype = {
 				_g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 			});
 		});
-		Template.listArticles.events({ 'click #btnLoadMoreResults' : function() {
+		Template.listArticles.events({ 'click #btnLoadMoreResults' : function(_) {
 			var _g1 = _g;
-			_g1.set_limit(_g1.get_limit() + 5);
-		}, 'click #btnSortByAge' : function() {
+			_g1.set_limit(_g1.get_limit() + Configs.client.PAGE_SIZE);
+		}, 'click #btnSortByAge' : function(_1) {
 			if(_g.get_sort().created == null) _g.set_sort({ created : 1}); else _g.set_sort({ created : _g.get_sort().created * -1});
-		}, 'click #btnSortByTitle' : function() {
+		}, 'click #btnSortByTitle' : function(_2) {
 			if(_g.get_sort().title == null) _g.set_sort({ title : 1}); else _g.set_sort({ title : _g.get_sort().title * -1});
-		}, 'click #btnSortByVotes' : function() {
-			if(_g.get_sort().upvotes == null) _g.set_sort({ upvotes : 1}); else _g.set_sort({ upvotes : _g.get_sort().upvotes * -1});
+		}, 'click #btnSortByVotes' : function(_3) {
+			if(_g.get_sort().votes == null) _g.set_sort({ votes : 1}); else _g.set_sort({ votes : _g.get_sort().votes * -1});
 		}});
-		Template.articleRow.helpers({ formatDate : function(date) {
-			return vagueTime.get({ from : new Date(), to : date});
+		Template.articleRow.helpers({ hasUserVote : function(id) {
+			if(Meteor.userId() == null) return false;
+			var votes = Meteor.user().profile.votes;
+			return votes != null && votes.indexOf(id) != -1;
+		}, formatDate : function(date) {
+			var s = vagueTime.get({ from : new Date(), to : date});
+			s = StringTools.replace(s," ago","");
+			return s;
 		}, formatLink : function(link) {
 			if(!StringTools.startsWith(link,"http://")) link = "http://" + link;
 			return link;
@@ -100,6 +119,12 @@ templates_ListArticles.prototype = {
 				var row = $it0.next();
 				if(row == target) row.collapse(isCollapsed?"show":"hide"); else row.collapse("hide");
 			}
+		}, 'click .articleVoteLink' : function(event1) {
+			var articleId = event1.currentTarget.getAttribute("data-article");
+			event1.stopImmediatePropagation();
+			Meteor.call("toggleArticleVote",articleId,function(error) {
+				if(error != null) Client.utils.handleServerError(error);
+			});
 		}});
 		Template.articleRow.onRendered(function() {
 			js.JQuery(this.find(".articleRowHeader")).show(500);
@@ -148,13 +173,28 @@ templates_NewArticle.prototype = {
 		}});
 		AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,updateDoc,_) {
 			this.event.preventDefault();
+			var ctx = this;
 			var id = null;
-			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc); else {
+			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc,null,function(error) {
+				if(error != null) {
+					Client.utils.handleServerError(error);
+					ctx.done(error);
+				} else {
+					FlowRouter.go("/view/" + id);
+					ctx.done();
+				}
+			}); else {
 				id = _g.get_editArticle()._id;
-				model_Articles.collection.update({ _id : id},updateDoc);
+				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1) {
+					if(error1 != null) {
+						Client.utils.handleServerError(error1);
+						ctx.done(error1);
+					} else {
+						FlowRouter.go("/view/" + id);
+						ctx.done(id);
+					}
+				});
 			}
-			FlowRouter.go("/view/" + id);
-			this.done(null,id);
 		}});
 	}
 	,show: function(articleId) {
@@ -163,13 +203,16 @@ templates_NewArticle.prototype = {
 			var article = model_Articles.collection.findOne({ _id : articleId});
 			if(article != null) {
 				_g.set_editArticle(article);
-				_g.get_page().show(500);
-				var _g1 = 0;
-				var _g2 = _g.get_editArticle().tags;
-				while(_g1 < _g2.length) {
-					var t = _g2[_g1];
-					++_g1;
-					js.JQuery("#naf-articleTags").tagsinput("add",t);
+				_g.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
+				var tags = _g.get_editArticle().tags;
+				if(tags != null) {
+					var _g1 = 0;
+					var _g2 = _g.get_editArticle().tags;
+					while(_g1 < _g2.length) {
+						var t = _g2[_g1];
+						++_g1;
+						js.JQuery("#naf-articleTags").tagsinput("add",t);
+					}
 				}
 			} else {
 				console.log("NewArticle.show: Could not find article " + articleId + " to edit");
@@ -177,11 +220,11 @@ templates_NewArticle.prototype = {
 			}
 		}, onError : function(e) {
 			console.log("Error: " + e);
-		}}); else this.get_page().show(500);
+		}}); else this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
 	}
 	,hide: function() {
 		if(Session.get("editArticle") != null) Session.set("editArticle",null);
-		this.get_page().hide(500);
+		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 	,__class__: templates_NewArticle
 };
@@ -191,23 +234,24 @@ Router.__name__ = true;
 Router.prototype = {
 	init: function() {
 		FlowRouter.route("/",{ action : function() {
-			Client.listArticles.show(null,null,{ });
+			Client.listArticles.show(null,null,{ },Configs.client.MSG_SHOWING_ALL);
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
-		FlowRouter.route("/tag/:_name",{ action : function() {
-			var tag = FlowRouter.getParam("_name");
+		FlowRouter.route("/tag/:name",{ action : function() {
+			var tag = FlowRouter.getParam("name");
 			var selector = model_Articles.queryFromTags([tag]);
-			Client.listArticles.show(null,null,selector);
+			Client.listArticles.show(null,null,selector,Configs.client.MSG_SHOWING_TAG(tag));
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
-		FlowRouter.route("/tag/group/:_name",{ action : function() {
-			var g = model_TagGroups.collection.findOne({ name : FlowRouter.getParam("_name")});
+		FlowRouter.route("/tag/group/:name",{ action : function() {
+			var groupName = FlowRouter.getParam("name");
+			var g = model_TagGroups.collection.findOne({ name : groupName});
 			if(g != null) {
 				var tags = Shared.utils.resolveTags(g);
 				tags.push(g.mainTag);
-				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags));
+				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags),Configs.client.MSG_SHOWING_GROUP(groupName));
 			} else {
 			}
 		}, triggersExit : [function() {
@@ -243,7 +287,6 @@ templates_SideBar.formatTagName = function(tag) {
 		split.shift();
 		tag = split.join("-");
 	}
-	if(tag.length < 2) return tag;
 	return tag;
 };
 templates_SideBar.prototype = {
@@ -324,6 +367,9 @@ ClientUtils.prototype = {
 	,parseMarkdown: function(raw) {
 		return marked(raw);
 	}
+	,handleServerError: function(error) {
+		if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);
+	}
 	,__class__: ClientUtils
 };
 var templates_ViewArticle = function() {
@@ -346,6 +392,8 @@ templates_ViewArticle.prototype = {
 			return _g.get_currentArticle();
 		}, parsedContent : function() {
 			if(_g.get_currentArticle() == null) return ""; else return Client.utils.parseMarkdown(_g.get_currentArticle().content);
+		}, isOwner : function() {
+			return model_Articles.isOwner(_g.get_currentArticle());
 		}});
 	}
 	,show: function(articleId) {
@@ -353,20 +401,20 @@ templates_ViewArticle.prototype = {
 		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
 		}});
-		this.get_page().show(500);
+		this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
 	}
 	,hide: function() {
-		this.get_page().hide(500);
+		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = $hx_exports.Client = function() { };
+var Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
 	window.tags = model_Tags.collection;
 	window.articles = model_Articles.collection;
-	window.groups = model_TagGroups.collection;
+	window.tag_groups = model_TagGroups.collection;
 	Meteor.subscribe("tags");
 	Meteor.subscribe("tag_groups",{ onReady : function() {
 		Client.preloadReqs.tagGroups = true;
@@ -383,7 +431,8 @@ Client.main = function() {
 	marked.setOptions({ highlight : function(code) {
 		return hljs.highlightAuto(code).value;
 	}});
-	AutoForm.debug();
+	Accounts.ui.config({ passwordSignupFields : "USERNAME_AND_EMAIL"});
+	toastr.options = { closeButton : true, progressBar : true};
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -396,6 +445,8 @@ Client.checkPreload = function() {
 	}
 	FlowRouter.initialize();
 };
+var Configs = function() { };
+Configs.__name__ = true;
 var EReg = function(r,opt) {
 	opt = opt.split("u").join("");
 	this.r = new RegExp(r,opt);
@@ -456,7 +507,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = $hx_exports.sharedUtils = function() {
+var SharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -502,7 +553,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = $hx_exports.Shared = function() { };
+var Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -521,6 +572,9 @@ var StringTools = function() { };
 StringTools.__name__ = true;
 StringTools.startsWith = function(s,start) {
 	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+};
+StringTools.replace = function(s,sub,by) {
+	return s.split(sub).join(by);
 };
 var haxe__$Int64__$_$_$Int64 = function(high,low) {
 	this.high = high;
@@ -1111,8 +1165,21 @@ var model_Articles = function() {
 		}
 		return undefined;
 	}}, user : { type : String, optional : true, autoValue : function() {
-		return this.userId;
-	}}, upvotes : { type : Number, defaultValue : 0}, created : { type : Date, optional : true, autoValue : function() {
+		if(this.isInsert) return Meteor.userId(); else {
+			this.unset();
+			return undefined;
+		}
+	}}, username : { type : String, optional : true, autoValue : function() {
+		if(this.isInsert && Meteor.user() != null) return Meteor.user().username; else {
+			this.unset();
+			return undefined;
+		}
+	}}, votes : { type : Number, optional : true, autoValue : function() {
+		if(this.isInsert) return 0; else {
+			this.unset();
+			return undefined;
+		}
+	}}, created : { type : Date, optional : true, autoValue : function() {
 		if(this.isInsert) return new Date(); else {
 			this.unset();
 			return undefined;
@@ -1122,8 +1189,11 @@ var model_Articles = function() {
 	}}});
 };
 model_Articles.__name__ = true;
-model_Articles.queryFromTags = function(tags) {
-	return { tags : { '$in' : tags}};
+model_Articles.isOwner = function(document) {
+	return document.user != null && Meteor.userId() != null && document.user == Meteor.userId();
+};
+model_Articles.queryFromTags = function(_tags) {
+	return { tags : { '$in' : _tags}};
 };
 model_Articles.__super__ = Mongo.Collection;
 model_Articles.prototype = $extend(Mongo.Collection.prototype,{
@@ -1200,8 +1270,6 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-templates_ListArticles.PAGE_SIZE = 5;
-Router.FADE_DURATION = 500;
 Client.utils = new ClientUtils();
 Client.navbar = new templates_Navbar();
 Client.sidebar = new templates_SideBar();
@@ -1210,6 +1278,12 @@ Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
+Configs.shared = { error : { NOT_AUTHORIZED : { code : 401, reason : "Not authorized", details : "User Must be logged in."}, NO_PERMISSION : { code : 403, reason : "No permission", details : "User does not have the required permissions."}}};
+Configs.client = { PAGE_SIZE : 5, PAGE_FADEIN_DURATION : 500, PAGE_FADEOUT_DURATION : 0, MSG_SHOWING_ALL : "Showing <em>all</em> articles", MSG_SHOWING_TAG : function(tag) {
+	return "Showing <em>" + tag + "</em> tag";
+}, MSG_SHOWING_GROUP : function(group) {
+	return "Showing <em>" + group + "</em> group";
+}};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;
@@ -1224,6 +1298,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
-
-//# sourceMappingURL=main.js.map
+})(typeof console != "undefined" ? console : {log:function(){}});

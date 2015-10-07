@@ -38,6 +38,10 @@ class ViewArticle {
 				return currentArticle == null ? 
 					"" :
 					Client.utils.parseMarkdown(currentArticle.content);
+			},
+			isOwner: function () {
+				//trace("IS OWNER OF " + currentArticle);
+				return Articles.isOwner(currentArticle);
 			}
 		});
 	}
@@ -49,11 +53,11 @@ class ViewArticle {
 			}
 			// TODO on error
 		});
-		page.show(Router.FADE_DURATION);
+		page.show(Configs.client.PAGE_FADEIN_DURATION);
 	}
 	
 	public function hide() {
-		page.hide(Router.FADE_DURATION);
+		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
 	}
 	
 }

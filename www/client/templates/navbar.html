@@ -8,12 +8,18 @@
 		</button>
 		<a class="navbar-brand" href="/">Haxe Resource</a>
 		
-		<div class="collapse navbar-collapse" id="bs-navbar-collapse">
-			<ul class="nav navbar-nav">
-				<a id="btn-flowgraph" class="btn btn-success navbar-btn" href="/new">
-					<span class="glyphicon glyphicon-random"></span> New Article
+		
+		<div class="collapse navbar-collapse">
+			<ul class="nav navbar-nav" id="navbar-left-items">
+				{{#if currentUser}}
+				<a id="btn-newArticle" class="btn btn-success navbar-btn" href="/new">
+					<span class="glyphicon glyphicon-file"></span> New Article
 				</a>
+				{{/if}}
 			</ul>
+			<ul class="nav navbar-nav navbar-right" id="navbar-right-items">
+				{{> loginButtons}}
+            </ul>
 		</div>
 	</nav>
 </template>

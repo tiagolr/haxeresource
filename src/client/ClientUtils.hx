@@ -1,5 +1,8 @@
+import meteor.Error;
 import meteor.Meteor;
+import meteor.packages.FlowRouter;
 import meteor.packages.PublishCounts;
+import meteor.packages.Toastr;
 
 using Lambda;
 /**
@@ -32,6 +35,10 @@ class ClientUtils{
 		return untyped marked(raw);
 	}
 	
-	
+	public function handleServerError(error:Error) {
+		if (Std.is(error.error, Int)) {
+			Toastr.error(error.details, error.reason);
+		}
+	}
 	
 }

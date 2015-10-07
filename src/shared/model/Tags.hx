@@ -37,7 +37,6 @@ class Tags extends Collection {
 					}
 					return Lib.undefined;
 				}
-				
 			},
 		});
 	}

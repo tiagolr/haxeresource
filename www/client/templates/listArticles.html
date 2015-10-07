@@ -1,15 +1,17 @@
 <template name="listArticles">
+
 	<div class="row">
-		<div class="col-lg-12 page-header">
-			<h1 class="">Haxe Resource</h1><p>Haxe tutorials and useful links.</p>
+		<div class="col-lg-12 ">
+			<div id="la-title-row">
+				<h1 class="la-title">Haxe Resource</h1> <h3 class="la-subtitle"><small>Haxe tutorials and useful links.</small></h3>
+			</div>
 		</div>
-		
-		
 	</div>
 	
 	<div class="row">
 		<div class="col-lg-12">
 			<table id="tableArticles" class="table table-hover" style="border-collapse:collapse">
+				<caption>{{{captionMsg}}}</caption>
 				<thead>
 				<tr>
 					<th class="text-center" style="width:10px"></th> 
@@ -23,7 +25,7 @@
 							{{/if}}
 						</a>
 					</th>
-					<th class="text-center" style="width:90px">
+					<th class="text-right" style="width:90px">
 						<a id="btnSortByVotes" href="#">STARS 
 							{{#if sortVotesUp}}
 							<span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
@@ -52,9 +54,9 @@
 				</tbody>
 			</table>
 			<div>
-				<p><small id="entriesNumText">Showing {{currentCount}} of {{totalCount}} Entries</small></p>
+				<p id="entriesNumText"><small>Showing {{currentCount}} of {{totalCount}} results</small></p>
 				<div class="text-center">
-					<button id="btnLoadMoreResults" type="button" class="btn btn-primary {{#if allEntriesLoaded}}disabled{{/if}}">Load more results</button>
+					<button id="btnLoadMoreResults" type="button" class="btn btn-primary {{#if allEntriesLoaded}}disabled{{/if}}">Load more</button>
 				</div>
 			</div>
 		</div>
@@ -65,7 +67,13 @@
 	<tr class="articleRowHeader" style="border-top:0px;display:none">
 		<td class="articleRowToggle" data-target="#articleRow{{_id}}" data-toggle="collapse"></td>
 		<td class="articleRowToggle" data-target="#articleRow{{_id}}" data-toggle="collapse"><strong>{{title}}</strong></td>
-		<td class="text-right">{{upvotes}}</td>
+		<td class="text-right">
+			{{votes}} 
+			<a class="articleVoteLink" href="#" data-article="{{_id}}">
+				<span class="glyphicon glyphicon-star {{#if hasUserVote _id}}vote-star{{else}}novote-star{{/if}}" aria-hidden="true">
+				</span>
+			</a>
+		</td>
 		<td class="articleRowToggle text-center" data-target="#articleRow{{_id}}" data-toggle="collapse" >{{formatDate created}}</td>
 	</tr>
 	<tr class="articleRowBody noHover">
@@ -75,7 +83,7 @@
 				
 				<p>{{description}}</p>
 				<div>
-					Posted by : <a href="#">{{user}}</a>
+					Posted by : <a href="#">{{username}}</a>
 				</div>
 				<div style="display:inline-block">
 					{{#if content}}
