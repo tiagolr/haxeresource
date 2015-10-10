@@ -139,7 +139,7 @@ Server.__name__ = true;
 Server.main = function() {
 	Shared.init();
 	Meteor.publish("tag_groups",function() {
-		return model_TagGroups.collection.find();
+		return model_TagGroups.collection.find({ },{ sort : { weight : 1}});
 	});
 	Meteor.publish("tags",function() {
 		return model_Tags.collection.find();
@@ -228,14 +228,15 @@ Server.main = function() {
 	if(Meteor.users.findOne({ roles : { '$in' : [Permissions.roles.ADMIN]}}) == null) {
 		var pwd = haxe_crypto_Md5.encode(Std.string(Math.random()));
 		console.log("creating admin with pw : " + pwd);
-		var adminId = Accounts.createUser({ username : "hxresadmin", password : pwd});
+		var adminId = Accounts.createUser({ username : "hxresadmin", password : pwd, profile : { }});
 		if(adminId != null) {
 			Meteor.users.update(adminId,{ '$set' : { initPwd : pwd}});
 			Roles.setUserRoles(adminId,[Permissions.roles.ADMIN]);
 		} else console.log("Error occurred, failed to create admin user account");
 	}
-	if(model_TagGroups.collection.findOne({ name : "Haxe"}) == null) model_TagGroups.create({ name : "Haxe", mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png"});
-	if(model_TagGroups.collection.findOne({ name : "Openfl"}) == null) model_TagGroups.create({ name : "Openfl", mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png"});
+	model_TagGroups.collection.upsert({ name : "Haxe"},{ '$set' : { mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", weight : 0}});
+	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", weight : 1}});
+	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", weight : 2}});
 };
 var SharedUtils = function() {
 };
@@ -933,13 +934,9 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, tags : { optional : true, type : [String]}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}});
 };
 model_TagGroups.__name__ = true;
-model_TagGroups.create = function(tagGroup) {
-	model_TagGroups.collection.insert(tagGroup);
-	return tagGroup;
-};
 model_TagGroups.__super__ = Mongo.Collection;
 model_TagGroups.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_TagGroups

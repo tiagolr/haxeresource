@@ -37,9 +37,17 @@ class NewArticle {
 	public function new() {}
 	public function init() {
 		Template.get('newArticle').helpers( {
+			
 			editArticle: function() {
 				return Session.get('editArticle');
 			},
+			
+			hasNoContents: function() {
+				var val = AutoForm.getFieldValue('newArticleForm', 'content');
+				trace("HERE " + val);
+				return val == null || val == "";
+			},
+			
 			titlePlaceholder: "Title goes here",
 			descriptionPlaceholder: "Brief description about the subject",
 			linkPlaceholder: "Url to the original article, ex: http://www.site.com/article",
@@ -47,15 +55,14 @@ class NewArticle {
 			tagsPlaceholder: "",
 		});
 		
-		// TODO add tooltips, not working after a bit
-		/*Template.get('autoForm').onRendered(function () {
-			new JQuery("#naf-articleContent").siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
-			new JQuery("#naf-articleLink").siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
-			new JQuery("#naf-articleTags").parent().siblings('label').append(' <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>');
-		});*/
-		
 		Template.get('newArticle').events( {
-			'click #btnPreviewArticle': function (evt) {
+			'click #btnPreviewContents': function (evt) {
+				var previewPanel = new JQuery('#na-previewPanel');
+				var editPanel = new JQuery('#na-editPanel');
+				
+				// set both panels to the same height
+				previewPanel.outerHeight(untyped editPanel.outerHeight());
+				
 				var title = new JQuery("#naf-articleTitle").val();
 				var content = new JQuery("#naf-articleContent").val();
 				var link = new JQuery("#naf-articleLink").val();
@@ -77,6 +84,7 @@ class NewArticle {
 		});
 		
 		AutoForm.addHooks('newArticleForm', {
+			
 			onSubmit: function (insertDoc, updateDoc, _) {
 				Lib.nativeThis.event.preventDefault();
 				var ctx:Dynamic = Lib.nativeThis;
@@ -106,6 +114,7 @@ class NewArticle {
 					});
 				}
 			},
+			
 		});
 		
 	}

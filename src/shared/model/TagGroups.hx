@@ -9,6 +9,7 @@ typedef TagGroup = {
 	?description:String,
 	tags:Array<String>, // tag names or regexes (eg: ~/.*/i)
 	mainTag:String,
+	?weight:Int,
 }
 /**
  * Categories
@@ -32,16 +33,18 @@ class TagGroups extends Collection {
 				type: String,
 				max:Tags.MAX_CHARS,
 			},
+			weight: {
+				type: untyped Number,
+				defaultValue: 10,
+			},
+			icon: {
+				type:String
+			},
 			tags: {
 				optional: true,
 				type: [String],
 			}
 		});
-	}
-	
-	public static function create(tagGroup:TagGroup):TagGroup {
-		TagGroups.collection.insert(tagGroup);
-		return tagGroup;
 	}
 	
 }

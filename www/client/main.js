@@ -68,8 +68,6 @@ templates_ListArticles.prototype = {
 			return Client.utils.retrieveArticleCount(_g.get_selector());
 		}, allEntriesLoaded : function() {
 			return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
-		}, test : function() {
-			return { cunt : "cunt"};
 		}, sortAgeUp : function() {
 			return _g.get_sort().created == 1;
 		}, sortAgeDown : function() {
@@ -158,8 +156,15 @@ templates_NewArticle.prototype = {
 		var _g = this;
 		Template.newArticle.helpers({ editArticle : function() {
 			return Session.get("editArticle");
+		}, hasNoContents : function() {
+			var val = AutoForm.getFieldValue("newArticleForm","content");
+			console.log("HERE " + val);
+			return val == null || val == "";
 		}, titlePlaceholder : "Title goes here", descriptionPlaceholder : "Brief description about the subject", linkPlaceholder : "Url to the original article, ex: http://www.site.com/article", contentPlaceholder : "Text contents using github flavored markdown", tagsPlaceholder : ""});
-		Template.newArticle.events({ 'click #btnPreviewArticle' : function(evt) {
+		Template.newArticle.events({ 'click #btnPreviewContents' : function(evt) {
+			var previewPanel = js.JQuery("#na-previewPanel");
+			var editPanel = js.JQuery("#na-editPanel");
+			previewPanel.outerHeight(editPanel.outerHeight());
 			var title = js.JQuery("#naf-articleTitle").val();
 			var content = js.JQuery("#naf-articleContent").val();
 			var link = js.JQuery("#naf-articleLink").val();
@@ -1202,13 +1207,9 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, tags : { optional : true, type : [String]}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}});
 };
 model_TagGroups.__name__ = true;
-model_TagGroups.create = function(tagGroup) {
-	model_TagGroups.collection.insert(tagGroup);
-	return tagGroup;
-};
 model_TagGroups.__super__ = Mongo.Collection;
 model_TagGroups.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_TagGroups

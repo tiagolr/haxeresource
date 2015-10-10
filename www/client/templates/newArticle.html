@@ -1,30 +1,38 @@
 <template name="newArticle">
-	<ul class="nav nav-tabs">
-			<li class="active"><a href="#editPanel" data-toggle="tab">Edit</a></li>
-			<li class=""><a id="btnPreviewArticle" href="#na-previewPanel" data-toggle="tab">Preview</a></li>
-	</ul>
-	
-	<div class="tab-content">
-		<div class="tab-pane fade active in" id="editPanel">
-			{{#autoForm collection="articles" id="newArticleForm" doc=editArticle type="normal"}}
-				<fieldset>
-				{{> afQuickField name='title' id='naf-articleTitle' placeholder=titlePlaceholder}}
-				{{> afQuickField name='description' id='naf-articleDescription' rows=2 placeholder=descriptionPlaceholder}}
-				{{> afQuickField name='link' id='naf-articleLink' placeholder=linkPlaceholder}}
-				{{> afQuickField name='content' id='naf-articleContent' rows=20 placeholder=contentPlaceholder}}
-				{{> afQuickField name='tags' id='naf-articleTags' placeholder=tagsPlaceholder}}
-				<div style="margin-top:-20px;margin-bottom:20px"><a href="#">Select featured tags from list. ( TODO )</a></div>
-				</fieldset>
-				<button type="submit" class="btn btn-primary">Submit</button>
-			{{/autoForm}}
-		</div>
-	
-		<div class="tab-pane fade" id="na-previewPanel">
-			<h1 id="na-previewTitle"></h1>
-			<div id="na-articleDescription"></div>
-			<div id="na-previewLink"></div>
-			<hr>
-			<div id="na-previewContent"></div>
-		</div>
+	<div id="editPanel">
+		{{#autoForm collection="articles" id="newArticleForm" doc=editArticle type="normal"}}
+			<fieldset>
+			{{> afQuickField name='title' id='naf-articleTitle' placeholder=titlePlaceholder}}
+			{{> afQuickField name='description' id='naf-articleDescription' rows=2 placeholder=descriptionPlaceholder}}
+			{{> afQuickField name='link' id='naf-articleLink' placeholder=linkPlaceholder}}
+			
+			<ul class="nav nav-tabs" role="tablist">
+				<li role="presentation" class="active"><a id="btnEditContents" href="#na-editPanel" aria-controls="edit-contents" data-toggle="tab">Edit</a></li>
+				<li role="presentation" class="{{#if hasNoContents}}disabled{{/if}}">
+				<a id="btnPreviewContents" href="#na-previewPanel" aria-controls="preview-contents" data-toggle="tab">Preview</a></li>
+			</ul>
+
+			<div class="tab-content">
+
+				<div class="tab-pane fade active in" id="na-editPanel">
+					{{> afQuickField name='content' id='naf-articleContent' rows=20 placeholder=contentPlaceholder label=false}}
+				</div>
+
+				<div id="na-previewPanel" class="tab-pane fade" style="overflow-y:auto">
+					<h1 id="na-previewTitle"></h1>
+					<div id="na-articleDescription"></div>
+					<div id="na-previewLink"></div>
+					<!-- hr -->
+					<div id="na-previewContent">
+					</div>
+				</div>
+
+			</div>
+			
+			{{> afQuickField name='tags' id='naf-articleTags' placeholder=tagsPlaceholder}}
+			<div style="margin-top:-20px;margin-bottom:20px"><a href="#">Select featured tags from list. ( TODO )</a></div>
+			</fieldset>
+			<button type="submit" class="btn btn-primary">Submit</button>
+		{{/autoForm}}
 	</div>
 </template>

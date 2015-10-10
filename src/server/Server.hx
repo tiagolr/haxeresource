@@ -26,7 +26,7 @@ class Server {
 		//-----------------------------------------------
 		
 		Meteor.publish(TagGroups.NAME, function() {
-			return TagGroups.collection.find();
+			return TagGroups.collection.find({}, {sort:{weight:1}});
 		});
 		
 		Meteor.publish(Tags.NAME, function() {
@@ -175,6 +175,7 @@ class Server {
 			var adminId = Accounts.createUser( {
 				username:'hxresadmin',
 				password:pwd,
+				profile:{},
 			});
 			
 			if (adminId != null) {
@@ -186,12 +187,27 @@ class Server {
 		}
 		
 		// Create tag groups
-		if (TagGroups.collection.findOne({name:'Haxe'}) == null)
-			TagGroups.create( { name:'Haxe', mainTag:'haxe', tags: ["~/^haxe-..*$/"], icon:'/img/haxe-logo-50x50.png' } );
-		if (TagGroups.collection.findOne({name:'Openfl'}) == null)
-			TagGroups.create( { name:'Openfl', mainTag:'openfl', tags: ["~/^openfl-..*$/"], icon:'/img/openfl-logo-50x50.png' } );
+		TagGroups.collection.upsert( { name:'Haxe' }, { '$set' : {
+			mainTag:'haxe',
+			tags: ["~/^haxe-..*$/"], 
+			icon:'/img/haxe-logo-50x50.png',
+			weight:0
+		}});
 		
-			
+		TagGroups.collection.upsert( { name:'Openfl' }, { '$set' : {
+			mainTag:'openfl',
+			tags: ["~/^openfl-..*$/"], 
+			icon:'/img/openfl-logo-50x50.png',
+			weight:1
+		}});
+		
+		TagGroups.collection.upsert( { name:'HaxeFlixel' }, { '$set' : {
+			mainTag:'flixel',
+			tags: ["~/^flixel-..*$/", "~/^haxeflixel-..*$/"], 
+			icon:'/img/haxeflixel-logo-50x50.png',
+			weight:2
+		}});
+		
 		#if debug
 		//-----------------------------------------------
 		// Create testing documents
