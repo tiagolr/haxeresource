@@ -65,9 +65,9 @@ class ListArticles {
 	
 	public function show(?_sort: { }, ?_limit:Int = -1, _selector:Dynamic, captionMsg:String) {
 		if (_limit == -1) {
-			_limit = Configs.client.PAGE_SIZE;
+			_limit = Configs.client.page_size;
 		}
-		page.show(Configs.client.PAGE_FADEIN_DURATION);
+		page.show(Configs.client.page_fadein_duration);
 		
 		if (_limit != null) {
 			limit = _limit;
@@ -85,13 +85,13 @@ class ListArticles {
 	}
 	
 	public function hide() {
-		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
+		page.hide(Configs.client.page_fadeout_duration);
 	}
 	
 	public function new() {}
 	public function init() {
 		sort = { created: -1 };
-		limit = Configs.client.PAGE_SIZE;
+		limit = Configs.client.page_size;
 		selector = { };
 		
 		Template.get('listArticles').helpers( {
@@ -133,7 +133,7 @@ class ListArticles {
 		Template.get('listArticles').events( {
 			
 			'click #btnLoadMoreResults': function (_) {
-				limit += Configs.client.PAGE_SIZE;
+				limit += Configs.client.page_size;
 			},
 			
 			'click #btnSortByAge' : function (_) {
@@ -180,6 +180,14 @@ class ListArticles {
 					link = "http://" + link;
 				}
 				return link;
+			},
+			
+			canEditArticle: function (article) {
+				return Permissions.canUpdateArticles(article);
+			},
+			
+			canRemoveArticle: function (article) {
+				return Permissions.canRemoveArticles(article);
 			}
 			
 		});
@@ -208,7 +216,21 @@ class ListArticles {
 						Client.utils.handleServerError(error);
 					}
 				});
-			}
+			},
+			
+			'click #la-btnRemoveArticle':function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				
+				Client.utils.confirm(
+					Configs.client.texts.prompt_ra_msg,
+					Configs.client.texts.prompt_ra_cancel,
+					Configs.client.texts.prompt_ra_confirm, 
+					function () {
+						Articles.collection.remove( { _id:articleId } );
+					}
+				);
+				
+			},
 		});
 		
 		Template.get('articleRow').onRendered(function () {

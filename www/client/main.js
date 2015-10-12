@@ -43,20 +43,20 @@ templates_ListArticles.prototype = {
 	}
 	,show: function(_sort,_limit,_selector,captionMsg) {
 		if(_limit == null) _limit = -1;
-		if(_limit == -1) _limit = Configs.client.PAGE_SIZE;
-		this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
+		if(_limit == -1) _limit = Configs.client.page_size;
+		this.get_page().show(Configs.client.page_fadein_duration);
 		if(_limit != null) this.set_limit(_limit);
 		if(_selector != null) this.set_selector(_selector);
 		if(_sort != null) this.set_sort(_sort);
 		this.set_captionMsg(captionMsg);
 	}
 	,hide: function() {
-		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
+		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,init: function() {
 		var _g = this;
 		this.set_sort({ created : -1});
-		this.set_limit(Configs.client.PAGE_SIZE);
+		this.set_limit(Configs.client.page_size);
 		this.set_selector({ });
 		Template.listArticles.helpers({ captionMsg : function() {
 			return _g.get_captionMsg();
@@ -88,7 +88,7 @@ templates_ListArticles.prototype = {
 		});
 		Template.listArticles.events({ 'click #btnLoadMoreResults' : function(_) {
 			var _g1 = _g;
-			_g1.set_limit(_g1.get_limit() + Configs.client.PAGE_SIZE);
+			_g1.set_limit(_g1.get_limit() + Configs.client.page_size);
 		}, 'click #btnSortByAge' : function(_1) {
 			if(_g.get_sort().created == null) _g.set_sort({ created : 1}); else _g.set_sort({ created : _g.get_sort().created * -1});
 		}, 'click #btnSortByTitle' : function(_2) {
@@ -107,6 +107,10 @@ templates_ListArticles.prototype = {
 		}, formatLink : function(link) {
 			if(!StringTools.startsWith(link,"http://")) link = "http://" + link;
 			return link;
+		}, canEditArticle : function(article) {
+			return Permissions.canUpdateArticles(article);
+		}, canRemoveArticle : function(article1) {
+			return Permissions.canRemoveArticles(article1);
 		}});
 		Template.articleRow.events({ 'click .articleRowToggle' : function(event) {
 			var target = js.JQuery(event.target.getAttribute("data-target"));
@@ -122,6 +126,11 @@ templates_ListArticles.prototype = {
 			event1.stopImmediatePropagation();
 			Meteor.call("toggleArticleVote",articleId,function(error) {
 				if(error != null) Client.utils.handleServerError(error);
+			});
+		}, 'click #la-btnRemoveArticle' : function(event2) {
+			var articleId1 = event2.currentTarget.getAttribute("data-article");
+			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
+				model_Articles.collection.remove({ _id : articleId1});
 			});
 		}});
 		Template.articleRow.onRendered(function() {
@@ -156,11 +165,26 @@ templates_NewArticle.prototype = {
 		var _g = this;
 		Template.newArticle.helpers({ editArticle : function() {
 			return Session.get("editArticle");
-		}, hasNoContents : function() {
-			var val = AutoForm.getFieldValue("newArticleForm","content");
-			console.log("HERE " + val);
-			return val == null || val == "";
-		}, titlePlaceholder : "Title goes here", descriptionPlaceholder : "Brief description about the subject", linkPlaceholder : "Url to the original article, ex: http://www.site.com/article", contentPlaceholder : "Text contents using github flavored markdown", tagsPlaceholder : ""});
+		}, featuredTags : function() {
+			var $final = [];
+			var groups = templates_SideBar.get_tagGroups();
+			if(groups == null) return [];
+			var _g1 = 0;
+			while(_g1 < groups.length) {
+				var g = groups[_g1];
+				++_g1;
+				$final.push(g.mainTag);
+				var tags = g.resolvedTags;
+				if(tags == null) continue;
+				var _g11 = 0;
+				while(_g11 < tags.length) {
+					var t = tags[_g11];
+					++_g11;
+					$final.push(t.name);
+				}
+			}
+			return $final;
+		}, titlePlaceholder : Configs.client.texts.na_placeh_title, descriptionPlaceholder : Configs.client.texts.na_placeh_desc, linkPlaceholder : Configs.client.texts.na_placeh_link, contentPlaceholder : Configs.client.texts.na_placeh_content, tagsPlaceholder : Configs.client.texts.na_placeh_tags});
 		Template.newArticle.events({ 'click #btnPreviewContents' : function(evt) {
 			var previewPanel = js.JQuery("#na-previewPanel");
 			var editPanel = js.JQuery("#na-editPanel");
@@ -175,6 +199,19 @@ templates_NewArticle.prototype = {
 			js.JQuery("#na-previewContent").html(Client.utils.parseMarkdown(content));
 		}, 'beforeItemAdd input' : function(evt1) {
 			if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
+		}, 'change #na-featuredTagsList' : function(evt2) {
+			js.JQuery("#na-featuredTagsAccept").toggleClass("disabled",js.JQuery("#na-featuredTagsList").val() == null);
+		}, 'click #na-featuredTagsAccept' : function(evt3) {
+			var selected = js.JQuery("#na-featuredTagsList").val();
+			if(selected != null) {
+				var _g2 = 0;
+				while(_g2 < selected.length) {
+					var tag = selected[_g2];
+					++_g2;
+					js.JQuery("#naf-articleTags").tagsinput("add",tag);
+				}
+			}
+			js.JQuery("#na-modalFeaturedTags").modal("hide");
 		}});
 		AutoForm.addHooks("newArticleForm",{ onSubmit : function(insertDoc,updateDoc,_) {
 			this.event.preventDefault();
@@ -208,7 +245,7 @@ templates_NewArticle.prototype = {
 			var article = model_Articles.collection.findOne({ _id : articleId});
 			if(article != null) {
 				_g.set_editArticle(article);
-				_g.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
+				_g.get_page().show(Configs.client.page_fadein_duration);
 				var tags = _g.get_editArticle().tags;
 				if(tags != null) {
 					var _g1 = 0;
@@ -225,11 +262,11 @@ templates_NewArticle.prototype = {
 			}
 		}, onError : function(e) {
 			console.log("Error: " + e);
-		}}); else this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
+		}}); else this.get_page().show(Configs.client.page_fadein_duration);
 	}
 	,hide: function() {
 		if(Session.get("editArticle") != null) Session.set("editArticle",null);
-		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
+		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,__class__: templates_NewArticle
 };
@@ -239,14 +276,14 @@ Router.__name__ = true;
 Router.prototype = {
 	init: function() {
 		FlowRouter.route("/",{ action : function() {
-			Client.listArticles.show(null,null,{ },Configs.client.MSG_SHOWING_ALL);
+			Client.listArticles.show(null,null,{ },Configs.client.texts.la_showing_all);
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
 		FlowRouter.route("/tag/:name",{ action : function() {
 			var tag = FlowRouter.getParam("name");
 			var selector = model_Articles.queryFromTags([tag]);
-			Client.listArticles.show(null,null,selector,Configs.client.MSG_SHOWING_TAG(tag));
+			Client.listArticles.show(null,null,selector,Configs.client.texts.la_showing_tag(tag));
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
@@ -256,7 +293,7 @@ Router.prototype = {
 			if(g != null) {
 				var tags = Shared.utils.resolveTags(g);
 				tags.push(g.mainTag);
-				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags),Configs.client.MSG_SHOWING_GROUP(groupName));
+				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags),Configs.client.texts.la_showing_group(groupName));
 			} else {
 			}
 		}, triggersExit : [function() {
@@ -286,6 +323,13 @@ var templates_SideBar = function() {
 	this.ignoreDivClick = false;
 };
 templates_SideBar.__name__ = true;
+templates_SideBar.get_tagGroups = function() {
+	return Session.get("sb_tag_groups");
+};
+templates_SideBar.set_tagGroups = function(val) {
+	Session.set("sb_tag_groups",val);
+	return val;
+};
 templates_SideBar.formatTagName = function(tag) {
 	var split = tag.split("-");
 	if(split.length > 1) {
@@ -315,6 +359,7 @@ templates_SideBar.prototype = {
 				resolved.push(g.mainTag);
 				g.resolvedTags = $final;
 			}
+			templates_SideBar.set_tagGroups(groups);
 			return groups;
 		}});
 		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
@@ -375,6 +420,15 @@ ClientUtils.prototype = {
 	,handleServerError: function(error) {
 		if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);
 	}
+	,alert: function(msg,label,callback) {
+		bootbox.alert(msg,label,callback);
+	}
+	,prompt: function(msg,cancel,confirm,callback) {
+		bootbox.prompt(msg,cancel,confirm,callback);
+	}
+	,confirm: function(msg,cancel,confirm,callback) {
+		bootbox.dialog({ message : msg, buttons : { cancel : { label : cancel, className : "btn-default"}, confirm : { label : confirm, className : "btn-primary", callback : callback}}});
+	}
 	,__class__: ClientUtils
 };
 var templates_ViewArticle = function() {
@@ -397,8 +451,16 @@ templates_ViewArticle.prototype = {
 			return _g.get_currentArticle();
 		}, parsedContent : function() {
 			if(_g.get_currentArticle() == null) return ""; else return Client.utils.parseMarkdown(_g.get_currentArticle().content);
-		}, isOwner : function() {
-			return model_Articles.isOwner(_g.get_currentArticle());
+		}, canUpdateArticle : function() {
+			return Permissions.canUpdateArticles(_g.get_currentArticle());
+		}, canRemoveArticle : function() {
+			return Permissions.canRemoveArticles(_g.get_currentArticle());
+		}});
+		Template.viewArticle.events({ 'click #va-btnRemoveArticle' : function(evt) {
+			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
+				model_Articles.collection.remove({ _id : _g.get_currentArticle()._id});
+				FlowRouter.go("/");
+			});
 		}});
 	}
 	,show: function(articleId) {
@@ -406,10 +468,10 @@ templates_ViewArticle.prototype = {
 		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
 		}});
-		this.get_page().show(Configs.client.PAGE_FADEIN_DURATION);
+		this.get_page().show(Configs.client.page_fadein_duration);
 	}
 	,hide: function() {
-		this.get_page().hide(Configs.client.PAGE_FADEOUT_DURATION);
+		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,__class__: templates_ViewArticle
 };
@@ -438,6 +500,31 @@ Client.main = function() {
 	}});
 	Accounts.ui.config({ passwordSignupFields : "USERNAME_AND_EMAIL"});
 	toastr.options = { closeButton : true, progressBar : true};
+	js.JQuery("document").ready(function(_) {
+		js.JQuery("[data-toggle=\"tooltip\"]").tooltip();
+	});
+	Template.registerHelper("getText",function(text) {
+		if(text == null) {
+			console.log("warning: calling getText() with null arg0");
+			return null;
+		}
+		var resolved = Reflect.field(Configs.client.texts,text);
+		if(resolved == null) console.log("warning: text \"" + text + "\" not found");
+		return resolved;
+	});
+	Template.registerHelper("getIconTooltip",function(tooltip,placement) {
+		if(tooltip == null) {
+			console.log("warning: calling getIconTooltip() with null arg0 ");
+			return null;
+		}
+		var tip = Reflect.field(Configs.client.texts,tooltip);
+		if(tip == null) {
+			console.log("warning: tooltip \"" + tooltip + "\" not found");
+			return null;
+		}
+		if(placement != "top" && placement != "bottom" && placement != "left" && placement != "right") placement = "right";
+		return "<div class=\"icon-tooltip\" data-toggle=\"tooltip\" data-placement=\"" + placement + "\" title=\"" + tip + "\">\r\n\t\t\t\t<span class=\"glyphicon glyphicon-question-sign\"></span>\r\n\t\t\t</div>";
+	});
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -500,8 +587,76 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
+var Permissions = function() { };
+Permissions.__name__ = true;
+Permissions.requireLogin = function() {
+	if(!Permissions.isLogged()) {
+		var err = Configs.shared.error.not_authorized;
+		var error = new Meteor.Error(err.code,err.reason,err.details);
+		throw error;
+	}
+	return true;
+};
+Permissions.requirePermission = function(hasPermission) {
+	if(!hasPermission) {
+		var err = Configs.shared.error.no_permission;
+		var error = new Meteor.Error(err.code,err.reason,err.details);
+		throw error;
+	}
+	return true;
+};
+Permissions.isLogged = function() {
+	return Meteor.userId() != null;
+};
+Permissions.isAdmin = function() {
+	return Roles.userIsInRole(Meteor.userId(),[Permissions.roles.ADMIN]);
+};
+Permissions.isModerator = function() {
+	return Roles.userIsInRole(Meteor.userId(),[Permissions.roles.ADMIN,Permissions.roles.MODERATOR]);
+};
+Permissions.canInsertTags = function() {
+	return Permissions.isModerator();
+};
+Permissions.canUpdateTags = function() {
+	return Permissions.isModerator();
+};
+Permissions.canRemoveTags = function() {
+	return Permissions.isModerator();
+};
+Permissions.canInsertTagGroups = function() {
+	return Permissions.isModerator();
+};
+Permissions.canUpdateTagGroups = function() {
+	return Permissions.isModerator();
+};
+Permissions.canRemoveTagGroups = function() {
+	return Permissions.isModerator();
+};
+Permissions.canInsertArticles = function() {
+	return Permissions.isLogged();
+};
+Permissions.canUpdateArticles = function(document) {
+	return Permissions.isModerator() || model_Articles.isOwner(document);
+};
+Permissions.canRemoveArticles = function(document) {
+	return Permissions.isModerator() || model_Articles.isOwner(document);
+};
+Permissions.canUpdateUsers = function(document,fields) {
+	return Permissions.isAdmin();
+};
+Permissions.canRemoveUser = function(document) {
+	return Permissions.isAdmin();
+};
 var Reflect = function() { };
 Reflect.__name__ = true;
+Reflect.field = function(o,field) {
+	try {
+		return o[field];
+	} catch( e ) {
+		if (e instanceof js__$Boot_HaxeError) e = e.val;
+		return null;
+	}
+};
 Reflect.fields = function(o) {
 	var a = [];
 	if(o != null) {
@@ -1149,13 +1304,13 @@ js_html_compat_Uint8Array._subarray = function(start,end) {
 var model_Articles = function() {
 	Mongo.Collection.call(this,"articles");
 	model_Articles.collection = this;
-	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, label : "Link (optional)", regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
+	model_Articles.schema = new SimpleSchema({ title : { type : String, max : 100}, description : { type : String, max : 512}, link : { type : String, max : 512, optional : true, regEx : SimpleSchema.RegEx.Url, autoform : { afFieldInput : { type : "url"}}, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, content : { type : String, max : 30000, label : "Content (optional)", optional : true, custom : function() {
+	}}, content : { type : String, max : 30000, optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
-	}}, tags : { label : "Tags (optional)", type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
+	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
 			var resolved = [];
@@ -1279,12 +1434,13 @@ Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { error : { NOT_AUTHORIZED : { code : 401, reason : "Not authorized", details : "User Must be logged in."}, NO_PERMISSION : { code : 403, reason : "No permission", details : "User does not have the required permissions."}}};
-Configs.client = { PAGE_SIZE : 5, PAGE_FADEIN_DURATION : 500, PAGE_FADEOUT_DURATION : 0, MSG_SHOWING_ALL : "Showing <em>all</em> articles", MSG_SHOWING_TAG : function(tag) {
+Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Bad arguments", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Bad arguments", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Bad arguments", details : "Invalid permission types"}}};
+Configs.client = { page_size : 5, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
-}, MSG_SHOWING_GROUP : function(group) {
+}, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
-}};
+}, na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "Url to the original article, ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Contents ", na_label_tags : "Tags ", na_tt_links : "An url for the original post (if any), required if not posting the contents directly here.", na_tt_contents : "The article contents are written using markdown notation, articles may contain only links to external posts like blogs or other webpages, in that case contents are not required.", na_tt_tags : "Tags may be inserted by pressing `comma` or `enter` keys. Depending on the tags choosen, the article may be added to different groups, for eg. using `haxe-macros` the article will be added to `Haxe` group inside `macros` subgroup", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
+Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;

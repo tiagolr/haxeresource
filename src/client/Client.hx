@@ -1,6 +1,7 @@
 import haxe.DynamicAccess;
 import js.Browser;
 import js.html.Event;
+import js.JQuery;
 import meteor.Accounts;
 import meteor.Error;
 import meteor.Meteor;
@@ -8,6 +9,7 @@ import meteor.packages.AutoForm;
 import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
 import meteor.packages.Toastr;
+import meteor.Template;
 import model.Articles;
 import model.TagGroups;
 import model.Tags;
@@ -79,6 +81,57 @@ class Client {
 			//timeOut: 5000,
 			//extendedTimeOut:2500,
 		}
+		
+		// initialize bootstrap tooltips
+		new JQuery('document').ready(function(_) {
+			untyped new JQuery('[data-toggle="tooltip"]').tooltip();
+		});
+		
+		//-----------------------------------------------
+		// Global Helpers
+		//-----------------------------------------------
+		
+		// returns a text from configs
+		Template.registerHelper('getText', function( text:String) {
+			if (text == null) {
+				trace('warning: calling getText() with null arg0');
+				return null;
+			}
+			
+			var resolved = Reflect.field(Configs.client.texts, text);
+			if (resolved == null) {
+				trace( 'warning: text "$text" not found');
+			}
+			
+			return resolved;
+		});
+		
+		// returns a question icon that displays a tooltip when hovered
+		Template.registerHelper('getIconTooltip', function( tooltip:String, placement:String ) {
+			if (tooltip == null) {
+				trace('warning: calling getIconTooltip() with null arg0 ');
+				return null;
+			}
+			
+			var tip = Reflect.field(Configs.client.texts, tooltip);
+			if (tip == null) {
+				trace('warning: tooltip "$tooltip" not found');
+				return null;
+			}
+			
+			if (placement != 'top' && placement != 'bottom' && placement != 'left' && placement != 'right') {
+				placement = 'right';
+			}
+			
+			return 
+			'<div class="icon-tooltip" data-toggle="tooltip" data-placement="$placement" title="$tip">
+				<span class="glyphicon glyphicon-question-sign"></span>
+			</div>';
+		});
+		
+		//-----------------------------------------------
+		
+		
 		
 		#if debug
 		AutoForm.debug();

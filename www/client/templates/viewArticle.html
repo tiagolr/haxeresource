@@ -4,9 +4,14 @@
 		<div id="va-description">{{description}}</div>
 		<a href="{{link}}" target="_blank">{{link}}</a>
 		<p>Tags: {{#each tags}}<a href="/tag/{{this}}">{{this}} </a>{{/each}}</p>
-		{{#if isOwner}}
-			<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}')">Edit</button>
-		{{/if}}
+		<div>
+			{{#if canUpdateArticle}}
+				<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}')" style="display:inline">Edit</button>
+			{{/if}}
+			{{#if canRemoveArticle}}
+				<button id="va-btnRemoveArticle" type="button" class="btn btn-danger" style="display:inline">Remove</button>
+			{{/if}}
+		</div>
 		<hr>
 	{{/with}}
 		<div id="va-content">{{{parsedContent}}}</div>

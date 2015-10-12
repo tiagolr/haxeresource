@@ -17,7 +17,7 @@ class Router {
 		
 		FlowRouter.route('/', {
 			action: function() {
-				Client.listArticles.show(null, null, {}, Configs.client.MSG_SHOWING_ALL);
+				Client.listArticles.show(null, null, {}, Configs.client.texts.la_showing_all);
 			},
 			triggersExit: [function() {
 				Client.listArticles.hide();
@@ -31,7 +31,7 @@ class Router {
 				var selector = Articles.queryFromTags([tag]);
 				//Client.utils.subscribeCountArticles(selector);
 				
-				Client.listArticles.show(null, null, selector, Configs.client.MSG_SHOWING_TAG(tag));
+				Client.listArticles.show(null, null, selector, Configs.client.texts.la_showing_tag(tag));
 			}, 
 			triggersExit:[function() {
 				Client.listArticles.hide();
@@ -48,7 +48,7 @@ class Router {
 					
 					//Client.utils.subscribeCountArticles(selector);
 					
-					Client.listArticles.show(null, null, Articles.queryFromTags(tags), Configs.client.MSG_SHOWING_GROUP(groupName));
+					Client.listArticles.show(null, null, Articles.queryFromTags(tags), Configs.client.texts.la_showing_group(groupName));
 				} else {
 					// TODO - goto index
 				}

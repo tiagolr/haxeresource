@@ -1,3 +1,4 @@
+import haxe.Constraints.Function;
 import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.FlowRouter;
@@ -39,6 +40,31 @@ class ClientUtils{
 		if (Std.is(error.error, Int)) {
 			Toastr.error(error.details, error.reason);
 		}
+	}
+	
+	public function alert(msg:String, ?label:String, ?callback:Function) {
+		untyped bootbox.alert(msg, label, callback);
+	}
+	
+	public function prompt(msg:String, ?cancel:String, ?confirm:String, ?callback:Function) {
+		untyped bootbox.prompt(msg, cancel, confirm, callback);
+	}
+	
+	public function confirm(msg:String, ?cancel:String, ?confirm:String, ?callback:Function) {
+		untyped bootbox.dialog({
+			message: msg,
+			buttons: {
+				cancel: {
+					label: cancel,
+					className: "btn-default",
+				},
+				confirm: {
+					label: confirm,
+					className: "btn-primary",
+					callback: callback,
+				},
+			}
+		});
 	}
 	
 }

@@ -1,6 +1,7 @@
 package templates;
 import js.JQuery;
 import meteor.Meteor;
+import meteor.packages.FlowRouter;
 import meteor.Session;
 import meteor.Template;
 import model.Articles;
@@ -39,9 +40,27 @@ class ViewArticle {
 					"" :
 					Client.utils.parseMarkdown(currentArticle.content);
 			},
-			isOwner: function () {
-				//trace("IS OWNER OF " + currentArticle);
-				return Articles.isOwner(currentArticle);
+			canUpdateArticle: function () {
+				return Permissions.canUpdateArticles(currentArticle);
+			},
+			
+			canRemoveArticle: function () {
+				return Permissions.canRemoveArticles(currentArticle);
+			}
+		});
+		
+		Template.get('viewArticle').events( {
+			'click #va-btnRemoveArticle': function (evt) {
+				
+				Client.utils.confirm(
+					Configs.client.texts.prompt_ra_msg,
+					Configs.client.texts.prompt_ra_cancel,
+					Configs.client.texts.prompt_ra_confirm, 
+					function () {
+						Articles.collection.remove( { _id:currentArticle._id } );
+						FlowRouter.go('/');
+					}
+				);
 			}
 		});
 	}
@@ -53,11 +72,11 @@ class ViewArticle {
 			}
 			// TODO on error
 		});
-		page.show(Configs.client.PAGE_FADEIN_DURATION);
+		page.show(Configs.client.page_fadein_duration);
 	}
 	
 	public function hide() {
-		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
+		page.hide(Configs.client.page_fadeout_duration);
 	}
 	
 }

@@ -20,11 +20,15 @@ class Server {
 
 	public static function main() {
 		Shared.init();
-		
-		//-----------------------------------------------
-		// Setup publishes
-		//-----------------------------------------------
-		
+		setupPublishes();
+		setupPermissions();
+		setupCollectionHooks();
+		defineMethods();
+		createAdmin();
+		createTagGroups();
+	}
+	
+	static private function setupPublishes():Void {
 		Meteor.publish(TagGroups.NAME, function() {
 			return TagGroups.collection.find({}, {sort:{weight:1}});
 		});
@@ -43,11 +47,9 @@ class Server {
 			if (selector == null) selector = { }// FIX - calling meteor.subscribe with a parameter set to null causes error
 			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
 		});
-		
-		//-------------------------------------------
-		// Setup Permissions
-		//-------------------------------------------
-		
+	}
+	
+	static private function setupPermissions():Void {
 		Tags.collection.allow({
 			insert: function (_, _) {
 				Permissions.requireLogin();
@@ -85,14 +87,13 @@ class Server {
 			},
 			update: function (_, document:Article, fields:Array<Dynamic>, modifier:Dynamic) {
 				Permissions.requireLogin();
-				return Permissions.requirePermission(Permissions.canUpdateArticles(document, fields));
+				return Permissions.requirePermission(Permissions.canUpdateArticles(document));
 			},
 			remove: function (_, document:Article) {
 				Permissions.requireLogin();
 				return Permissions.requirePermission(Permissions.canRemoveArticles(document));
 			}
 		});
-		
 		
 		// remove default user ability to change profile
 		Meteor.users.deny( { 
@@ -107,16 +108,35 @@ class Server {
 				return Permissions.requirePermission(Permissions.canUpdateUsers(document, fields));
 			},
 		});
+	}
+	
+	static private function setupCollectionHooks():Void {
+		Articles.collection.after.update(function () {
+			var prev:Article = untyped Lib.nativeThis.previous;
+			if (prev.tags != null) {
+				for (tag in prev.tags) {
+					removeTagIfEmtpy(tag);
+				}
+			}
+		});
 		
-		//-----------------------------------------------
-		// Define methods
-		//-----------------------------------------------
+		Articles.collection.after.remove(function (userId, doc) {
+			if (doc != null && doc.tags != null) {
+				var tags:Array<String> = doc.tags;
+				for (tag in tags) {
+					removeTagIfEmtpy(tag);
+				}
+			}
+		});
+	}
+	
+	static private function defineMethods():Void {
 		Meteor.methods( {
 			
 			toggleArticleVote: function (id:String) {
 				Permissions.requireLogin();
 				if (Articles.collection.findOne( { _id:id } ) == null) {
-					var err = Configs.server.error.ARG_ARTICLE_NOT_FOUND;
+					var err = Configs.shared.error.args_article_not_found;
 					Error.throw_(new Error(err.code, err.reason, err.details));
 				}
 				
@@ -145,7 +165,7 @@ class Server {
 				
 				var user = Meteor.users.findOne( { _id:id } );
 				if (user == null) {
-					var err = Configs.server.error.ARG_USER_NOT_FOUND;
+					var err = Configs.shared.error.args_user_not_found;
 					Error.throw_(new Error(err.code, err.reason, err.details));
 				}
 				
@@ -163,12 +183,47 @@ class Server {
 				// remove user articles?
 				// remove user comments?
 				// remove user tags
+			},
+			
+			removeEmptyTags: function() {
+				Permissions.requirePermission(Permissions.isAdmin());
+				var tags:Array<Tag> = cast Tags.collection.find( { } ).fetch();
+				for (t in tags) {
+					removeTagIfEmtpy(t.name);
+				}
+			},
+			
+			setPermissions: function (userId:String, permissions:Array<String>) {
+				// verify user args
+				var user = Meteor.users.findOne( { _id:userId } );
+				if (permissions == null) {
+					var err = Configs.shared.error.args_user_not_found;
+					Error.throw_(new Error(err.code, err.reason, err.details));
+				}
+				
+				// verify permission args
+				if (!Std.is(permissions, Array)) {
+					var err = Configs.shared.error.args_bad_permissions;
+					Error.throw_(new Error(err.code, err.reason, err.details));
+				}
+				
+				// make sure permissions are well set
+				for (p in permissions) {
+					if (Reflect.field(Permissions.roles, p) == null) {
+						var err = Configs.shared.error.args_bad_permissions;
+						Error.throw_(new Error(err.code, err.reason, err.details));
+					}
+				}
+				
+				Permissions.requirePermission(Permissions.isAdmin());
+				Permissions.requirePermission(!Roles.userIsInRole(userId, [Permissions.roles.ADMIN])); // not setting admin permissions
+				
+				Roles.setUserRoles(userId, permissions);
 			}
 		});
-		
-		//-----------------------------------------------
-		
-		// create admin account if there is none
+	}
+	
+	static private function createAdmin():Void {
 		if (Meteor.users.findOne( { roles: { '$in':[Permissions.roles.ADMIN] }} ) == null) {
 			var pwd = Md5.encode(Std.string(Math.random()));
 			trace('creating admin with pw : $pwd');
@@ -185,8 +240,9 @@ class Server {
 				trace('Error occurred, failed to create admin user account');
 			}
 		}
-		
-		// Create tag groups
+	}
+	
+	static private function createTagGroups():Void {
 		TagGroups.collection.upsert( { name:'Haxe' }, { '$set' : {
 			mainTag:'haxe',
 			tags: ["~/^haxe-..*$/"], 
@@ -196,7 +252,7 @@ class Server {
 		
 		TagGroups.collection.upsert( { name:'Openfl' }, { '$set' : {
 			mainTag:'openfl',
-			tags: ["~/^openfl-..*$/"], 
+			tags: ["~/^openfl-..*$/"],
 			icon:'/img/openfl-logo-50x50.png',
 			weight:1
 		}});
@@ -207,64 +263,15 @@ class Server {
 			icon:'/img/haxeflixel-logo-50x50.png',
 			weight:2
 		}});
-		
-		#if debug
-		//-----------------------------------------------
-		// Create testing documents
-		//-----------------------------------------------
-		if (Articles.collection.find().count() == 0) {
-			Articles.create({
-				title: "Test Haxe Article1",
-				description: "Has no link, has content, tags to: haxe-syntax",
-				link: "http://www.haxedomain.com",
-				content: "This article has some content.", 
-				user: "",
-				tags: ["haxe-syntax"],
-			});
-			
-			Articles.create({
-				title: "Test Haxe Article2",
-				description: "Has link, has content, tags to: haxe, haxe-macros",
-				link: "http://www.google.com",
-				content: "This article has some content.", 
-				user: "",
-				tags: ["haxe", "haxe-macros"],
-			});
-			
-			Articles.create({
-				title: "Test Haxe Article3",
-				description: "Has link, has content, tags: none",
-				link: "http://www.google.com",
-				content: "This article has some content.", 
-				user: "",
-				tags: ["haxe", "haxe-macros"],
-			});
-			
-			Articles.create({
-				title: "Test Openfl Article1",
-				description: "Has link, has content, tags: openfl, openfl-gamedev",
-				link: "http://www.google.com",
-				content: "This article has some content.", 
-				user: "",
-				tags: ["openfl", "openfl-gamedev"],
-			});
-			
-			Articles.create({
-				title: "Test Openfl Article2",
-				description: "Has no link, has content, tags: openfl, opEnfl-gaMeDev",
-				content: "This article has some content.", 
-				user: "",
-				tags: ["openfl", "opEnfl-gaMeDev"],
-			});
-			
-			Articles.create({
-				title: "Test Openfl Article3",
-				description: "Has link, has no content, tags: openfl, openfl-gamedev",
-				link: "http://www.google.com",
-				user: "",
-				tags: ["oPenFl", "openfl-gamedev"],
-			});
-		}
-		#end
 	}
+	
+	//-----------------------------------------------
+	// AUX
+	//-----------------------------------------------
+	static function removeTagIfEmtpy(tagName:String) {
+		if (Articles.collection.findOne(Articles.queryFromTags([tagName])) == null) {
+			Tags.collection.remove( { name:tagName } );
+		}
+	}
+	
 }

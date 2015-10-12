@@ -49,7 +49,6 @@ class Articles extends Collection {
 				type:String,
 				max:512,
 				optional:true,
-				label: 'Link (optional)',
 				regEx: SimpleSchema.RegEx.Url,
 				autoform: {
 					afFieldInput: {
@@ -66,7 +65,6 @@ class Articles extends Collection {
 			content: {
 				type:String,
 				max:30000,
-				label: 'Content (optional)',
 				optional:true,
 				custom: function() {
 					if (!SchemaCtx.field('link').isSet && !SchemaCtx.field('content').isSet) {
@@ -76,7 +74,6 @@ class Articles extends Collection {
 				}
 			},
 			tags: {
-				label: 'Tags (optional)',
 				type:[String],
 				optional:true,
 				autoform: {

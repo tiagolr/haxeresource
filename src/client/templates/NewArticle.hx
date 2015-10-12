@@ -12,6 +12,7 @@ import meteor.Session;
 import meteor.Template;
 import model.Articles;
 import model.Articles.Article;
+import model.TagGroups.TagGroup;
 import model.Tags;
 
 /**
@@ -42,17 +43,33 @@ class NewArticle {
 				return Session.get('editArticle');
 			},
 			
-			hasNoContents: function() {
-				var val = AutoForm.getFieldValue('newArticleForm', 'content');
-				trace("HERE " + val);
-				return val == null || val == "";
+			featuredTags: function() {
+				var final = [];
+				var groups = SideBar.tagGroups;
+				
+				if (groups == null) {
+					return [];
+				}
+				
+				for (g in groups) {
+					final.push(g.mainTag);
+					var tags:Array<Dynamic> = untyped g.resolvedTags;
+					if (tags == null) {
+						continue;
+					}
+					for (t in tags) {
+						final.push(t.name);
+					}
+				}
+				
+				return final;
 			},
 			
-			titlePlaceholder: "Title goes here",
-			descriptionPlaceholder: "Brief description about the subject",
-			linkPlaceholder: "Url to the original article, ex: http://www.site.com/article",
-			contentPlaceholder: "Text contents using github flavored markdown",
-			tagsPlaceholder: "",
+			titlePlaceholder: Configs.client.texts.na_placeh_title,
+			descriptionPlaceholder: Configs.client.texts.na_placeh_desc,
+			linkPlaceholder: Configs.client.texts.na_placeh_link,
+			contentPlaceholder: Configs.client.texts.na_placeh_content,
+			tagsPlaceholder: Configs.client.texts.na_placeh_tags, 
 		});
 		
 		Template.get('newArticle').events( {
@@ -79,7 +96,22 @@ class NewArticle {
 				if (!Tags.regEx.test(untyped evt.item)) {
 					untyped evt.cancel = true;
 				}
-			}
+			},
+			
+			'change #na-featuredTagsList' : function (evt) {
+				new JQuery('#na-featuredTagsAccept').toggleClass('disabled', new JQuery('#na-featuredTagsList').val() == null);
+			},
+			
+			'click #na-featuredTagsAccept' : function (evt) {
+				var selected:Array<String> = cast new JQuery('#na-featuredTagsList').val();
+				if (selected != null) {
+					for (tag in selected) {
+						untyped new JQuery("#naf-articleTags").tagsinput('add', tag);
+					}
+				}
+				
+				untyped new JQuery('#na-modalFeaturedTags').modal('hide');
+			},
 			
 		});
 		
@@ -129,7 +161,7 @@ class NewArticle {
 					var article:Article = Articles.collection.findOne( { _id:articleId } );
 					if (article != null) {
 						editArticle = article;
-						page.show(Configs.client.PAGE_FADEIN_DURATION);
+						page.show(Configs.client.page_fadein_duration);
 						
 						// FIX - force tags to show in input tags
 						var tags = editArticle.tags;
@@ -150,7 +182,7 @@ class NewArticle {
 				
 			});
 		} else {
-			page.show(Configs.client.PAGE_FADEIN_DURATION);
+			page.show(Configs.client.page_fadein_duration);
 		}
 	}
 	
@@ -159,6 +191,6 @@ class NewArticle {
 			Session.set('editArticle', null);
 			//AutoForm.resetForm('newArticleForm');
 		}
-		page.hide(Configs.client.PAGE_FADEOUT_DURATION);
+		page.hide(Configs.client.page_fadeout_duration);
 	}
 }

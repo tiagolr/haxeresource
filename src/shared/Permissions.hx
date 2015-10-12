@@ -22,7 +22,7 @@ class Permissions {
 	
 	public static function requireLogin():Bool {
 		if (!isLogged()) {
-			var err = Configs.shared.error.NOT_AUTHORIZED;
+			var err = Configs.shared.error.not_authorized;
 			Error.throw_(new Error(err.code, err.reason, err.details));
 		}
 		return true;
@@ -30,7 +30,7 @@ class Permissions {
 	
 	public static function requirePermission(hasPermission:Bool):Bool {
 		if (!hasPermission) {
-			var err = Configs.shared.error.NO_PERMISSION;
+			var err = Configs.shared.error.no_permission;
 			Error.throw_(new Error(err.code, err.reason, err.details));
 		}
 		return true;
@@ -76,13 +76,12 @@ class Permissions {
 		return isLogged();
 	}
 	
-	static public function canUpdateArticles(document:Article, fields:Array<Dynamic>):Bool {
-		return	(isModerator() && fields.length == 1 && fields[0] == 'tags') // moderators can only edit document tags
-				|| Articles.isOwner(document);						 		 // owners can edit any field
+	static public function canUpdateArticles(document:Article):Bool {
+		return	isModerator() || Articles.isOwner(document); // moderators and owners can edit article
 	}
 	
 	static public function canRemoveArticles(document:Article):Bool {
-		return isModerator() || Articles.isOwner(document); // moderators and owners can edit article
+		return isModerator() || Articles.isOwner(document); // moderators and owners can remove article
 	}
 	
 	static public function canUpdateUsers(document:Dynamic, fields:Array<Dynamic>):Bool {
