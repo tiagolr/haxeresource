@@ -42,7 +42,24 @@ class ClientUtils{
 		}
 	}
 	
-	public function alert(msg:String, ?label:String, ?callback:Function) {
+	public function notifyInfo(msg:String, ?title:String) {
+		Toastr.info(msg, title);
+	}
+	
+	public function notifyError(msg:String, ?title:String) {
+		Toastr.error(msg, title);
+	}
+	
+	public function notifySuccess(msg:String, ?title:String) {
+		Toastr.success(msg, title);
+	}
+	
+	public function notifyWarning(msg:String, ?title:String) {
+		Toastr.warning(msg, title);
+	}
+	
+	
+	public function alert(msg:String, label:String, ?callback:Function) {
 		untyped bootbox.alert(msg, label, callback);
 	}
 	

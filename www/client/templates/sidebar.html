@@ -1,18 +1,27 @@
 <template name="sidebar">
 	<div id="sidebar-wrapper">
-		<h4 class="sidebar-headline">Topics</h4>
+		<h4 class="sidebar-headline">Groups</h4>
 		<ul class="sidebar-groups">
-			{{#each tag_groups}}
+			{{#each tagGroups}}
 				{{> tagGroup}}
 			{{/each}}
+			<li class="nav-tag-group nav-tag-ungrouped">
+				<a class="link-ungrouped" href="/tag/group/ungrouped">
+				<div>
+					Ungrouped 
+					<span class="badge pull-right">{{countUngrouped}}</span>
+				</div> <!-- double div to ignore event listeners -->
+				</a>
+		</li>
 		</ul>
+		
 	</div>
 </template>
 	
 <template name="tagGroup">
 	<!-- collapse triggering is made via code -->
 	<li class="nav-tag-group">
-		<div href="#" data-trigger="collapse-{{name}}" data-toggle>
+		<div class="group-toggler" href="#" data-trigger="collapse-{{name}}" data-toggle>
 			<a href="/tag/group/{{name}}">
 				<img src="{{icon}}" alt="{{name}}-logo">
 				{{name}} 

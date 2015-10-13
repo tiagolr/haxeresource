@@ -55,4 +55,13 @@ class SharedUtils{
 		return resolved;
 	}
 	
+	/**
+	 * Replaces spaces with hyphens for url
+	 */
+	public function formatUrlName(name:String) {
+		name = StringTools.trim(name);
+		name =  StringTools.replace(name, ' ', '-');
+		return name;
+	}
+	
 }

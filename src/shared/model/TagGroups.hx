@@ -10,6 +10,7 @@ typedef TagGroup = {
 	tags:Array<String>, // tag names or regexes (eg: ~/.*/i)
 	mainTag:String,
 	?weight:Int,
+	?resolvedTags:Array<{name:String, formattedName:String}>, // client only: contains the tags resolved by their regular expressions
 }
 /**
  * Categories

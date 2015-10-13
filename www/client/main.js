@@ -222,17 +222,17 @@ templates_NewArticle.prototype = {
 					Client.utils.handleServerError(error);
 					ctx.done(error);
 				} else {
-					FlowRouter.go("/view/" + id);
+					FlowRouter.go("/view/" + id + "/" + Shared.utils.formatUrlName(insertDoc.title));
 					ctx.done();
 				}
 			}); else {
 				id = _g.get_editArticle()._id;
-				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1) {
+				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1,doc) {
 					if(error1 != null) {
 						Client.utils.handleServerError(error1);
 						ctx.done(error1);
 					} else {
-						FlowRouter.go("/view/" + id);
+						FlowRouter.go("/view/" + _g.get_editArticle()._id + "/" + Shared.utils.formatUrlName(_g.get_editArticle().title));
 						ctx.done(id);
 					}
 				});
@@ -294,8 +294,25 @@ Router.prototype = {
 				var tags = Shared.utils.resolveTags(g);
 				tags.push(g.mainTag);
 				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags),Configs.client.texts.la_showing_group(groupName));
-			} else {
-			}
+			} else if(groupName == "ungrouped") {
+				var tagNames = [];
+				var groups = templates_SideBar.get_tagGroups();
+				var _g = 0;
+				while(_g < groups.length) {
+					var g1 = groups[_g];
+					++_g;
+					tagNames.push(g1.mainTag);
+					var _g1 = 0;
+					var _g2 = g1.resolvedTags;
+					while(_g1 < _g2.length) {
+						var t = _g2[_g1];
+						++_g1;
+						tagNames.push(t.name);
+					}
+				}
+				var selector1 = { tags : { '$nin' : tagNames}};
+				Client.listArticles.show(null,null,selector1,Configs.client.texts.la_showing_ungrouped);
+			} else FlowRouter.go("/");
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
@@ -304,18 +321,22 @@ Router.prototype = {
 		}, triggersExit : [function() {
 			Client.newArticle.hide();
 		}]});
-		FlowRouter.route("/edit/:_id",{ action : function() {
+		FlowRouter.route("/edit/:_id/:name",{ action : function() {
 			var id = FlowRouter.getParam("_id");
 			Client.newArticle.show(id);
 		}, triggersExit : [function() {
 			Client.newArticle.hide();
 		}]});
-		FlowRouter.route("/view/:_id",{ action : function() {
+		FlowRouter.route("/view/:_id/:name",{ action : function() {
 			var id1 = FlowRouter.getParam("_id");
 			Client.viewArticle.show(id1);
 		}, triggersExit : [function() {
 			Client.viewArticle.hide();
 		}]});
+		FlowRouter.notFound = { action : function() {
+			Client.utils.notifyInfo("Url not found, redirecting to homepage");
+			FlowRouter.go("/");
+		}};
 	}
 	,__class__: Router
 };
@@ -341,7 +362,7 @@ templates_SideBar.formatTagName = function(tag) {
 templates_SideBar.prototype = {
 	init: function() {
 		var _g = this;
-		Template.sidebar.helpers({ tag_groups : function() {
+		Template.sidebar.helpers({ tagGroups : function() {
 			var tags = model_Tags.collection.find().fetch();
 			var groups = model_TagGroups.collection.find().fetch();
 			var _g1 = 0;
@@ -361,24 +382,40 @@ templates_SideBar.prototype = {
 			}
 			templates_SideBar.set_tagGroups(groups);
 			return groups;
+		}, countUngrouped : function() {
+			var tagNames = [];
+			var _g2 = 0;
+			var _g12 = templates_SideBar.get_tagGroups();
+			while(_g2 < _g12.length) {
+				var g1 = _g12[_g2];
+				++_g2;
+				tagNames.push(g1.mainTag);
+				var _g21 = 0;
+				var _g3 = g1.resolvedTags;
+				while(_g21 < _g3.length) {
+					var t = _g3[_g21];
+					++_g21;
+					tagNames.push(t.name);
+				}
+			}
+			return Client.utils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
 		}});
 		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
 			return Client.utils.retrieveArticleCount(model_Articles.queryFromTags([tag]));
 		}, countArticlesGroup : function(mainTag,tags1) {
 			var final1;
-			var _g2 = [];
-			var _g12 = 0;
-			while(_g12 < tags1.length) {
-				var t = tags1[_g12];
-				++_g12;
-				_g2.push(t.name);
+			var _g4 = [];
+			var _g13 = 0;
+			while(_g13 < tags1.length) {
+				var t1 = tags1[_g13];
+				++_g13;
+				_g4.push(t1.name);
 			}
-			final1 = _g2;
+			final1 = _g4;
 			final1.push(mainTag);
-			var f = Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
-			return f;
+			return Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
 		}});
-		Template.tagGroup.events({ 'click .nav-tag-group > div' : function(evt) {
+		Template.tagGroup.events({ 'click .group-toggler' : function(evt) {
 			if(_g.ignoreDivClick) {
 				_g.ignoreDivClick = false;
 				return;
@@ -419,6 +456,18 @@ ClientUtils.prototype = {
 	}
 	,handleServerError: function(error) {
 		if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);
+	}
+	,notifyInfo: function(msg,title) {
+		toastr.info(msg,title);
+	}
+	,notifyError: function(msg,title) {
+		toastr.error(msg,title);
+	}
+	,notifySuccess: function(msg,title) {
+		toastr.success(msg,title);
+	}
+	,notifyWarning: function(msg,title) {
+		toastr.warning(msg,title);
 	}
 	,alert: function(msg,label,callback) {
 		bootbox.alert(msg,label,callback);
@@ -524,6 +573,9 @@ Client.main = function() {
 		}
 		if(placement != "top" && placement != "bottom" && placement != "left" && placement != "right") placement = "right";
 		return "<div class=\"icon-tooltip\" data-toggle=\"tooltip\" data-placement=\"" + placement + "\" title=\"" + tip + "\">\r\n\t\t\t\t<span class=\"glyphicon glyphicon-question-sign\"></span>\r\n\t\t\t</div>";
+	});
+	Template.registerHelper("formatUrlName",function(name) {
+		return Shared.utils.formatUrlName(name);
 	});
 };
 Client.checkPreload = function() {
@@ -711,6 +763,11 @@ SharedUtils.prototype = {
 		});
 		return resolved;
 	}
+	,formatUrlName: function(name) {
+		name = StringTools.trim(name);
+		name = StringTools.replace(name," ","-");
+		return name;
+	}
 	,__class__: SharedUtils
 };
 var Shared = function() { };
@@ -732,6 +789,25 @@ var StringTools = function() { };
 StringTools.__name__ = true;
 StringTools.startsWith = function(s,start) {
 	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
 };
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
@@ -1435,11 +1511,11 @@ Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
 Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Bad arguments", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Bad arguments", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Bad arguments", details : "Invalid permission types"}}};
-Configs.client = { page_size : 5, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
-}, na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "Url to the original article, ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Contents ", na_label_tags : "Tags ", na_tt_links : "An url for the original post (if any), required if not posting the contents directly here.", na_tt_contents : "The article contents are written using markdown notation, articles may contain only links to external posts like blogs or other webpages, in that case contents are not required.", na_tt_tags : "Tags may be inserted by pressing `comma` or `enter` keys. Depending on the tags choosen, the article may be added to different groups, for eg. using `haxe-macros` the article will be added to `Haxe` group inside `macros` subgroup", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
+}, la_showing_ungrouped : "Showing ungrouped articles", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "Url to the original article, ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Contents ", na_label_tags : "Tags ", na_tt_links : "An url for the original post (if any), required if not posting the contents directly here.", na_tt_contents : "The article contents are written using markdown notation, articles may contain only links to external posts like blogs or other webpages, in that case contents are not required.", na_tt_tags : "Tags may be inserted by pressing `comma` or `enter` keys. Depending on the tags choosen, the article may be added to different groups, for eg. using `haxe-macros` the article will be added to `Haxe` group inside `macros` subgroup", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {

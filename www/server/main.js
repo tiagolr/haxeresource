@@ -370,6 +370,11 @@ SharedUtils.prototype = {
 		});
 		return resolved;
 	}
+	,formatUrlName: function(name) {
+		name = StringTools.trim(name);
+		name = StringTools.replace(name," ","-");
+		return name;
+	}
 	,__class__: SharedUtils
 };
 var Shared = function() { };
@@ -391,6 +396,28 @@ var StringTools = function() { };
 StringTools.__name__ = true;
 StringTools.startsWith = function(s,start) {
 	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+};
+StringTools.isSpace = function(s,pos) {
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+};
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+};
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+};
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+};
+StringTools.replace = function(s,sub,by) {
+	return s.split(sub).join(by);
 };
 var haxe__$Int64__$_$_$Int64 = function(high,low) {
 	this.high = high;

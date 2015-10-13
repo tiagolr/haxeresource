@@ -3,6 +3,7 @@ import model.Articles;
 import model.TagGroups;
 import templates.ListArticles;
 import templates.NewArticle;
+import templates.SideBar;
 import templates.ViewArticle;
 /**
  * ...
@@ -46,11 +47,23 @@ class Router {
 					var tags = Shared.utils.resolveTags(g);
 					tags.push(g.mainTag);
 					
-					//Client.utils.subscribeCountArticles(selector);
-					
 					Client.listArticles.show(null, null, Articles.queryFromTags(tags), Configs.client.texts.la_showing_group(groupName));
+				} else if (groupName == 'ungrouped') {
+					var tagNames = [];
+					var groups = SideBar.tagGroups;
+					
+					for (g in groups) {
+						tagNames.push(g.mainTag);
+						for (t in g.resolvedTags) {
+							tagNames.push(t.name);
+						}
+					}
+					
+					var selector = { tags: { '$nin':tagNames }};
+					Client.listArticles.show(null, null, selector, Configs.client.texts.la_showing_ungrouped); 
+					
 				} else {
-					// TODO - goto index
+					FlowRouter.go('/');
 				}
 			}, 
 			triggersExit:[function() {
@@ -67,7 +80,7 @@ class Router {
 			}]
 		});
 		
-		FlowRouter.route("/edit/:_id", {
+		FlowRouter.route("/edit/:_id/:name", {
 			action:function () {
 				var id = FlowRouter.getParam('_id');
 				Client.newArticle.show(id);
@@ -77,7 +90,7 @@ class Router {
 			}]
 		});
 		
-		FlowRouter.route("/view/:_id", {
+		FlowRouter.route("/view/:_id/:name", {
 			action: function () {
 				var id = FlowRouter.getParam('_id');
 				Client.viewArticle.show(id);
@@ -86,5 +99,12 @@ class Router {
 				Client.viewArticle.hide();
 			}]
 		});
+		
+		FlowRouter.notFound = {
+			action: function() {
+				Client.utils.notifyInfo('Url not found, redirecting to homepage');
+				FlowRouter.go('/');
+			}
+		};
 	}
 }

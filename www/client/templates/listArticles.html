@@ -3,7 +3,7 @@
 	<div class="row">
 		<div class="col-lg-12 ">
 			<div id="la-title-row">
-				<h1 class="la-title">Haxe Resource</h1> <h3 class="la-subtitle"><small>Haxe tutorials and useful links.</small></h3>
+				<h1 class="la-title">Haxe Resource</h1> <h3 class="la-subtitle"><small>Haxe tutorials and articles.</small></h3>
 			</div>
 		</div>
 	</div>
@@ -83,7 +83,12 @@
 				
 				<p>{{description}}</p>
 				<div>
-					Posted by : <a href="#">{{username}}</a>
+					{{#if content}}
+					Author:
+					{{else}}
+					Submitted by:
+					{{/if}}
+					 <a href="#">{{username}}</a>
 				</div>
 				<div>
 					
@@ -95,13 +100,13 @@
 					
 					<div>
 						{{#if content}}
-						<button class="btn btn-info" onclick="FlowRouter.go('/view/{{_id}}')" style="display:inline">
+						<button class="btn btn-info" onclick="FlowRouter.go('/view/{{_id}}/{{formatUrlName title}}')" style="display:inline">
 							Read Here
 						</button>
 						{{/if}}
 						
 						{{#if canEditArticle this}}
-							<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}')" style="display:inline">
+							<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}/{{formatUrlName title}}')" style="display:inline">
 								Edit
 							</button>
 						{{/if}}

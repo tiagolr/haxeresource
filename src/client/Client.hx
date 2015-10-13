@@ -129,6 +129,10 @@ class Client {
 			</div>';
 		});
 		
+		Template.registerHelper('formatUrlName', function(name:String) {
+			return Shared.utils.formatUrlName(name);
+		});
+		
 		//-----------------------------------------------
 		
 		

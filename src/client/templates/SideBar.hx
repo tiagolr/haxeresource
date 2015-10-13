@@ -30,7 +30,7 @@ class SideBar {
 	public function init() {
 		Template.get('sidebar').helpers( {
 			
-			tag_groups:function() {
+			tagGroups:function() {
 				var tags:Array<Tag> = cast Tags.collection.find().fetch();
 				var groups:Array<TagGroup> = cast TagGroups.collection.find().fetch();
 				
@@ -43,14 +43,27 @@ class SideBar {
 					}
 					
 					resolved.push(g.mainTag);
-					untyped g.resolvedTags = final;
+					g.resolvedTags = final; // store resolvedTags in local groups
 				}
 				
 				// store the resolved gorups in a static variable so they can be accessed elsewhere.
-				tagGroups = groups; 
+				tagGroups = groups;
 				
 				return groups;
 			},
+			
+			countUngrouped: function() {
+				var tagNames = [];
+				for (g in tagGroups) {
+					tagNames.push(g.mainTag);
+					
+					for (t in g.resolvedTags) {
+						tagNames.push(t.name);
+					}
+				}
+				
+				return Client.utils.retrieveArticleCount( { tags: { '$nin':tagNames }} );
+			}
 		});
 		
 		Template.get('tagGroup').helpers( {
@@ -62,14 +75,12 @@ class SideBar {
 				var final = [for (t in tags) t.name];
 				final.push(mainTag);
 				
-				var f = Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
-				
-				return f;
+				return Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
 			}
 		});
 		
 		Template.get('tagGroup').events( {
-			'click .nav-tag-group > div': function (evt) {
+			'click .group-toggler': function (evt) {
 				if (ignoreDivClick) {
 					ignoreDivClick = false;
 					return;

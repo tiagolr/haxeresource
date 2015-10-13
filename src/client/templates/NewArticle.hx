@@ -128,19 +128,19 @@ class NewArticle {
 							Client.utils.handleServerError(cast error);
 							ctx.done(error);
 						} else {
-							FlowRouter.go('/view/$id');
+							FlowRouter.go('/view/$id/' + Shared.utils.formatUrlName(insertDoc.title));
 							ctx.done();
 						}
 					});
 				} else {
 					// update existing document
 					id = editArticle._id;
-					Articles.collection.update( { _id:id }, updateDoc, null, function(error) {
+					Articles.collection.update( { _id:id }, updateDoc, null, function(error, doc) {
 						if (error != null) {
 							Client.utils.handleServerError(cast error);
 							ctx.done(error);
 						} else {
-							FlowRouter.go('/view/$id');
+							FlowRouter.go('/view/${editArticle._id}/' + Shared.utils.formatUrlName(editArticle.title));
 							ctx.done(id);
 						}
 					});

@@ -6,8 +6,7 @@
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
 		</button>
-		<a class="navbar-brand" href="/">Haxe Resource</a>
-		
+		<a class="navbar-brand" href="/">Haxe Resource <small>(beta)</small></a>
 		
 		<div class="collapse navbar-collapse">
 			<ul class="nav navbar-nav" id="navbar-left-items">
@@ -19,7 +18,37 @@
 			</ul>
 			<ul class="nav navbar-nav navbar-right" id="navbar-right-items">
 				{{> loginButtons}}
+				<li class="dropdown">
+          			<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">More <span class="caret"></span></a>
+        		  		<ul class="dropdown-menu">
+        		    	<li><a href="https://groups.google.com/forum/#!forum/haxeresource" target="_blank">Forum</a></li>
+        		    	<li><a data-toggle="modal" href='#modal-about' >About</a></li>
+        		  	</ul>
+        		</li>
             </ul>
 		</div>
 	</nav>
+
+	<div class="modal fade" id="modal-about">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h4 class="modal-title">About</h4>
+				</div>
+				<div class="modal-body">
+					<p>Haxe resource is a wiki site that gathers haxe information such as articles and tutorials.</p>
+					<p>It contains features like <strong>article voting</strong> and <strong>tag groups</strong> to make it easier to find content. Because a lot of articles are scattered in blogs, it also features <strong>external articles</strong> with links only.</p>
+					<p>This site is built using <a href="https://www.meteor.com/" target="_blank">meteorjs</a> and haxe and is open source.</p>
+					<p>For more information, questions or suggestions head over to the <a href="https://groups.google.com/forum/#!forum/haxeresource" target="_blank">forum</a>. If you have tutorials to write or know some that should be listed here, feel free to signup and start posting.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
 </template>
