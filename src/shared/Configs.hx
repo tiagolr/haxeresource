@@ -18,17 +18,17 @@ class Configs {
 			},
 			args_article_not_found : {
 				code: 412,
-				reason: 'Bad arguments',
+				reason: 'Invalid argument : article',
 				details: 'Article not found.'
 			},
 			args_user_not_found : {
 				code: 412,
-				reason: 'Bad arguments',
+				reason: 'Invalid argument : user',
 				details: 'User not found.'
 			},
 			args_bad_permissions : {
 				code: 412,
-				reason: 'Bad arguments',
+				reason: 'Invalid argument : permissions',
 				details: 'Invalid permission types',
 			},
 		}

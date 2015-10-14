@@ -166,7 +166,7 @@ class Server {
 				var user = Meteor.users.findOne( { _id:id } );
 				if (user == null) {
 					var err = Configs.shared.error.args_user_not_found;
-					Error.throw_(new Error(err.code, err.reason, err.details));
+					var error1 = new Error(err.code, err.reason, err.details);
 				}
 				
 				// remove user votes
@@ -193,9 +193,18 @@ class Server {
 				}
 			},
 			
-			setPermissions: function (userId:String, permissions:Array<String>) {
+			setPermissions: function (username:String, permissions:Array<String>) {
+				Permissions.requirePermission(Permissions.isAdmin());
+				
 				// verify user args
-				var user = Meteor.users.findOne( { _id:userId } );
+				var user = Meteor.users.findOne( { username:username } );
+				
+				if (user == null) {
+					var err = Configs.shared.error.args_user_not_found;
+					var error = new Error(err.code, err.reason, err.details);
+					Error.throw_(error);
+				}
+				
 				if (permissions == null) {
 					var err = Configs.shared.error.args_user_not_found;
 					Error.throw_(new Error(err.code, err.reason, err.details));
@@ -209,16 +218,14 @@ class Server {
 				
 				// make sure permissions are well set
 				for (p in permissions) {
-					if (Reflect.field(Permissions.roles, p) == null) {
+					if (Reflect.field(Permissions.roles, p) == null || p == Permissions.roles.ADMIN) {
 						var err = Configs.shared.error.args_bad_permissions;
 						Error.throw_(new Error(err.code, err.reason, err.details));
 					}
 				}
 				
-				Permissions.requirePermission(Permissions.isAdmin());
-				Permissions.requirePermission(!Roles.userIsInRole(userId, [Permissions.roles.ADMIN])); // not setting admin permissions
-				
-				Roles.setUserRoles(userId, permissions);
+				Permissions.requirePermission(!Roles.userIsInRole(user._id, [Permissions.roles.ADMIN])); // not setting admin permissions
+				Roles.setUserRoles(user._id, permissions);
 			}
 		});
 	}
@@ -262,6 +269,13 @@ class Server {
 			tags: ["~/^flixel-..*$/", "~/^haxeflixel-..*$/"], 
 			icon:'/img/haxeflixel-logo-50x50.png',
 			weight:2
+		}});
+		
+		TagGroups.collection.upsert( { name:'Other' }, { '$set' : {
+			mainTag:'other',
+			tags: ["~/^other-..*$/"], 
+			icon:'/img/other-logo-50x50.png',
+			weight:3
 		}});
 	}
 	

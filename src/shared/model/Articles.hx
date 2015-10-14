@@ -18,6 +18,7 @@ typedef Article = {
 	?username:String,
 	?created:Date,
 	?modified:Date,
+	?editedBy:String,
 	?tags:Array<String>,
 }
 
@@ -154,6 +155,13 @@ class Articles extends Collection {
 					return Date.now();
 				},
 			},
+			editedBy: { 
+				type:String,
+				optional:true,
+				autoValue: function() {
+					return Meteor.userId();
+				},
+			}
 		});
 	}
 	

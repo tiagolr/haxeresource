@@ -645,7 +645,7 @@ Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
 		var err = Configs.shared.error.not_authorized;
 		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw error;
+		throw(error);
 	}
 	return true;
 };
@@ -653,7 +653,7 @@ Permissions.requirePermission = function(hasPermission) {
 	if(!hasPermission) {
 		var err = Configs.shared.error.no_permission;
 		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw error;
+		throw(error);
 	}
 	return true;
 };
@@ -1422,6 +1422,8 @@ var model_Articles = function() {
 		}
 	}}, modified : { type : Date, optional : true, autoValue : function() {
 		return new Date();
+	}}, editedBy : { type : String, optional : true, autoValue : function() {
+		return Meteor.userId();
 	}}});
 };
 model_Articles.__name__ = true;
@@ -1510,7 +1512,7 @@ Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Bad arguments", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Bad arguments", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Bad arguments", details : "Invalid permission types"}}};
+Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {

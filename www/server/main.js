@@ -80,7 +80,7 @@ Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
 		var err = Configs.shared.error.not_authorized;
 		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw error;
+		throw(error);
 	}
 	return true;
 };
@@ -88,7 +88,7 @@ Permissions.requirePermission = function(hasPermission) {
 	if(!hasPermission) {
 		var err = Configs.shared.error.no_permission;
 		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw error;
+		throw(error);
 	}
 	return true;
 };
@@ -242,7 +242,7 @@ Server.defineMethods = function() {
 		if(model_Articles.collection.findOne({ _id : id}) == null) {
 			var err = Configs.shared.error.args_article_not_found;
 			var error = new Meteor.Error(err.code,err.reason,err.details);
-			throw error;
+			throw(error);
 		}
 		var votes = Meteor.user().profile.votes;
 		if(votes == null) votes = [];
@@ -261,7 +261,6 @@ Server.defineMethods = function() {
 		if(user == null) {
 			var err1 = Configs.shared.error.args_user_not_found;
 			var error1 = new Meteor.Error(err1.code,err1.reason,err1.details);
-			throw error;
 		}
 		var votes1 = user.profile.votes;
 		if(votes1 != null && votes1.length > 0) {
@@ -280,31 +279,36 @@ Server.defineMethods = function() {
 			++_g;
 			Server.removeTagIfEmtpy(t.name);
 		}
-	}, setPermissions : function(userId,permissions) {
-		var user1 = Meteor.users.findOne({ _id : userId});
-		if(permissions == null) {
+	}, setPermissions : function(username,permissions) {
+		Permissions.requirePermission(Permissions.isAdmin());
+		var user1 = Meteor.users.findOne({ username : username});
+		if(user1 == null) {
 			var err2 = Configs.shared.error.args_user_not_found;
 			var error2 = new Meteor.Error(err2.code,err2.reason,err2.details);
-			throw error;
+			throw(error2);
+		}
+		if(permissions == null) {
+			var err3 = Configs.shared.error.args_user_not_found;
+			var error3 = new Meteor.Error(err3.code,err3.reason,err3.details);
+			throw(error3);
 		}
 		if(!((permissions instanceof Array) && permissions.__enum__ == null)) {
-			var err3 = Configs.shared.error.args_bad_permissions;
-			var error3 = new Meteor.Error(err3.code,err3.reason,err3.details);
-			throw error;
+			var err4 = Configs.shared.error.args_bad_permissions;
+			var error4 = new Meteor.Error(err4.code,err4.reason,err4.details);
+			throw(error4);
 		}
 		var _g1 = 0;
 		while(_g1 < permissions.length) {
 			var p = permissions[_g1];
 			++_g1;
-			if(Reflect.field(Permissions.roles,p) == null) {
-				var err4 = Configs.shared.error.args_bad_permissions;
-				var error4 = new Meteor.Error(err4.code,err4.reason,err4.details);
-				throw error;
+			if(Reflect.field(Permissions.roles,p) == null || p == Permissions.roles.ADMIN) {
+				var err5 = Configs.shared.error.args_bad_permissions;
+				var error5 = new Meteor.Error(err5.code,err5.reason,err5.details);
+				throw(error5);
 			}
 		}
-		Permissions.requirePermission(Permissions.isAdmin());
-		Permissions.requirePermission(!Roles.userIsInRole(userId,[Permissions.roles.ADMIN]));
-		Roles.setUserRoles(userId,permissions);
+		Permissions.requirePermission(!Roles.userIsInRole(user1._id,[Permissions.roles.ADMIN]));
+		Roles.setUserRoles(user1._id,permissions);
 	}});
 };
 Server.createAdmin = function() {
@@ -322,6 +326,7 @@ Server.createTagGroups = function() {
 	model_TagGroups.collection.upsert({ name : "Haxe"},{ '$set' : { mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", weight : 0}});
 	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", weight : 1}});
 	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", weight : 2}});
+	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", weight : 3}});
 };
 Server.removeTagIfEmtpy = function(tagName) {
 	if(model_Articles.collection.findOne(model_Articles.queryFromTags([tagName])) == null) model_Tags.collection.remove({ name : tagName});
@@ -1029,6 +1034,8 @@ var model_Articles = function() {
 		}
 	}}, modified : { type : Date, optional : true, autoValue : function() {
 		return new Date();
+	}}, editedBy : { type : String, optional : true, autoValue : function() {
+		return Meteor.userId();
 	}}});
 };
 model_Articles.__name__ = true;
@@ -1106,7 +1113,7 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Bad arguments", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Bad arguments", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Bad arguments", details : "Invalid permission types"}}};
+Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.server = { };
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
