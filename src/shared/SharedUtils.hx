@@ -30,14 +30,14 @@ class SharedUtils{
 				var reg = new EReg(split[1], split[2]);
 				
 				for (t in tags) {
-					if (reg.match(t.name) && !resolved.has(t.name)) { 
+					if (reg.match(t.name) && !resolved.has(t.name) && t != g.mainTag) { 
 						resolved.push(t.name);
 					}
 				}
 				
 			} else { // if selector is not a regex, find an exact match
 				for (t in tags) { 
-					if (t.name == entry && !resolved.has(t.name)) {
+					if (t.name == entry && !resolved.has(t.name) && t != g.mainTag) {
 						resolved = [t.name];
 						break;
 					}

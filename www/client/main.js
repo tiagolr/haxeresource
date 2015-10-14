@@ -218,22 +218,22 @@ templates_NewArticle.prototype = {
 			var ctx = this;
 			var id = null;
 			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc,null,function(error) {
-				if(error != null) {
-					Client.utils.handleServerError(error);
-					ctx.done(error);
-				} else {
+				if(error == null) {
 					FlowRouter.go("/view/" + id + "/" + Shared.utils.formatUrlName(insertDoc.title));
 					ctx.done();
+				} else {
+					Client.utils.handleServerError(error);
+					ctx.done(error);
 				}
 			}); else {
 				id = _g.get_editArticle()._id;
 				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1,doc) {
-					if(error1 != null) {
+					if(error1 == null) {
+						FlowRouter.go("/view/" + _g.get_editArticle()._id + "/" + Shared.utils.formatUrlName(_g.get_editArticle().title));
+						ctx.done();
+					} else {
 						Client.utils.handleServerError(error1);
 						ctx.done(error1);
-					} else {
-						FlowRouter.go("/view/" + _g.get_editArticle()._id + "/" + Shared.utils.formatUrlName(_g.get_editArticle().title));
-						ctx.done(id);
 					}
 				});
 			}
@@ -401,19 +401,27 @@ templates_SideBar.prototype = {
 			return Client.utils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
 		}});
 		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
-			return Client.utils.retrieveArticleCount(model_Articles.queryFromTags([tag]));
+			var t1 = model_Tags.collection.findOne({ name : tag});
+			if(t1 == null || t1.articles == null) return -1; else return t1.articles.length;
 		}, countArticlesGroup : function(mainTag,tags1) {
-			var final1;
-			var _g4 = [];
-			var _g13 = 0;
-			while(_g13 < tags1.length) {
-				var t1 = tags1[_g13];
-				++_g13;
-				_g4.push(t1.name);
+			tags1 = tags1.concat([{ name : mainTag}]);
+			var articles = [];
+			var _g4 = 0;
+			while(_g4 < tags1.length) {
+				var tag1 = tags1[_g4];
+				++_g4;
+				var t2 = model_Tags.collection.findOne({ name : tag1.name});
+				if(t2 != null && t2.articles != null) {
+					var _g13 = 0;
+					var _g22 = t2.articles;
+					while(_g13 < _g22.length) {
+						var a = _g22[_g13];
+						++_g13;
+						if(HxOverrides.indexOf(articles,a,0) == -1) articles.push(a);
+					}
+				}
 			}
-			final1 = _g4;
-			final1.push(mainTag);
-			return Client.utils.retrieveArticleCount(model_Articles.queryFromTags(final1));
+			return articles.length;
 		}});
 		Template.tagGroup.events({ 'click .group-toggler' : function(evt) {
 			if(_g.ignoreDivClick) {
@@ -622,6 +630,18 @@ HxOverrides.substr = function(s,pos,len) {
 	} else if(len < 0) len = s.length + len - pos;
 	return s.substr(pos,len);
 };
+HxOverrides.indexOf = function(a,obj,i) {
+	var len = a.length;
+	if(i < 0) {
+		i += len;
+		if(i < 0) i = 0;
+	}
+	while(i < len) {
+		if(a[i] === obj) return i;
+		i++;
+	}
+	return -1;
+};
 HxOverrides.iter = function(a) {
 	return { cur : 0, arr : a, hasNext : function() {
 		return this.cur < this.arr.length;
@@ -743,14 +763,14 @@ SharedUtils.prototype = {
 				while(_g2 < tags.length) {
 					var t = tags[_g2];
 					++_g2;
-					if(reg.match(t.name) && !Lambda.has(resolved,t.name)) resolved.push(t.name);
+					if(reg.match(t.name) && !Lambda.has(resolved,t.name) && t != g.mainTag) resolved.push(t.name);
 				}
 			} else {
 				var _g21 = 0;
 				while(_g21 < tags.length) {
 					var t1 = tags[_g21];
 					++_g21;
-					if(t1.name == entry && !Lambda.has(resolved,t1.name)) {
+					if(t1.name == entry && !Lambda.has(resolved,t1.name) && t1 != g.mainTag) {
 						resolved = [t1.name];
 						break;
 					}
@@ -1400,7 +1420,7 @@ var model_Articles = function() {
 			}
 			return resolved;
 		}
-		return [];
+		return undefined;
 	}}, user : { type : String, optional : true, autoValue : function() {
 		if(this.isInsert) return Meteor.userId(); else {
 			this.unset();
@@ -1455,8 +1475,8 @@ var model_Tags = function() {
 	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 30, autoValue : function() {
 		if(this.field("name").isSet) return model_Tags.format(js_Boot.__cast(this.field("name").value , String));
 		return undefined;
-	}}, articleCount : { type : "Number", optional : true, autoValue : function() {
-		if(this.isInsert) return 0;
+	}}, articles : { type : [String], optional : true, autoValue : function() {
+		if(this.isInsert) return [];
 		return undefined;
 	}}});
 };
@@ -1482,6 +1502,9 @@ model_Tags.prototype = $extend(Mongo.Collection.prototype,{
 function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; }
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; }
+if(Array.prototype.indexOf) HxOverrides.indexOf = function(a,o,i) {
+	return Array.prototype.indexOf.call(a,o,i);
+};
 String.prototype.__class__ = String;
 String.__name__ = true;
 Array.__name__ = true;

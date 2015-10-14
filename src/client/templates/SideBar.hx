@@ -46,7 +46,7 @@ class SideBar {
 					g.resolvedTags = final; // store resolvedTags in local groups
 				}
 				
-				// store the resolved gorups in a static variable so they can be accessed elsewhere.
+				// store the resolved groups in a static variable so they can be accessed elsewhere.
 				tagGroups = groups;
 				
 				return groups;
@@ -68,14 +68,27 @@ class SideBar {
 		
 		Template.get('tagGroup').helpers( {
 			countArticlesTag: function (tag) {
-				return Client.utils.retrieveArticleCount( Articles.queryFromTags([tag]) );
+				var t = Tags.collection.findOne( { name:tag } ); 
+				return (t == null || t.articles == null) ?
+					-1:
+					t.articles.length;
 			},
 			
 			countArticlesGroup: function (mainTag:String, tags:Array<{name:String}>) {
-				var final = [for (t in tags) t.name];
-				final.push(mainTag);
+				tags = tags.concat([{ name:mainTag }]); 
+				var articles = [];
+				for (tag in tags) {
+					var t:Tag = cast Tags.collection.findOne( { name:tag.name } );
+					if (t != null && t.articles != null) {
+						for (a in t.articles) {
+							if (articles.indexOf(a) == -1) {
+								articles.push(a);
+							}
+						}
+					}
+				}
 				
-				return Client.utils.retrieveArticleCount( Articles.queryFromTags(final) );
+				return articles.length;
 			}
 		});
 		

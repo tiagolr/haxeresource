@@ -6,7 +6,7 @@ import meteor.packages.SimpleSchema;
 
 typedef Tag = {
 	?_id:String,
-	?articleCount:Int,
+	?articles:Array<String>,
 	name:String,
 }
 /**
@@ -39,12 +39,12 @@ class Tags extends Collection {
 					return Lib.undefined;
 				}
 			},
-			articleCount: {
-				type: 'Number',
+			articles: {
+				type: [String],
 				optional: true,
 				autoValue: function () {
 					if (SchemaCtx.isInsert) {
-						return 0; // tags are created on new article
+						return [];
 					}
 					return Lib.undefined;
 				}
@@ -71,14 +71,18 @@ class Tags extends Collection {
 	}
 	
 	#if server
-	static public function incrementArticleCount(name:String) {
-		collection.update( { name:name }, { '$inc': { articleCount: 1} });
+	static public function addArticle(tagname:String, articleId:String) {
+		if (collection.findOne( { name:tagname } ).articles == null) {
+			collection.update( { name:tagname }, { '$push': { articles:articleId } });
+		}
+		collection.update( { name:tagname }, { '$addToSet': { articles:articleId }} );
 	}
 	
-	static public function decrementArticleCount(name:String) {
-		collection.update( { name:name }, { '$inc': { articleCount: -1 } } );
-		if (collection.findOne( { name:name } ).articleCount == 0) {
-			collection.remove( { name:name } ); // remove empty tags
+	static public function removeArticle(tagname:String, articleId:String) {
+		collection.update( { name:tagname }, { '$pull': { articles:articleId }} );
+		var tag = collection.findOne( { name:tagname } );
+		if (tag.articles == null || tag.articles.length <= 0) {
+			collection.remove( { name:tagname } );
 		}
 	}
 	#end

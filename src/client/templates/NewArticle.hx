@@ -124,24 +124,24 @@ class NewArticle {
 				if (Session.get('editArticle') == null) { 
 					// insert new document
 					id = Articles.collection.insert(insertDoc, function (error) {
-						if (error != null) {
-							Client.utils.handleServerError(cast error);
-							ctx.done(error);
-						} else {
+						if (error == null) {
 							FlowRouter.go('/view/$id/' + Shared.utils.formatUrlName(insertDoc.title));
 							ctx.done();
+						} else {
+							Client.utils.handleServerError(cast error);
+							ctx.done(error);
 						}
 					});
 				} else {
 					// update existing document
 					id = editArticle._id;
 					Articles.collection.update( { _id:id }, updateDoc, null, function(error, doc) {
-						if (error != null) {
+						if (error == null) {
+							FlowRouter.go('/view/${editArticle._id}/' + Shared.utils.formatUrlName(editArticle.title));
+							ctx.done();
+						} else {
 							Client.utils.handleServerError(cast error);
 							ctx.done(error);
-						} else {
-							FlowRouter.go('/view/${editArticle._id}/' + Shared.utils.formatUrlName(editArticle.title));
-							ctx.done(id);
 						}
 					});
 				}

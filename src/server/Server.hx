@@ -116,8 +116,8 @@ class Server {
 		Articles.collection.after.insert(function (userId, doc:Article) {
 			if (doc.tags == null) doc.tags = [];
 			
-			for (tag in doc.tags) {
-				Tags.incrementArticleCount(tag);
+			for (tagname in doc.tags) {
+				Tags.addArticle(tagname, doc._id);
 			}
 		});
 		
@@ -128,16 +128,16 @@ class Server {
 			if (prev.tags == null) prev.tags = [];
 			
 			// increment new tags
-			for (tag in doc.tags) {
-				if (prev.tags.indexOf(tag) == -1) {
-					Tags.incrementArticleCount(tag);
+			for (tagname in doc.tags) {
+				if (prev.tags.indexOf(tagname) == -1) {
+					Tags.addArticle(tagname, doc._id);
 				}
 			}
 			
 			// decrement removed tags 
-			for (tag in prev.tags) {
-				if (doc.tags.indexOf(tag) == -1) {
-					Tags.decrementArticleCount(tag);
+			for (tagname in prev.tags) {
+				if (doc.tags.indexOf(tagname) == -1) {
+					Tags.removeArticle(tagname, doc._id);
 				}
 			}
 		});
@@ -146,8 +146,8 @@ class Server {
 			if (doc.tags == null) doc.tags = [];
 			
 			var tags:Array<String> = doc.tags;
-			for (tag in tags) {
-				Tags.decrementArticleCount(tag);
+			for (tagname in tags) {
+				Tags.removeArticle(tagname, doc._id);
 			}
 		});
 	}
@@ -243,31 +243,23 @@ class Server {
 	}
 	
 	/**
-	 * Methods used for database maintenance and migration
+	 * Methods used for database maintenance and admin tasks
 	 */
 	static private function setupMaintenanceMethods():Void {
 		Meteor.methods( {
-			
-			updateTagsArticleCount: function() {
-				
-				Articles.collection.update({ tags: null }, {'$set': { tags: [] }}, { multi:true });
-				
-				Permissions.requirePermission(Permissions.isAdmin());
-				var tags:Array<Tag> = cast Tags.collection.find( { } ).fetch();
-				for (t in tags) {
-					var count = Articles.collection.find(Articles.queryFromTags([t.name])).count();
-					Tags.collection.update( { name:t.name }, { '$set': { articleCount: count }} );
-					t = Tags.collection.findOne( { name:t.name } );
-					if (t.articleCount == 0) {
-						Tags.collection.remove( { name:t.name } );
+			updateTagsArticles: function () {
+				Tags.collection.remove( { } );
+				var articles:Array<Article> = cast Articles.collection.find().fetch();
+				for (article in articles) {
+					for (tagname in article.tags) {
+						if (Tags.collection.findOne( { name:tagname } ) == null) {
+							Tags.collection.insert( { name:tagname } );
+						}
+						Tags.addArticle(tagname, article._id);
 					}
 				}
-			},
-			
-			resetProfile: function () {
-				Meteor.users.update( { _id:Meteor.userId() }, { '$set': { profile: { }}} );
 			}
-		});	
+		});
 	}
 	
 	static private function setupAccounts() {

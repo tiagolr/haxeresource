@@ -96,7 +96,7 @@ class Articles extends Collection {
 						}
 						return resolved;
 					}
-					return [];
+					return Lib.undefined;
 				}
 			},
 			user: {
