@@ -85,19 +85,18 @@ class Articles extends Collection {
 					}
 				},
 				autoValue: function() {
-					// if tag does not exist create it
 					if (SchemaCtx.field('tags').isSet) {
 						var tags:Array<Dynamic> = SchemaCtx.field('tags').value;
 						var resolved = new Array<String>();
 						for (t in tags) {
-							var res = Tags.getOrCreate(t);
+							var res = Tags.getOrCreate(t); 
 							if (res != null) {
 								resolved.push(res.name);
 							}
 						}
 						return resolved;
 					}
-					return Lib.undefined;
+					return [];
 				}
 			},
 			user: {

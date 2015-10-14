@@ -152,6 +152,7 @@ Server.main = function() {
 	Server.setupPermissions();
 	Server.setupCollectionHooks();
 	Server.setupMethods();
+	Server.setupMaintenanceMethods();
 	Server.setupAccounts();
 	Server.createAdmin();
 	Server.createTagGroups();
@@ -174,66 +175,73 @@ Server.setupPublishes = function() {
 	});
 };
 Server.setupPermissions = function() {
-	model_Tags.collection.allow({ insert : function(_,_1) {
-		Permissions.requireLogin();
-		return Permissions.requirePermission(Permissions.canInsertTags());
-	}, update : function(_2,_3,_4,_5) {
-		Permissions.requireLogin();
-		return Permissions.requirePermission(Permissions.canUpdateTags());
-	}, remove : function(_6,_7) {
-		Permissions.requireLogin();
-		return Permissions.requirePermission(Permissions.canRemoveTags());
-	}});
-	model_TagGroups.collection.allow({ insert : function(_8,_9) {
+	model_Tags.collection.allow({ });
+	model_TagGroups.collection.allow({ insert : function(_,_1) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canInsertTagGroups());
-	}, update : function(_10,_11,_12,_13) {
+	}, update : function(_2,_3,_4,_5) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canUpdateTagGroups());
-	}, remove : function(_14,_15) {
+	}, remove : function(_6,_7) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canRemoveTagGroups());
 	}});
-	model_Articles.collection.allow({ insert : function(_16,_17) {
+	model_Articles.collection.allow({ insert : function(_8,_9) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canInsertArticles());
-	}, update : function(_18,document,fields,modifier) {
+	}, update : function(_10,document,fields,modifier) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canUpdateArticles(document));
-	}, remove : function(_19,document1) {
+	}, remove : function(_11,document1) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canRemoveArticles(document1));
 	}});
-	Meteor.users.deny({ update : function(_20,_21,_22,_23) {
+	Meteor.users.deny({ update : function(_12,_13,_14,_15) {
 		return true;
 	}});
-	Meteor.users.allow({ update : function(_24,document2,fields1,modifier1) {
+	Meteor.users.allow({ update : function(_16,document2,fields1,modifier1) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canUpdateUsers(document2,fields1));
 	}});
 };
 Server.setupCollectionHooks = function() {
-	model_Articles.collection.after.update(function() {
-		var prev = this.previous;
-		if(prev.tags != null) {
-			var _g = 0;
-			var _g1 = prev.tags;
-			while(_g < _g1.length) {
-				var tag = _g1[_g];
-				++_g;
-				Server.removeTagIfEmtpy(tag);
-			}
+	model_Articles.collection.after.insert(function(userId,doc) {
+		if(doc.tags == null) doc.tags = [];
+		var _g = 0;
+		var _g1 = doc.tags;
+		while(_g < _g1.length) {
+			var tag = _g1[_g];
+			++_g;
+			model_Tags.incrementArticleCount(tag);
 		}
 	});
-	model_Articles.collection.after.remove(function(userId,doc) {
-		if(doc != null && doc.tags != null) {
-			var tags = doc.tags;
-			var _g2 = 0;
-			while(_g2 < tags.length) {
-				var tag1 = tags[_g2];
-				++_g2;
-				Server.removeTagIfEmtpy(tag1);
-			}
+	model_Articles.collection.after.update(function(userId1,doc1) {
+		var prev = this.previous;
+		if(doc1.tags == null) doc1.tags = [];
+		if(prev.tags == null) prev.tags = [];
+		var _g2 = 0;
+		var _g11 = doc1.tags;
+		while(_g2 < _g11.length) {
+			var tag1 = _g11[_g2];
+			++_g2;
+			if(HxOverrides.indexOf(prev.tags,tag1,0) == -1) model_Tags.incrementArticleCount(tag1);
+		}
+		var _g3 = 0;
+		var _g12 = prev.tags;
+		while(_g3 < _g12.length) {
+			var tag2 = _g12[_g3];
+			++_g3;
+			if(HxOverrides.indexOf(doc1.tags,tag2,0) == -1) model_Tags.decrementArticleCount(tag2);
+		}
+	});
+	model_Articles.collection.after.remove(function(userId2,doc2) {
+		if(doc2.tags == null) doc2.tags = [];
+		var tags = doc2.tags;
+		var _g4 = 0;
+		while(_g4 < tags.length) {
+			var tag3 = tags[_g4];
+			++_g4;
+			model_Tags.decrementArticleCount(tag3);
 		}
 	});
 };
@@ -262,6 +270,7 @@ Server.setupMethods = function() {
 		if(user == null) {
 			var err1 = Configs.shared.error.args_user_not_found;
 			var error1 = new Meteor.Error(err1.code,err1.reason,err1.details);
+			throw(error1);
 		}
 		var votes1 = user.profile.votes;
 		if(votes1 != null && votes1.length > 0) {
@@ -270,16 +279,8 @@ Server.setupMethods = function() {
 				model_Articles.collection.update({ _id : articleId},{ '$dec' : { votes : 1}},{ getAutoValues : false});
 			}
 		}
+		model_Articles.collection.remove({ user : id1});
 		Meteor.users.remove({ _id : id1});
-	}, removeEmptyTags : function() {
-		Permissions.requirePermission(Permissions.isAdmin());
-		var tags = model_Tags.collection.find({ }).fetch();
-		var _g = 0;
-		while(_g < tags.length) {
-			var t = tags[_g];
-			++_g;
-			Server.removeTagIfEmtpy(t.name);
-		}
 	}, setPermissions : function(username,permissions) {
 		Permissions.requirePermission(Permissions.isAdmin());
 		var user1 = Meteor.users.findOne({ username : username});
@@ -298,10 +299,10 @@ Server.setupMethods = function() {
 			var error4 = new Meteor.Error(err4.code,err4.reason,err4.details);
 			throw(error4);
 		}
-		var _g1 = 0;
-		while(_g1 < permissions.length) {
-			var p = permissions[_g1];
-			++_g1;
+		var _g = 0;
+		while(_g < permissions.length) {
+			var p = permissions[_g];
+			++_g;
 			if(Reflect.field(Permissions.roles,p) == null || p == Permissions.roles.ADMIN) {
 				var err5 = Configs.shared.error.args_bad_permissions;
 				var error5 = new Meteor.Error(err5.code,err5.reason,err5.details);
@@ -310,6 +311,24 @@ Server.setupMethods = function() {
 		}
 		Permissions.requirePermission(!Roles.userIsInRole(user1._id,[Permissions.roles.ADMIN]));
 		Roles.setUserRoles(user1._id,permissions);
+	}});
+};
+Server.setupMaintenanceMethods = function() {
+	Meteor.methods({ updateTagsArticleCount : function() {
+		model_Articles.collection.update({ tags : null},{ '$set' : { tags : []}},{ multi : true});
+		Permissions.requirePermission(Permissions.isAdmin());
+		var tags = model_Tags.collection.find({ }).fetch();
+		var _g = 0;
+		while(_g < tags.length) {
+			var t = tags[_g];
+			++_g;
+			var count = model_Articles.collection.find(model_Articles.queryFromTags([t.name])).count();
+			model_Tags.collection.update({ name : t.name},{ '$set' : { articleCount : count}});
+			t = model_Tags.collection.findOne({ name : t.name});
+			if(t.articleCount == 0) model_Tags.collection.remove({ name : t.name});
+		}
+	}, resetProfile : function() {
+		Meteor.users.update({ _id : Meteor.userId()},{ '$set' : { profile : { }}});
 	}});
 };
 Server.setupAccounts = function() {
@@ -355,6 +374,7 @@ Server.createAdmin = function() {
 		var pwd = haxe_crypto_Md5.encode(Std.string(Math.random()));
 		console.log("creating admin with pw : " + pwd);
 		var adminId = Accounts.createUser({ username : "hxresadmin", password : pwd, profile : { }});
+		Meteor.users.update({ _id : adminId},{ '$set' : { profile : { }}});
 		if(adminId != null) {
 			Meteor.users.update(adminId,{ '$set' : { initPwd : pwd}});
 			Roles.setUserRoles(adminId,[Permissions.roles.ADMIN]);
@@ -366,9 +386,6 @@ Server.createTagGroups = function() {
 	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", weight : 1}});
 	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", weight : 2}});
 	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", weight : 3}});
-};
-Server.removeTagIfEmtpy = function(tagName) {
-	if(model_Articles.collection.findOne(model_Articles.queryFromTags([tagName])) == null) model_Tags.collection.remove({ name : tagName});
 };
 var SharedUtils = function() {
 };
@@ -1050,7 +1067,7 @@ var model_Articles = function() {
 			}
 			return resolved;
 		}
-		return undefined;
+		return [];
 	}}, user : { type : String, optional : true, autoValue : function() {
 		if(this.isInsert) return Meteor.userId(); else {
 			this.unset();
@@ -1107,23 +1124,34 @@ var model_Tags = function() {
 	model_Tags.collection = this;
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
 	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 30, autoValue : function() {
-		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
+		if(this.field("name").isSet) return model_Tags.format(js_Boot.__cast(this.field("name").value , String));
+		return undefined;
+	}}, articleCount : { type : "Number", optional : true, autoValue : function() {
+		if(this.isInsert) return 0;
 		return undefined;
 	}}});
 };
 model_Tags.__name__ = true;
-model_Tags.create = function(tag) {
-	tag.name = tag.name.toLowerCase();
-	return model_Tags.collection.insert(tag);
+model_Tags.format = function(name) {
+	name = name.toLowerCase();
+	if(!model_Tags.regEx.test(name)) return null;
+	return name;
 };
 model_Tags.getOrCreate = function(name) {
-	name = name.toLowerCase();
+	name = model_Tags.format(name);
 	var exists = model_Tags.collection.findOne({ name : name});
 	if(exists == null) {
-		var newTag = model_Tags.create({ name : name});
+		var newTag = model_Tags.collection.insert({ name : name});
 		exists = model_Tags.collection.findOne({ _id : newTag});
 	}
-	if(exists == null) return null; else return { _id : exists._id, name : exists.name};
+	return exists;
+};
+model_Tags.incrementArticleCount = function(name) {
+	model_Tags.collection.update({ name : name},{ '$inc' : { articleCount : 1}});
+};
+model_Tags.decrementArticleCount = function(name) {
+	model_Tags.collection.update({ name : name},{ '$inc' : { articleCount : -1}});
+	if(model_Tags.collection.findOne({ name : name}).articleCount == 0) model_Tags.collection.remove({ name : name});
 };
 model_Tags.__super__ = Mongo.Collection;
 model_Tags.prototype = $extend(Mongo.Collection.prototype,{

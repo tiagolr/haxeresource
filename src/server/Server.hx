@@ -24,6 +24,7 @@ class Server {
 		setupPermissions();
 		setupCollectionHooks();
 		setupMethods();
+		setupMaintenanceMethods();
 		setupAccounts();
 		createAdmin();
 		createTagGroups();
@@ -52,18 +53,18 @@ class Server {
 	
 	static private function setupPermissions():Void {
 		Tags.collection.allow({
-			insert: function (_, _) {
-				Permissions.requireLogin();
-				return Permissions.requirePermission(Permissions.canInsertTags());
-			},
-			update: function (_, _, _, _) {
-				Permissions.requireLogin();
-				return Permissions.requirePermission(Permissions.canUpdateTags());
-			},
-			remove: function (_, _) {
-				Permissions.requireLogin();
-				return Permissions.requirePermission(Permissions.canRemoveTags());
-			}
+			//insert: function (_, _) {
+				//Permissions.requireLogin();
+				//return Permissions.requirePermission(Permissions.canInsertTags());
+			//},
+			//update: function (_, _, _, _) {
+				//Permissions.requireLogin();
+				//return Permissions.requirePermission(Permissions.canUpdateTags());
+			//},
+			//remove: function (_, _) {
+				//Permissions.requireLogin();
+				//return Permissions.requirePermission(Permissions.canRemoveTags());
+			//}
 		});
 		
 		TagGroups.collection.allow({
@@ -112,21 +113,41 @@ class Server {
 	}
 	
 	static private function setupCollectionHooks():Void {
-		Articles.collection.after.update(function () {
+		Articles.collection.after.insert(function (userId, doc:Article) {
+			if (doc.tags == null) doc.tags = [];
+			
+			for (tag in doc.tags) {
+				Tags.incrementArticleCount(tag);
+			}
+		});
+		
+		Articles.collection.after.update(function (userId, doc:Article) {
 			var prev:Article = untyped Lib.nativeThis.previous;
-			if (prev.tags != null) {
-				for (tag in prev.tags) {
-					removeTagIfEmtpy(tag);
+			
+			if (doc.tags == null) doc.tags = [];
+			if (prev.tags == null) prev.tags = [];
+			
+			// increment new tags
+			for (tag in doc.tags) {
+				if (prev.tags.indexOf(tag) == -1) {
+					Tags.incrementArticleCount(tag);
+				}
+			}
+			
+			// decrement removed tags 
+			for (tag in prev.tags) {
+				if (doc.tags.indexOf(tag) == -1) {
+					Tags.decrementArticleCount(tag);
 				}
 			}
 		});
 		
 		Articles.collection.after.remove(function (userId, doc) {
-			if (doc != null && doc.tags != null) {
-				var tags:Array<String> = doc.tags;
-				for (tag in tags) {
-					removeTagIfEmtpy(tag);
-				}
+			if (doc.tags == null) doc.tags = [];
+			
+			var tags:Array<String> = doc.tags;
+			for (tag in tags) {
+				Tags.decrementArticleCount(tag);
 			}
 		});
 	}
@@ -159,7 +180,6 @@ class Server {
 				Meteor.users.update({_id: Meteor.userId()}, {'$set': {"profile.votes": votes}}, { getAutoValues:false});
 			},
 			
-			
 			removeUser: function (id:String) {
 				Permissions.requireLogin();
 				Permissions.requirePermission(Permissions.canRemoveUser(Meteor.users.findOne( { _id:id } )));
@@ -167,7 +187,7 @@ class Server {
 				var user = Meteor.users.findOne( { _id:id } );
 				if (user == null) {
 					var err = Configs.shared.error.args_user_not_found;
-					var error1 = new Error(err.code, err.reason, err.details);
+					Error.throw_(new Error(err.code, err.reason, err.details));
 				}
 				
 				// remove user votes
@@ -178,40 +198,28 @@ class Server {
 					}
 				}
 				
-				Meteor.users.remove( { _id:id } );
+				// remove user articles
+				Articles.collection.remove( { user:id } );
 				
-				// TODO
-				// remove user articles?
-				// remove user comments?
-				// remove user tags
+				Meteor.users.remove( { _id:id } );
 			},
-			
-			removeEmptyTags: function() {
-				Permissions.requirePermission(Permissions.isAdmin());
-				var tags:Array<Tag> = cast Tags.collection.find( { } ).fetch();
-				for (t in tags) {
-					removeTagIfEmtpy(t.name);
-				}
-			},
-			
+		
 			setPermissions: function (username:String, permissions:Array<String>) {
 				Permissions.requirePermission(Permissions.isAdmin());
 				
 				// verify user args
 				var user = Meteor.users.findOne( { username:username } );
-				
 				if (user == null) {
 					var err = Configs.shared.error.args_user_not_found;
 					var error = new Error(err.code, err.reason, err.details);
 					Error.throw_(error);
 				}
 				
+				// verify permission args
 				if (permissions == null) {
 					var err = Configs.shared.error.args_user_not_found;
 					Error.throw_(new Error(err.code, err.reason, err.details));
 				}
-				
-				// verify permission args
 				if (!Std.is(permissions, Array)) {
 					var err = Configs.shared.error.args_bad_permissions;
 					Error.throw_(new Error(err.code, err.reason, err.details));
@@ -225,10 +233,41 @@ class Server {
 					}
 				}
 				
-				Permissions.requirePermission(!Roles.userIsInRole(user._id, [Permissions.roles.ADMIN])); // not setting admin permissions
+				// make sure is not setting admin permissions
+				Permissions.requirePermission(!Roles.userIsInRole(user._id, [Permissions.roles.ADMIN]));
+				
 				Roles.setUserRoles(user._id, permissions);
 			}
+			
 		});
+	}
+	
+	/**
+	 * Methods used for database maintenance and migration
+	 */
+	static private function setupMaintenanceMethods():Void {
+		Meteor.methods( {
+			
+			updateTagsArticleCount: function() {
+				
+				Articles.collection.update({ tags: null }, {'$set': { tags: [] }}, { multi:true });
+				
+				Permissions.requirePermission(Permissions.isAdmin());
+				var tags:Array<Tag> = cast Tags.collection.find( { } ).fetch();
+				for (t in tags) {
+					var count = Articles.collection.find(Articles.queryFromTags([t.name])).count();
+					Tags.collection.update( { name:t.name }, { '$set': { articleCount: count }} );
+					t = Tags.collection.findOne( { name:t.name } );
+					if (t.articleCount == 0) {
+						Tags.collection.remove( { name:t.name } );
+					}
+				}
+			},
+			
+			resetProfile: function () {
+				Meteor.users.update( { _id:Meteor.userId() }, { '$set': { profile: { }}} );
+			}
+		});	
 	}
 	
 	static private function setupAccounts() {
@@ -296,6 +335,8 @@ class Server {
 				profile:{},
 			});
 			
+			Meteor.users.update( { _id:adminId }, { '$set': { profile: { }}} ); // FIX
+			
 			if (adminId != null) {
 				Meteor.users.update(adminId, { '$set': { initPwd: pwd }} ); // store initial admin pass in database unencrypted
 				Roles.setUserRoles(adminId, [Permissions.roles.ADMIN]);
@@ -338,10 +379,5 @@ class Server {
 	//-----------------------------------------------
 	// AUX
 	//-----------------------------------------------
-	static function removeTagIfEmtpy(tagName:String) {
-		if (Articles.collection.findOne(Articles.queryFromTags([tagName])) == null) {
-			Tags.collection.remove( { name:tagName } );
-		}
-	}
 	
 }

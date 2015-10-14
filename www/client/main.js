@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -524,7 +524,7 @@ templates_ViewArticle.prototype = {
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = function() { };
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
@@ -577,6 +577,7 @@ Client.main = function() {
 	Template.registerHelper("formatUrlName",function(name) {
 		return Shared.utils.formatUrlName(name);
 	});
+	AutoForm.debug();
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -639,7 +640,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = function() { };
+var Permissions = $hx_exports.Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -719,7 +720,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = function() {
+var SharedUtils = $hx_exports.sharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -770,7 +771,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -1399,7 +1400,7 @@ var model_Articles = function() {
 			}
 			return resolved;
 		}
-		return undefined;
+		return [];
 	}}, user : { type : String, optional : true, autoValue : function() {
 		if(this.isInsert) return Meteor.userId(); else {
 			this.unset();
@@ -1452,23 +1453,27 @@ var model_Tags = function() {
 	model_Tags.collection = this;
 	model_Tags.regEx = new RegExp("^[a-zA-Z0-9._-]+$");
 	model_Tags.schema = new SimpleSchema({ name : { type : String, unique : true, regEx : model_Tags.regEx, max : 30, autoValue : function() {
-		if(this.field("name").isSet) return (js_Boot.__cast(this.field("name").value , String)).toLowerCase();
+		if(this.field("name").isSet) return model_Tags.format(js_Boot.__cast(this.field("name").value , String));
+		return undefined;
+	}}, articleCount : { type : "Number", optional : true, autoValue : function() {
+		if(this.isInsert) return 0;
 		return undefined;
 	}}});
 };
 model_Tags.__name__ = true;
-model_Tags.create = function(tag) {
-	tag.name = tag.name.toLowerCase();
-	return model_Tags.collection.insert(tag);
+model_Tags.format = function(name) {
+	name = name.toLowerCase();
+	if(!model_Tags.regEx.test(name)) return null;
+	return name;
 };
 model_Tags.getOrCreate = function(name) {
-	name = name.toLowerCase();
+	name = model_Tags.format(name);
 	var exists = model_Tags.collection.findOne({ name : name});
 	if(exists == null) {
-		var newTag = model_Tags.create({ name : name});
+		var newTag = model_Tags.collection.insert({ name : name});
 		exists = model_Tags.collection.findOne({ _id : newTag});
 	}
-	if(exists == null) return null; else return { _id : exists._id, name : exists.name};
+	return exists;
 };
 model_Tags.__super__ = Mongo.Collection;
 model_Tags.prototype = $extend(Mongo.Collection.prototype,{
@@ -1533,4 +1538,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);

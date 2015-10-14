@@ -34,35 +34,54 @@ class Tags extends Collection {
 				max:MAX_CHARS,
 				autoValue: function() { 
 					if (SchemaCtx.field('name').isSet) {
-						return cast(SchemaCtx.field('name').value, String).toLowerCase();
+						return format(cast(SchemaCtx.field('name').value, String));
 					}
 					return Lib.undefined;
 				}
 			},
-			/*articleCount: {
-				type: Number
+			articleCount: {
+				type: 'Number',
 				optional: true,
 				autoValue: function () {
-					
+					if (SchemaCtx.isInsert) {
+						return 0; // tags are created on new article
+					}
+					return Lib.undefined;
 				}
-			}*/
+			}
 		});
 	}
 	
-	public static function create(tag:Tag):String {
-		tag.name = tag.name.toLowerCase();
-		return collection.insert(tag);
+	static public function format(name:String):String {
+		name = name.toLowerCase();
+		if (!regEx.test(name)) {
+			return null;
+		}
+		return name;
 	}
 	
 	static public function getOrCreate(name:String):Tag {
-		name = name.toLowerCase();
+		name = format(name);
 		var exists = collection.findOne( { name:name } );
 		if (exists == null) {
-			var newTag = create( { name:name } );
+			var newTag = collection.insert( { name:name } );
 			exists = collection.findOne( { _id:newTag } );
 		}
-		
-		return exists == null ? null : { _id:exists._id, name:exists.name };
+		return exists;
 	}
+	
+	#if server
+	static public function incrementArticleCount(name:String) {
+		collection.update( { name:name }, { '$inc': { articleCount: 1} });
+	}
+	
+	static public function decrementArticleCount(name:String) {
+		collection.update( { name:name }, { '$inc': { articleCount: -1 } } );
+		if (collection.findOne( { name:name } ).articleCount == 0) {
+			collection.remove( { name:name } ); // remove empty tags
+		}
+	}
+	#end
+	
 	
 }
