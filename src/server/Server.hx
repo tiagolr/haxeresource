@@ -23,7 +23,8 @@ class Server {
 		setupPublishes();
 		setupPermissions();
 		setupCollectionHooks();
-		defineMethods();
+		setupMethods();
+		setupAccounts();
 		createAdmin();
 		createTagGroups();
 	}
@@ -130,7 +131,7 @@ class Server {
 		});
 	}
 	
-	static private function defineMethods():Void {
+	static private function setupMethods():Void {
 		Meteor.methods( {
 			
 			toggleArticleVote: function (id:String) {
@@ -229,6 +230,61 @@ class Server {
 			}
 		});
 	}
+	
+	static private function setupAccounts() {
+		Accounts.onCreateUser(function(options:Dynamic, user:User) {
+			if (user.services != null) {
+				
+				// setup a github user account
+				if (user.services.github != null) {
+					var gh = user.services.github;
+					if (user.profile == null) {
+						user.profile = { };
+					}
+					//user.emails = gh.emails;
+					var username = gh.username; 
+					var i = 1;
+					while (Meteor.users.findOne({username:username}) != null) {
+						username = gh.username + ' ($i)';
+						i++;
+					}
+					user.username = username;
+				} 
+				else 
+				if (user.services.google != null) {
+					var go = user.services.google;
+					if (user.profile == null) {
+						user.profile = { };
+					}
+					//user.emails = [ { address:go.email, verified:go.verified_email } ];
+					var username = go.name;
+					var i = 1;
+					while (Meteor.users.findOne({username:username}) != null) {
+						username = go.name + ' ($i)';
+						i++;
+					}
+					user.username = username;
+				}
+				else 
+				if (user.services.twitter != null) {
+					var tw = user.services.twitter;
+					if (!user.profile == null) {
+						user.profile = { };
+					}
+					var username = tw.screenName;
+					var i = 1;
+					while (Meteor.users.findOne( { username:username } ) != null) {
+						username = tw.screenName + ' ($i)';
+						i++;
+					}
+					user.username = username;
+				}
+			}
+			
+			return user;
+		});
+	}
+	
 	
 	static private function createAdmin():Void {
 		if (Meteor.users.findOne( { roles: { '$in':[Permissions.roles.ADMIN] }} ) == null) {

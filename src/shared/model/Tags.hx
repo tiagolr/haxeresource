@@ -6,6 +6,7 @@ import meteor.packages.SimpleSchema;
 
 typedef Tag = {
 	?_id:String,
+	?articleCount:Int,
 	name:String,
 }
 /**
@@ -38,6 +39,13 @@ class Tags extends Collection {
 					return Lib.undefined;
 				}
 			},
+			/*articleCount: {
+				type: Number
+				optional: true,
+				autoValue: function () {
+					
+				}
+			}*/
 		});
 	}
 	

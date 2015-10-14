@@ -151,7 +151,8 @@ Server.main = function() {
 	Server.setupPublishes();
 	Server.setupPermissions();
 	Server.setupCollectionHooks();
-	Server.defineMethods();
+	Server.setupMethods();
+	Server.setupAccounts();
 	Server.createAdmin();
 	Server.createTagGroups();
 };
@@ -236,7 +237,7 @@ Server.setupCollectionHooks = function() {
 		}
 	});
 };
-Server.defineMethods = function() {
+Server.setupMethods = function() {
 	Meteor.methods({ toggleArticleVote : function(id) {
 		Permissions.requireLogin();
 		if(model_Articles.collection.findOne({ _id : id}) == null) {
@@ -310,6 +311,44 @@ Server.defineMethods = function() {
 		Permissions.requirePermission(!Roles.userIsInRole(user1._id,[Permissions.roles.ADMIN]));
 		Roles.setUserRoles(user1._id,permissions);
 	}});
+};
+Server.setupAccounts = function() {
+	Accounts.onCreateUser(function(options,user) {
+		if(user.services != null) {
+			if(user.services.github != null) {
+				var gh = user.services.github;
+				if(user.profile == null) user.profile = { };
+				var username = gh.username;
+				var i = 1;
+				while(Meteor.users.findOne({ username : username}) != null) {
+					username = gh.username + (" (" + i + ")");
+					i++;
+				}
+				user.username = username;
+			} else if(user.services.google != null) {
+				var go = user.services.google;
+				if(user.profile == null) user.profile = { };
+				var username1 = go.name;
+				var i1 = 1;
+				while(Meteor.users.findOne({ username : username1}) != null) {
+					username1 = go.name + (" (" + i1 + ")");
+					i1++;
+				}
+				user.username = username1;
+			} else if(user.services.twitter != null) {
+				var tw = user.services.twitter;
+				if(!user.profile == null) user.profile = { };
+				var username2 = tw.screenName;
+				var i2 = 1;
+				while(Meteor.users.findOne({ username : username2}) != null) {
+					username2 = tw.screenName + (" (" + i2 + ")");
+					i2++;
+				}
+				user.username = username2;
+			}
+		}
+		return user;
+	});
 };
 Server.createAdmin = function() {
 	if(Meteor.users.findOne({ roles : { '$in' : [Permissions.roles.ADMIN]}}) == null) {

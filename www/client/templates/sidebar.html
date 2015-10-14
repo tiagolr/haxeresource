@@ -5,15 +5,15 @@
 			{{#each tagGroups}}
 				{{> tagGroup}}
 			{{/each}}
-			<li class="nav-tag-group nav-tag-ungrouped">
-				<a class="link-ungrouped" href="/tag/group/ungrouped">
+		</ul>
+		<div id="sb-ungrouped">
+			<a href="/tag/group/ungrouped">
 				<div>
 					Ungrouped 
-					<span class="badge pull-right">{{countUngrouped}}</span>
+					<span class="badge">{{countUngrouped}}</span>
 				</div> <!-- double div to ignore event listeners -->
-				</a>
-		</li>
-		</ul>
+			</a>
+		</div>
 		
 	</div>
 </template>
