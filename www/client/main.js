@@ -41,33 +41,56 @@ templates_ListArticles.prototype = {
 		Session.set("la_captionMsg",val);
 		return val;
 	}
+	,get_searchMode: function() {
+		return Session.get("search_mode");
+	}
+	,set_searchMode: function(val) {
+		Session.set("search_mode",val);
+		return val;
+	}
+	,get_searchQuery: function() {
+		return Session.get("search_query");
+	}
+	,set_searchQuery: function(val) {
+		Session.set("search_query",val);
+		return val;
+	}
 	,show: function(_sort,_limit,_selector,captionMsg) {
 		if(_limit == null) _limit = -1;
+		this.set_searchMode(false);
 		if(_limit == -1) _limit = Configs.client.page_size;
-		this.get_page().show(Configs.client.page_fadein_duration);
+		this.get_page().show(0);
 		if(_limit != null) this.set_limit(_limit);
 		if(_selector != null) this.set_selector(_selector);
 		if(_sort != null) this.set_sort(_sort);
 		this.set_captionMsg(captionMsg);
 	}
+	,showSearch: function(query) {
+		this.set_captionMsg("Searching this mofo");
+		this.set_searchMode(true);
+		this.set_searchQuery(query);
+		this.get_page().show(0);
+	}
 	,hide: function() {
-		this.get_page().hide(Configs.client.page_fadeout_duration);
+		this.get_page().hide(0);
 	}
 	,init: function() {
 		var _g = this;
 		this.set_sort({ created : -1});
 		this.set_limit(Configs.client.page_size);
 		this.set_selector({ });
+		this.set_searchMode(false);
+		this.set_searchQuery("");
 		Template.listArticles.helpers({ captionMsg : function() {
 			return _g.get_captionMsg();
 		}, articles : function() {
-			return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+			if(_g.get_searchMode()) return model_Articles.collection.find({ score : { '$exists' : true}}); else return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 		}, currentCount : function() {
-			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+			if(_g.get_searchMode()) return 0; else return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
 		}, totalCount : function() {
-			return Client.utils.retrieveArticleCount(_g.get_selector());
+			if(_g.get_searchMode()) return 0; else return Client.utils.retrieveArticleCount(_g.get_selector());
 		}, allEntriesLoaded : function() {
-			return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+			if(_g.get_searchMode()) return true; else return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
 		}, sortAgeUp : function() {
 			return _g.get_sort().created == 1;
 		}, sortAgeDown : function() {
@@ -83,18 +106,22 @@ templates_ListArticles.prototype = {
 		}});
 		Template.listArticles.onCreated(function() {
 			this.autorun(function() {
-				_g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+				if(_g.get_searchMode()) _g.subscription = Meteor.subscribe("searchArticles",_g.get_searchQuery()); else _g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 			});
 		});
 		Template.listArticles.events({ 'click #btnLoadMoreResults' : function(_) {
 			var _g1 = _g;
 			_g1.set_limit(_g1.get_limit() + Configs.client.page_size);
 		}, 'click #btnSortByAge' : function(_1) {
-			if(_g.get_sort().created == null) _g.set_sort({ created : 1}); else _g.set_sort({ created : _g.get_sort().created * -1});
+			_g.set_sort(_g.get_sort().created == null?{ created : 1}:{ created : _g.get_sort().created * -1});
 		}, 'click #btnSortByTitle' : function(_2) {
-			if(_g.get_sort().title == null) _g.set_sort({ title : 1}); else _g.set_sort({ title : _g.get_sort().title * -1});
+			_g.set_sort(_g.get_sort().title == null?{ title : 1}:{ title : _g.get_sort().title * -1});
 		}, 'click #btnSortByVotes' : function(_3) {
-			if(_g.get_sort().votes == null) _g.set_sort({ votes : 1}); else _g.set_sort({ votes : _g.get_sort().votes * -1});
+			_g.set_sort(_g.get_sort().votes == null?{ votes : 1}:{ votes : _g.get_sort().votes * -1});
+		}, 'submit #la-search-form' : function(evt) {
+			var query = js.JQuery("#la-search-form input").val();
+			if(query != null && query != "") FlowRouter.go("/search",{ },{ q : query}); else FlowRouter.go("/");
+			return false;
 		}});
 		Template.articleRow.helpers({ hasUserVote : function(id) {
 			if(Meteor.userId() == null) return false;
@@ -316,6 +343,13 @@ Router.prototype = {
 		}, triggersExit : [function() {
 			Client.listArticles.hide();
 		}]});
+		FlowRouter.route("/search",{ action : function() {
+			var query = FlowRouter.getQueryParam("q");
+			console.log("got query " + query);
+			if(query != null && query != "") Client.listArticles.showSearch(query); else FlowRouter.go("/");
+		}, triggersExit : [function() {
+			Client.listArticles.hide();
+		}]});
 		FlowRouter.route("/new",{ action : function() {
 			Client.newArticle.show();
 		}, triggersExit : [function() {
@@ -460,7 +494,7 @@ ClientUtils.prototype = {
 		return Counts.get("countArticles" + id);
 	}
 	,parseMarkdown: function(raw) {
-		return marked(raw);
+		if(raw == null) return null; else return marked(raw);
 	}
 	,handleServerError: function(error) {
 		if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);

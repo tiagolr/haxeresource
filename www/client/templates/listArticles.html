@@ -11,7 +11,23 @@
 	<div class="row">
 		<div class="col-lg-12">
 			<table id="tableArticles" class="table table-hover" style="border-collapse:collapse">
-				<caption>{{{captionMsg}}}</caption>
+				<caption>
+
+				<div>{{{captionMsg}}}</div>
+				<div class="row">
+					<div class="col-lg-3">
+						<form id="la-search-form" role="search">
+							<div class="input-group">
+								<input type="text" class="form-control" placeholder="Search" name="q">
+								<div class="input-group-btn">
+									<button class="btn form-control" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				</caption>
 				<thead>
 				<tr>
 					<th class="text-center" style="width:10px"></th> 

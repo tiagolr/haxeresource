@@ -4,7 +4,9 @@ import js.html.Event;
 import js.JQuery;
 import js.JQuery.JqEvent;
 import js.Lib;
+import meteor.Cursor;
 import meteor.Meteor;
+import meteor.packages.FlowRouter;
 import meteor.packages.PublishCounts;
 import meteor.Session;
 import meteor.Template;
@@ -16,7 +18,7 @@ import model.Articles;
  */
 class ListArticles {
 	
-	var subscription:{};
+	var subscription: { };
 	
 	var page(get, null):JQuery;
 	function get_page():JQuery {
@@ -51,7 +53,6 @@ class ListArticles {
 		return Session.get('list_articles_selector');
 	}
 	
-	
 	var captionMsg(get, set):String;
 	function get_captionMsg():String {
 		return Session.get('la_captionMsg');
@@ -60,14 +61,35 @@ class ListArticles {
 		Session.set('la_captionMsg', val);
 		return val;
 	}
+	
+	var searchMode(get, set):Bool;
+	function get_searchMode():Bool {
+		return Session.get('search_mode');
+	}
+	function set_searchMode(val:Bool):Bool {
+		Session.set('search_mode', val);
+		return val;
+	}
+	
+	var searchQuery(get, set):String;
+	function get_searchQuery():String {
+		return Session.get('search_query');
+	}
+	function set_searchQuery(val:String):String {
+		Session.set('search_query', val);
+		return val;
+	}
 	//-----------------------------------------------------------------
 	
 	
 	public function show(?_sort: { }, ?_limit:Int = -1, _selector:Dynamic, captionMsg:String) {
+		searchMode = false;
+		
 		if (_limit == -1) {
 			_limit = Configs.client.page_size;
 		}
-		page.show(Configs.client.page_fadein_duration);
+		//page.show(Configs.client.page_fadein_duration);
+		page.show(0);
 		
 		if (_limit != null) {
 			limit = _limit;
@@ -77,6 +99,7 @@ class ListArticles {
 			selector = _selector;
 		}
 		
+
 		if (_sort != null) {
 			sort = _sort;
 		}
@@ -84,8 +107,16 @@ class ListArticles {
 		this.captionMsg = captionMsg;
 	}
 	
+	public function showSearch(query:String) {
+		captionMsg = 'Searching this mofo';
+		searchMode = true;
+		searchQuery = query;
+		
+		page.show(0);
+	}
+	
 	public function hide() {
-		page.hide(Configs.client.page_fadeout_duration);
+		page.hide(0);
 	}
 	
 	public function new() {}
@@ -93,6 +124,8 @@ class ListArticles {
 		sort = { created: -1 };
 		limit = Configs.client.page_size;
 		selector = { };
+		searchMode = false;
+		searchQuery = "";
 		
 		Template.get('listArticles').helpers( {
 			
@@ -101,19 +134,35 @@ class ListArticles {
 			},
 			
 			articles:function() {
-				return Articles.collection.find( selector, { sort:sort, limit:limit } );
+				if (searchMode) {
+					return Articles.collection.find( { score: { '$exists':true }} );
+				} else {
+					return Articles.collection.find( selector, { sort:sort, limit:limit } );
+				}
 			},
 			
 			currentCount:function () {
-				return Articles.collection.find( selector, { limit:limit } ).count();
+				if (searchMode) {
+					return 0;
+				} else {
+					return Articles.collection.find( selector, { limit:limit } ).count();
+				}
 			},
 			
 			totalCount: function () {
-				return Client.utils.retrieveArticleCount(selector);
+				if (searchMode) {
+					return 0;
+				} else {
+					return Client.utils.retrieveArticleCount(selector);
+				}
 			},
 			
 			allEntriesLoaded: function() {
-				return Client.utils.retrieveArticleCount(selector) == Articles.collection.find(selector, { limit:limit } ).count();
+				if (searchMode) {
+					return true;
+				} else {
+					return Client.utils.retrieveArticleCount(selector) == Articles.collection.find(selector, { limit:limit } ).count();
+				}
 			},
 			
 			sortAgeUp: function() { return sort.created == 1;},
@@ -124,11 +173,17 @@ class ListArticles {
 			sortTitleDown: function() { return sort.title == -1; },
 		});
 		
+		
 		Template.get('listArticles').onCreated(function() {
 			TemplateCtx.autorun(function () {
-				subscription = Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
+				if (searchMode) {
+					subscription = Meteor.subscribe('searchArticles', searchQuery); 
+				} else {
+					subscription = Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
+				}
 			});
 		});
+		
 		
 		Template.get('listArticles').events( {
 			
@@ -137,22 +192,34 @@ class ListArticles {
 			},
 			
 			'click #btnSortByAge' : function (_) {
-				sort.created == null ? 
-					sort = { created : 1 } :
-					sort = { created : sort.created * -1 };	
+				sort = sort.created == null ? 
+					{ created : 1 } :
+					{ created : sort.created * -1 };	
 			},
 			
 			'click #btnSortByTitle' : function (_) {
-				sort.title == null ? 
-					sort = { title : 1 } :
-					sort = { title : sort.title * -1 };
+				sort = sort.title == null ? 
+					{ title : 1 } :
+					{ title : sort.title * -1 };
 			},
 			
 			'click #btnSortByVotes' : function(_) {
-				sort.votes == null ? 
-					sort = { votes : 1 } :
-					sort = { votes : sort.votes * -1 };
+				sort = sort.votes == null ? 
+					{ votes : 1 } :
+					{ votes : sort.votes * -1 };
 			},
+			
+			'submit #la-search-form' : function(evt:JqEvent) {
+				var query = new JQuery('#la-search-form input').val();
+				
+				if (query != null && query != "") {
+					FlowRouter.go('/search',{}, {q:query});
+				} else {
+					FlowRouter.go('/'); // show all articles
+				}
+				
+				return false;
+			}
 			
 		});
 		
@@ -238,4 +305,6 @@ class ListArticles {
 		});
 		
 	}
+	
+	
 }

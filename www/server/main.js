@@ -156,6 +156,12 @@ Server.main = function() {
 	Server.setupAccounts();
 	Server.createAdmin();
 	Server.createTagGroups();
+	Server.setupIndexes();
+};
+Server.setupIndexes = function() {
+	Meteor.startup(function() {
+		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index"});
+	});
 };
 Server.setupPublishes = function() {
 	Meteor.publish("tag_groups",function() {
@@ -172,6 +178,12 @@ Server.setupPublishes = function() {
 	Meteor.publish("countArticles",function(id,selector1) {
 		if(selector1 == null) selector1 = { };
 		Counts.publish(this,"countArticles" + id,model_Articles.collection.find(selector1));
+	});
+	Meteor.publish("searchArticles",function(searchValue) {
+		if(searchValue == null || searchValue == "") return model_Articles.collection.find({ });
+		var fields = { score : { '$meta' : "textScore"}};
+		var sort = { score : { '$meta' : "textScore"}};
+		return model_Articles.collection.find({ '$text' : { '$search' : searchValue}},{ fields : fields, sort : sort});
 	});
 };
 Server.setupPermissions = function() {

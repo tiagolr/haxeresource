@@ -71,6 +71,21 @@ class Router {
 			}]
 		});
 		
+		FlowRouter.route("/search", {
+			action:function () {
+				var query = FlowRouter.getQueryParam('q');
+				trace('got query $query');
+				if (query != null && query != "") {
+					Client.listArticles.showSearch(query);
+				} else {
+					FlowRouter.go('/');
+				}
+			},
+			triggersExit: [function () {
+				Client.listArticles.hide();
+			}]
+		});
+		
 		FlowRouter.route("/new", {
 			action:function () {
 				Client.newArticle.show();

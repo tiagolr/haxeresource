@@ -33,7 +33,8 @@ class ClientUtils{
 	}
 	
 	public function parseMarkdown(raw:String):String {
-		return untyped marked(raw);
+		return raw == null ? null:
+			untyped marked(raw);
 	}
 	
 	public function handleServerError(error:Error) {

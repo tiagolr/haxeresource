@@ -8,9 +8,7 @@ import meteor.packages.Roles;
 import model.Articles;
 import model.Articles.Article;
 import model.TagGroups;
-import model.TagGroups.TagGroup;
 import model.Tags;
-import model.Tags.Tag;
 
 /**
  * Server
@@ -28,6 +26,19 @@ class Server {
 		setupAccounts();
 		createAdmin();
 		createTagGroups();
+		
+		setupIndexes();
+	}
+	
+	static private function setupIndexes() {
+		Meteor.startup(function() {
+			untyped Articles.collection._ensureIndex( {
+				content:'text',
+				title: 'text',
+				description: 'text',
+				tags:'text',
+			}, { name:'article_search_index' } );
+		});
 	}
 	
 	static private function setupPublishes():Void {
@@ -48,6 +59,17 @@ class Server {
 		Meteor.publish('countArticles', function(id:String , selector: { } ) {
 			if (selector == null) selector = { }// FIX - calling meteor.subscribe with a parameter set to null causes error
 			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
+		});
+		
+		Meteor.publish("searchArticles", function(searchValue) {
+			if (searchValue == null || searchValue == "") {
+				return Articles.collection.find({});
+			}
+			
+			var fields = { score: { '$meta': "textScore" }};
+			var sort = { score: { '$meta': "textScore" }};
+			
+			return Articles.collection.find( { "$text": { "$search": searchValue } } , untyped {fields:fields, sort:sort});
 		});
 	}
 	
