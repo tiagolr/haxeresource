@@ -1,4 +1,7 @@
+import meteor.Meteor;
 import meteor.packages.FlowRouter;
+import meteor.Session;
+import meteor.Tracker;
 import model.Articles;
 import model.TagGroups;
 import templates.ListArticles;
@@ -10,10 +13,42 @@ import templates.ViewArticle;
  * @author TiagoLr
  */
 class Router {
-
 	
+	//-----------------------------------------------
+	// Used to control page transitions
+	//-----------------------------------------------
+	public var visiblePage(default, null):String;
+	var currentPage(default, null):String;
 	
-	public function new() {}
+	function showPage(page:String, args:Dynamic) {
+		switch page() {
+			case 'listArticles': 
+			case 'newArticle':
+			case 'viewArticle':
+		}
+		
+		if (currentPage != page) {
+			hidePage(currentPage);
+		}
+		
+		currentPage = page;
+	}
+	
+	function hidePage(page:String) {
+		switch(page) {
+			case 'listArticles':
+				Client.listArticles.hide();
+			case 'newArticle':
+				Client.newArticle.hide();
+			case 'viewArticle':
+				Client.viewArticle.hide();
+		}
+	}
+	//-----------------------------------------------
+	
+	public function new() { }
+	
+	// Define Routes
 	public function init() {
 		
 		FlowRouter.route('/', {
@@ -30,7 +65,6 @@ class Router {
 				var tag = FlowRouter.getParam('name');
 				
 				var selector = Articles.queryFromTags([tag]);
-				//Client.utils.subscribeCountArticles(selector);
 				
 				Client.listArticles.show(null, null, selector, Configs.client.texts.la_showing_tag(tag));
 			}, 
@@ -65,7 +99,7 @@ class Router {
 				} else {
 					FlowRouter.go('/');
 				}
-			}, 
+			},
 			triggersExit:[function() {
 				Client.listArticles.hide();
 			}]
@@ -74,9 +108,8 @@ class Router {
 		FlowRouter.route("/search", {
 			action:function () {
 				var query = FlowRouter.getQueryParam('q');
-				trace('got query $query');
 				if (query != null && query != "") {
-					Client.listArticles.showSearch(query);
+					Client.listArticles.showSearch(null, query, Configs.client.texts.la_showing_query(query));
 				} else {
 					FlowRouter.go('/');
 				}

@@ -82,7 +82,7 @@ class ListArticles {
 	//-----------------------------------------------------------------
 	
 	
-	public function show(?_sort: { }, ?_limit:Int = -1, _selector:Dynamic, captionMsg:String) {
+	public function show(_sort:Dynamic , _limit:Int = -1, _selector:Dynamic, captionMsg:String) {
 		searchMode = false;
 		
 		if (_limit == -1) {
@@ -99,18 +99,25 @@ class ListArticles {
 			selector = _selector;
 		}
 		
-
-		if (_sort != null) {
+		if (_sort == null || (_sort.created == null && _sort.votes == null && sort.title == null)) {
+			sort = { created: -1 }; // default sorting
+		} else {
 			sort = _sort;
 		}
 		
 		this.captionMsg = captionMsg;
 	}
 	
-	public function showSearch(query:String) {
-		captionMsg = 'Searching this mofo';
+	public function showSearch(_sort:{}, query:String, caption:String) {
+		captionMsg = caption;
 		searchMode = true;
 		searchQuery = query;
+		selector = { score: { '$exists':true }}
+		
+		if (_sort == null) {
+			sort = {score: -1};
+		}
+		
 		
 		page.show(0);
 	}
@@ -134,35 +141,22 @@ class ListArticles {
 			},
 			
 			articles:function() {
-				if (searchMode) {
-					return Articles.collection.find( { score: { '$exists':true }} );
-				} else {
-					return Articles.collection.find( selector, { sort:sort, limit:limit } );
-				}
+				return Articles.collection.find( selector, { sort:sort, limit:limit } );
 			},
 			
 			currentCount:function () {
-				if (searchMode) {
-					return 0;
-				} else {
-					return Articles.collection.find( selector, { limit:limit } ).count();
-				}
+				return Articles.collection.find( selector, { limit:limit } ).count();
 			},
 			
 			totalCount: function () {
-				if (searchMode) {
-					return 0;
-				} else {
-					return Client.utils.retrieveArticleCount(selector);
-				}
+				var s = searchMode == true ?  { "$text": { "$search": searchQuery }} : selector;
+				return Client.utils.retrieveArticleCount(s);
 			},
 			
+			// return currentCount == totalCount
 			allEntriesLoaded: function() {
-				if (searchMode) {
-					return true;
-				} else {
-					return Client.utils.retrieveArticleCount(selector) == Articles.collection.find(selector, { limit:limit } ).count();
-				}
+				var s = searchMode == true ?  { "$text": { "$search": searchQuery }} : selector;
+				return Articles.collection.find(selector, { limit:limit } ).count() == Client.utils.retrieveArticleCount(s);
 			},
 			
 			sortAgeUp: function() { return sort.created == 1;},
@@ -176,11 +170,9 @@ class ListArticles {
 		
 		Template.get('listArticles').onCreated(function() {
 			TemplateCtx.autorun(function () {
-				if (searchMode) {
-					subscription = Meteor.subscribe('searchArticles', searchQuery); 
-				} else {
-					subscription = Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit });
-				}
+				subscription = searchMode == true ?
+					subscription = Meteor.subscribe('searchArticles', searchQuery, { sort:sort, limit:limit }):
+					subscription = Meteor.subscribe(Articles.NAME, selector, { sort:sort, limit:limit } );
 			});
 		});
 		

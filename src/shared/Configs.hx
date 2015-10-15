@@ -44,6 +44,7 @@ class Configs {
 			la_showing_all: 	'Showing <em>all</em> articles',
 			la_showing_tag: 	function(tag:String) return 'Showing <em>$tag</em> tag',
 			la_showing_group: 	function(group:String) return 'Showing <em>$group</em> group',
+			la_showing_query:	function(query:String) return 'Showing results for <em>$query</em> query',
 			la_showing_ungrouped: "Showing ungrouped articles",
 			na_placeh_title:	"Title goes here",
 			na_placeh_desc:		"Brief description about the subject",

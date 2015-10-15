@@ -1,6 +1,7 @@
 import haxe.crypto.Md5;
 import js.Lib;
 import meteor.Accounts;
+import meteor.Collection.FindOptions;
 import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.PublishCounts;
@@ -51,25 +52,28 @@ class Server {
 		});
 		
 		Meteor.publish(Articles.NAME, function(selector, options) {
-			if (selector == null) selector = { }; // FIX - calling meteor.subscribe with a parameter set to null causes error
-			if (options == null) options = { }; // FIX - calling meteor.subscribe with a parameter set to null causes error
+			if (selector == null) selector = { }; 	// FIX - calling meteor.subscribe with a parameter set to null causes error
+			if (options == null) options = { }; 	// FIX - calling meteor.subscribe with a parameter set to null causes error
 			return Articles.collection.find(selector, options);
 		});
 		
 		Meteor.publish('countArticles', function(id:String , selector: { } ) {
-			if (selector == null) selector = { }// FIX - calling meteor.subscribe with a parameter set to null causes error
+			if (selector == null) selector = { }	// FIX - calling meteor.subscribe with a parameter set to null causes error
 			PublishCounts.publish(Lib.nativeThis, 'countArticles$id', Articles.collection.find(selector));
 		});
 		
-		Meteor.publish("searchArticles", function(searchValue) {
-			if (searchValue == null || searchValue == "") {
+		Meteor.publish("searchArticles", function(query, options:FindOptions) {
+			if (query == null || query == "") {
 				return Articles.collection.find({});
 			}
+			if (options == null) options = { };
 			
-			var fields = { score: { '$meta': "textScore" }};
-			var sort = { score: { '$meta': "textScore" }};
+			options.fields = untyped { score: { '$meta': "textScore" }}; 		// configure fields to include score results
+			if (options.sort == null || options.sort.score != null) { 	// if no sorting defined or sorting set to score
+				options.sort = { score: { '$meta': "textScore" }}; 			// configure sorting for indexed search score
+			}
 			
-			return Articles.collection.find( { "$text": { "$search": searchValue } } , untyped {fields:fields, sort:sort});
+			return Articles.collection.find( { "$text": { "$search": query } } , options);
 		});
 	}
 	

@@ -62,13 +62,15 @@ templates_ListArticles.prototype = {
 		this.get_page().show(0);
 		if(_limit != null) this.set_limit(_limit);
 		if(_selector != null) this.set_selector(_selector);
-		if(_sort != null) this.set_sort(_sort);
+		if(_sort == null || _sort.created == null && _sort.votes == null && this.get_sort().title == null) this.set_sort({ created : -1}); else this.set_sort(_sort);
 		this.set_captionMsg(captionMsg);
 	}
-	,showSearch: function(query) {
-		this.set_captionMsg("Searching this mofo");
+	,showSearch: function(_sort,query,caption) {
+		this.set_captionMsg(caption);
 		this.set_searchMode(true);
 		this.set_searchQuery(query);
+		this.set_selector({ score : { '$exists' : true}});
+		if(_sort == null) this.set_sort({ score : -1});
 		this.get_page().show(0);
 	}
 	,hide: function() {
@@ -84,13 +86,17 @@ templates_ListArticles.prototype = {
 		Template.listArticles.helpers({ captionMsg : function() {
 			return _g.get_captionMsg();
 		}, articles : function() {
-			if(_g.get_searchMode()) return model_Articles.collection.find({ score : { '$exists' : true}}); else return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+			return model_Articles.collection.find(_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 		}, currentCount : function() {
-			if(_g.get_searchMode()) return 0; else return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
 		}, totalCount : function() {
-			if(_g.get_searchMode()) return 0; else return Client.utils.retrieveArticleCount(_g.get_selector());
+			var s;
+			if(_g.get_searchMode() == true) s = { '$text' : { '$search' : _g.get_searchQuery()}}; else s = _g.get_selector();
+			return Client.utils.retrieveArticleCount(s);
 		}, allEntriesLoaded : function() {
-			if(_g.get_searchMode()) return true; else return Client.utils.retrieveArticleCount(_g.get_selector()) == model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count();
+			var s1;
+			if(_g.get_searchMode() == true) s1 = { '$text' : { '$search' : _g.get_searchQuery()}}; else s1 = _g.get_selector();
+			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count() == Client.utils.retrieveArticleCount(s1);
 		}, sortAgeUp : function() {
 			return _g.get_sort().created == 1;
 		}, sortAgeDown : function() {
@@ -106,7 +112,7 @@ templates_ListArticles.prototype = {
 		}});
 		Template.listArticles.onCreated(function() {
 			this.autorun(function() {
-				if(_g.get_searchMode()) _g.subscription = Meteor.subscribe("searchArticles",_g.get_searchQuery()); else _g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
+				if(_g.get_searchMode() == true) _g.subscription = _g.subscription = Meteor.subscribe("searchArticles",_g.get_searchQuery(),{ sort : _g.get_sort(), limit : _g.get_limit()}); else _g.subscription = _g.subscription = Meteor.subscribe("articles",_g.get_selector(),{ sort : _g.get_sort(), limit : _g.get_limit()});
 			});
 		});
 		Template.listArticles.events({ 'click #btnLoadMoreResults' : function(_) {
@@ -128,9 +134,9 @@ templates_ListArticles.prototype = {
 			var votes = Meteor.user().profile.votes;
 			return votes != null && votes.indexOf(id) != -1;
 		}, formatDate : function(date) {
-			var s = vagueTime.get({ from : new Date(), to : date});
-			s = StringTools.replace(s," ago","");
-			return s;
+			var s2 = vagueTime.get({ from : new Date(), to : date});
+			s2 = StringTools.replace(s2," ago","");
+			return s2;
 		}, formatLink : function(link) {
 			if(!StringTools.startsWith(link,"http://")) link = "http://" + link;
 			return link;
@@ -301,10 +307,30 @@ var Router = function() {
 };
 Router.__name__ = true;
 Router.prototype = {
-	init: function() {
+	get_currentRoute: function() {
+		return Session.get("current_route");
+	}
+	,set_currentRoute: function(val) {
+		Session.set("current_route",val);
+		return val;
+	}
+	,get_previousRoute: function() {
+		var current = FlowRouter.current();
+		if(current != null && current.oldRoute != null) return FlowRouter.current().oldRoute.path; else return null;
+	}
+	,init: function() {
+		var _g = this;
+		Tracker.autorun(function() {
+			FlowRouter.watchPathChange();
+			_g.set_currentRoute(FlowRouter.current().path);
+		});
 		FlowRouter.route("/",{ action : function() {
+			console.log("entering index |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			Client.listArticles.show(null,null,{ },Configs.client.texts.la_showing_all);
 		}, triggersExit : [function() {
+			console.log("exiting index |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
+			console.log("NOTICE");
+			console.log(FlowRouter.current());
 			Client.listArticles.hide();
 		}]});
 		FlowRouter.route("/tag/:name",{ action : function() {
@@ -324,16 +350,16 @@ Router.prototype = {
 			} else if(groupName == "ungrouped") {
 				var tagNames = [];
 				var groups = templates_SideBar.get_tagGroups();
-				var _g = 0;
-				while(_g < groups.length) {
-					var g1 = groups[_g];
-					++_g;
+				var _g1 = 0;
+				while(_g1 < groups.length) {
+					var g1 = groups[_g1];
+					++_g1;
 					tagNames.push(g1.mainTag);
-					var _g1 = 0;
+					var _g11 = 0;
 					var _g2 = g1.resolvedTags;
-					while(_g1 < _g2.length) {
-						var t = _g2[_g1];
-						++_g1;
+					while(_g11 < _g2.length) {
+						var t = _g2[_g11];
+						++_g11;
 						tagNames.push(t.name);
 					}
 				}
@@ -344,15 +370,18 @@ Router.prototype = {
 			Client.listArticles.hide();
 		}]});
 		FlowRouter.route("/search",{ action : function() {
+			console.log("entering search |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			var query = FlowRouter.getQueryParam("q");
-			console.log("got query " + query);
-			if(query != null && query != "") Client.listArticles.showSearch(query); else FlowRouter.go("/");
+			if(query != null && query != "") Client.listArticles.showSearch(null,query,Configs.client.texts.la_showing_query(query)); else FlowRouter.go("/");
 		}, triggersExit : [function() {
+			console.log("exiting search |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			Client.listArticles.hide();
 		}]});
 		FlowRouter.route("/new",{ action : function() {
+			console.log("entering new |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			Client.newArticle.show();
 		}, triggersExit : [function() {
+			console.log("exiting new |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			Client.newArticle.hide();
 		}]});
 		FlowRouter.route("/edit/:_id/:name",{ action : function() {
@@ -1579,6 +1608,8 @@ Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_dura
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
+}, la_showing_query : function(query) {
+	return "Showing results for <em>" + query + "</em> query";
 }, la_showing_ungrouped : "Showing ungrouped articles", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "Url to the original article, ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Contents ", na_label_tags : "Tags ", na_tt_links : "An url for the original post (if any), required if not posting the contents directly here.", na_tt_contents : "The article contents are written using markdown notation, articles may contain only links to external posts like blogs or other webpages, in that case contents are not required.", na_tt_tags : "Tags may be inserted by pressing `comma` or `enter` keys. Depending on the tags choosen, the article may be added to different groups, for eg. using `haxe-macros` the article will be added to `Haxe` group inside `macros` subgroup", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
