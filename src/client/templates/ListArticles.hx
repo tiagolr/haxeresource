@@ -218,7 +218,7 @@ class ListArticles {
 				var query = new JQuery('#la-search-form input').val();
 				
 				if (query != null && query != "") {
-					FlowRouter.go('/search',{}, {q:query});
+					FlowRouter.go('/articles/search',{}, {q:query});
 				} else {
 					FlowRouter.go('/'); // show all articles
 				}
@@ -290,7 +290,25 @@ class ListArticles {
 				});
 			},
 			
-			'click #la-btnRemoveArticle':function (event:JqEvent) {
+			'click #la-btn-view-article':function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				var title = event.currentTarget.getAttribute('data-title');
+				title = Shared.utils.formatUrlName(title);
+				
+				var path = FlowRouter.path('/articles/view/:id/:name', { id:articleId, name:title } );
+				FlowRouter.go(path);
+			},
+
+			'click #la-btn-edit-article':function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				var title = event.currentTarget.getAttribute('data-title');
+				title = Shared.utils.formatUrlName(title);
+				
+				var path = FlowRouter.path('/articles/edit/:id/:name', { id:articleId, name:title } );
+				FlowRouter.go(path);
+			},
+			
+			'click #la-btn-remove-article':function (event:JqEvent) {
 				var articleId = event.currentTarget.getAttribute('data-article');
 				
 				Client.utils.confirm(

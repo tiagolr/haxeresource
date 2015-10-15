@@ -3,13 +3,13 @@
 		<h1 id="va-title">{{title}}</h1>
 		<div id="va-description">{{description}}</div>
 		<a href="{{link}}" target="_blank">{{link}}</a>
-		<p>Tags: {{#each tags}}<a href="/tag/{{this}}">{{this}} </a>{{/each}}</p>
+		<p>Tags: {{#each tags}}<a href="/articles/tag/{{this}}">{{this}} </a>{{/each}}</p>
 		<div>
 			{{#if canUpdateArticle}}
-				<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}/{{formatUrlName title}}')" style="display:inline">Edit</button>
+				<button id="va-btn-edit-article" type="button" class="btn btn-success" style="display:inline">Edit</button>
 			{{/if}}
 			{{#if canRemoveArticle}}
-				<button id="va-btnRemoveArticle" type="button" class="btn btn-danger" style="display:inline">Remove</button>
+				<button id="va-btn-remove-article" type="button" class="btn btn-danger" style="display:inline">Remove</button>
 			{{/if}}
 		</div>
 		<hr>

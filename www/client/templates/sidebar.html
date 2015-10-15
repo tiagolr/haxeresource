@@ -7,7 +7,7 @@
 			{{/each}}
 		</ul>
 		<div id="sb-ungrouped">
-			<a href="/tag/group/ungrouped">
+			<a href="/articles/tag/group/ungrouped">
 				<div>
 					Ungrouped 
 					<span class="badge">{{countUngrouped}}</span>
@@ -22,7 +22,7 @@
 	<!-- collapse triggering is made via code -->
 	<li class="nav-tag-group">
 		<div class="group-toggler" href="#" data-trigger="collapse-{{name}}" data-toggle>
-			<a href="/tag/group/{{name}}">
+			<a href="/articles/tag/group/{{name}}">
 				<img src="{{icon}}" alt="{{name}}-logo">
 				{{name}} 
 				<span class="badge pull-right">{{countArticlesGroup mainTag resolvedTags}}</span>
@@ -32,7 +32,7 @@
 	<div id="collapse-{{name}}" class="collapse collapsed">
 		<ul class="sidebar-subgroup">
 			{{#each resolvedTags}}
-			<li class="nav-tag"><a href="/tag/{{name}}">{{formattedName}} <span class="badge pull-right">{{countArticlesTag name}}</span></a></li>
+			<li class="nav-tag"><a href="/articles/tag/{{name}}">{{formattedName}} <span class="badge pull-right">{{countArticlesTag name}}</span></a></li>
 			{{/each}}
 		</ul>
 	</div>

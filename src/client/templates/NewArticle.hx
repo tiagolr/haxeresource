@@ -125,7 +125,10 @@ class NewArticle {
 					// insert new document
 					id = Articles.collection.insert(insertDoc, function (error) {
 						if (error == null) {
-							FlowRouter.go('/view/$id/' + Shared.utils.formatUrlName(insertDoc.title));
+							var title = Shared.utils.formatUrlName(insertDoc.title);
+							var path = FlowRouter.path('/articles/view/:id/:name', { id:id, name:title } );
+							
+							FlowRouter.go(path);
 							ctx.done();
 						} else {
 							Client.utils.handleServerError(cast error);
@@ -137,7 +140,12 @@ class NewArticle {
 					id = editArticle._id;
 					Articles.collection.update( { _id:id }, updateDoc, null, function(error, doc) {
 						if (error == null) {
-							FlowRouter.go('/view/${editArticle._id}/' + Shared.utils.formatUrlName(editArticle.title));
+							
+							var title = Articles.collection.findOne( { _id:id } ).title;
+							title = Shared.utils.formatUrlName(title);
+							var path = FlowRouter.path('/articles/view/:id/:name', { id:id, name:title } );
+							
+							FlowRouter.go(path);
 							ctx.done();
 						} else {
 							Client.utils.handleServerError(cast error);
@@ -155,7 +163,7 @@ class NewArticle {
 		var articleId = args != null ? args.articleId : null;
 		
 		if (articleId != null) {
-			//AutoForm.resetForm('newArticleForm');
+			// edits article
 			Meteor.subscribe(Articles.NAME, { _id:articleId }, null, {
 				
 				onReady:function () {
@@ -164,7 +172,7 @@ class NewArticle {
 						editArticle = article;
 						page.show(Configs.client.page_fadein_duration);
 						
-						// FIX - force tags to show in input tags
+						// force tags to show in input tags
 						var tags = editArticle.tags;
 						if (tags != null) {
 							for (t in editArticle.tags) {
@@ -172,26 +180,28 @@ class NewArticle {
 							}
 						}
 					} else {
-						// TODO show flash error
-						trace('NewArticle.show: Could not find article $articleId to edit');
+						Client.utils.notifyError('Could not find article $articleId to edit');
 						FlowRouter.go('/');
 					}
 				}, onError: function(e) {
 					trace("Error: " + e);
-					// TODO on error
 				}
 				
 			});
 		} else {
-			page.show(Configs.client.page_fadein_duration);
+			// creates new article
+			page.show(Configs.client.page_fadein_duration); 
 		}
 	}
 	
 	public function hide() {
 		if (Session.get('editArticle') != null) {
 			Session.set('editArticle', null);
-			//AutoForm.resetForm('newArticleForm');
 		}
+		
+		// clear tags input
+		untyped new JQuery("#naf-articleTags").tagsinput('removeAll');
+		
 		page.hide(Configs.client.page_fadeout_duration);
 	}
 }

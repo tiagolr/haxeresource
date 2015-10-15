@@ -70,7 +70,13 @@ class Router {
 			}
 		});
 		
-		FlowRouter.route('/tag/:name', {
+		FlowRouter.route('/articles', {
+			action: function() {
+				showListArticles({ selector: { }, caption: Configs.client.texts.la_showing_all});   
+			}
+		});
+		
+		FlowRouter.route('/articles/tag/:name', {
 			action: function () {
 				var tag = FlowRouter.getParam('name');
 				var selector = { tags: { '$nin':[tag] }}
@@ -79,7 +85,7 @@ class Router {
 			} 
 		});
 		
-		FlowRouter.route('/tag/group/:name', {
+		FlowRouter.route('/articles/tag/group/:name', {
 			action: function () {
 				var groupName = FlowRouter.getParam('name');
 				var g:TagGroup = TagGroups.collection.findOne( { name:groupName } );
@@ -110,7 +116,7 @@ class Router {
 			}
 		});
 		
-		FlowRouter.route("/search", {
+		FlowRouter.route("/articles/search", {
 			action:function () {
 				var query = FlowRouter.getQueryParam('q');
 				if (query != null && query != "") {
@@ -121,20 +127,20 @@ class Router {
 			}
 		});
 		
-		FlowRouter.route("/new", {
+		FlowRouter.route("/articles/new", {
 			action:function () {
 				showPage('newArticle');
 			}
 		});
 		
-		FlowRouter.route("/edit/:_id/:name", {
+		FlowRouter.route("/articles/edit/:_id/:name", {
 			action:function () {
 				var id = FlowRouter.getParam('_id');
 				showPage('newArticle', { articleId:id } );
 			}
 		});
 		
-		FlowRouter.route("/view/:_id/:name", {
+		FlowRouter.route("/articles/view/:_id/:name", {
 			action: function () {
 				var id = FlowRouter.getParam('_id');
 				showPage('viewArticle', { articleId:id } );

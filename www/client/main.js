@@ -124,7 +124,7 @@ templates_ListArticles.prototype = {
 			_g.set_sort(_g.get_sort().votes == null?{ votes : 1}:{ votes : _g.get_sort().votes * -1});
 		}, 'submit #la-search-form' : function(evt) {
 			var query = js.JQuery("#la-search-form input").val();
-			if(query != null && query != "") FlowRouter.go("/search",{ },{ q : query}); else FlowRouter.go("/");
+			if(query != null && query != "") FlowRouter.go("/articles/search",{ },{ q : query}); else FlowRouter.go("/");
 			return false;
 		}});
 		Template.articleRow.helpers({ hasUserVote : function(id) {
@@ -158,10 +158,22 @@ templates_ListArticles.prototype = {
 			Meteor.call("toggleArticleVote",articleId,function(error) {
 				if(error != null) Client.utils.handleServerError(error);
 			});
-		}, 'click #la-btnRemoveArticle' : function(event2) {
+		}, 'click #la-btn-view-article' : function(event2) {
 			var articleId1 = event2.currentTarget.getAttribute("data-article");
+			var title = event2.currentTarget.getAttribute("data-title");
+			title = Shared.utils.formatUrlName(title);
+			var path = FlowRouter.path("/articles/view/:id/:name",{ id : articleId1, name : title});
+			FlowRouter.go(path);
+		}, 'click #la-btn-edit-article' : function(event3) {
+			var articleId2 = event3.currentTarget.getAttribute("data-article");
+			var title1 = event3.currentTarget.getAttribute("data-title");
+			title1 = Shared.utils.formatUrlName(title1);
+			var path1 = FlowRouter.path("/articles/edit/:id/:name",{ id : articleId2, name : title1});
+			FlowRouter.go(path1);
+		}, 'click #la-btn-remove-article' : function(event4) {
+			var articleId3 = event4.currentTarget.getAttribute("data-article");
 			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
-				model_Articles.collection.remove({ _id : articleId1});
+				model_Articles.collection.remove({ _id : articleId3});
 			});
 		}});
 		Template.articleRow.onRendered(function() {
@@ -250,7 +262,9 @@ templates_NewArticle.prototype = {
 			var id = null;
 			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc,null,function(error) {
 				if(error == null) {
-					FlowRouter.go("/view/" + id + "/" + Shared.utils.formatUrlName(insertDoc.title));
+					var title1 = Shared.utils.formatUrlName(insertDoc.title);
+					var path = FlowRouter.path("/articles/view/:id/:name",{ id : id, name : title1});
+					FlowRouter.go(path);
 					ctx.done();
 				} else {
 					Client.utils.handleServerError(error);
@@ -260,7 +274,10 @@ templates_NewArticle.prototype = {
 				id = _g.get_editArticle()._id;
 				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1,doc) {
 					if(error1 == null) {
-						FlowRouter.go("/view/" + _g.get_editArticle()._id + "/" + Shared.utils.formatUrlName(_g.get_editArticle().title));
+						var title2 = model_Articles.collection.findOne({ _id : id}).title;
+						title2 = Shared.utils.formatUrlName(title2);
+						var path1 = FlowRouter.path("/articles/view/:id/:name",{ id : id, name : title2});
+						FlowRouter.go(path1);
 						ctx.done();
 					} else {
 						Client.utils.handleServerError(error1);
@@ -290,7 +307,7 @@ templates_NewArticle.prototype = {
 					}
 				}
 			} else {
-				console.log("NewArticle.show: Could not find article " + articleId + " to edit");
+				Client.utils.notifyError("Could not find article " + articleId + " to edit");
 				FlowRouter.go("/");
 			}
 		}, onError : function(e) {
@@ -299,6 +316,7 @@ templates_NewArticle.prototype = {
 	}
 	,hide: function() {
 		if(Session.get("editArticle") != null) Session.set("editArticle",null);
+		js.JQuery("#naf-articleTags").tagsinput("removeAll");
 		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,__class__: templates_NewArticle
@@ -343,12 +361,15 @@ Router.prototype = {
 		FlowRouter.route("/",{ action : function() {
 			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all});
 		}});
-		FlowRouter.route("/tag/:name",{ action : function() {
+		FlowRouter.route("/articles",{ action : function() {
+			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all});
+		}});
+		FlowRouter.route("/articles/tag/:name",{ action : function() {
 			var tag = FlowRouter.getParam("name");
 			var selector = { tags : { '$nin' : [tag]}};
 			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag)});
 		}});
-		FlowRouter.route("/tag/group/:name",{ action : function() {
+		FlowRouter.route("/articles/tag/group/:name",{ action : function() {
 			var groupName = FlowRouter.getParam("name");
 			var g = model_TagGroups.collection.findOne({ name : groupName});
 			if(g != null) {
@@ -376,18 +397,18 @@ Router.prototype = {
 				_g.showListArticles({ selector : selector2, caption : Configs.client.texts.la_showing_ungrouped});
 			} else FlowRouter.go("/");
 		}});
-		FlowRouter.route("/search",{ action : function() {
+		FlowRouter.route("/articles/search",{ action : function() {
 			var query = FlowRouter.getQueryParam("q");
 			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
 		}});
-		FlowRouter.route("/new",{ action : function() {
+		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
 		}});
-		FlowRouter.route("/edit/:_id/:name",{ action : function() {
+		FlowRouter.route("/articles/edit/:_id/:name",{ action : function() {
 			var id = FlowRouter.getParam("_id");
 			_g.showPage("newArticle",{ articleId : id});
 		}});
-		FlowRouter.route("/view/:_id/:name",{ action : function() {
+		FlowRouter.route("/articles/view/:_id/:name",{ action : function() {
 			var id1 = FlowRouter.getParam("_id");
 			_g.showPage("viewArticle",{ articleId : id1});
 		}});
@@ -571,7 +592,13 @@ templates_ViewArticle.prototype = {
 		}, canRemoveArticle : function() {
 			return Permissions.canRemoveArticles(_g.get_currentArticle());
 		}});
-		Template.viewArticle.events({ 'click #va-btnRemoveArticle' : function(evt) {
+		Template.viewArticle.events({ 'click #va-btn-edit-article' : function(evt) {
+			var id = _g.get_currentArticle()._id;
+			var title = _g.get_currentArticle().title;
+			title = Shared.utils.formatUrlName(title);
+			var path = FlowRouter.path("/articles/edit/:id/:name",{ id : id, name : title});
+			FlowRouter.go(path);
+		}, 'click #va-btn-remove-article' : function(evt1) {
 			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
 				model_Articles.collection.remove({ _id : _g.get_currentArticle()._id});
 				FlowRouter.go("/");

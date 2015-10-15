@@ -116,19 +116,19 @@
 					
 					<div>
 						{{#if content}}
-						<button class="btn btn-info" onclick="FlowRouter.go('/view/{{_id}}/{{formatUrlName title}}')" style="display:inline">
+						<button id="la-btn-view-article" class="btn btn-info" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
 							Read Here
 						</button>
 						{{/if}}
 						
 						{{#if canEditArticle this}}
-							<button type="button" class="btn btn-success" onClick="FlowRouter.go('/edit/{{_id}}/{{formatUrlName title}}')" style="display:inline">
+							<button id="la-btn-edit-article" class="btn btn-success" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
 								Edit
 							</button>
 						{{/if}}
 						
 						{{#if canRemoveArticle this}}
-							<button id="la-btnRemoveArticle" type="button" class="btn btn-danger" data-article="{{_id}}" style="display:inline">
+							<button id="la-btn-remove-article" type="button" class="btn btn-danger" data-article="{{_id}}" style="display:inline">
 								Remove
 							</button>
 						{{/if}}
@@ -137,7 +137,7 @@
 					<p>
 					Tags: 
 					{{#each tags}}
-					<a href="/tag/{{this}}">{{this}} </a> 
+					<a href="/articles/tag/{{this}}">{{this}} </a> 
 					{{/each}}
 					</p>
 				</div>

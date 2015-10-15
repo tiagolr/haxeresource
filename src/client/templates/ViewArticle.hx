@@ -50,7 +50,17 @@ class ViewArticle {
 		});
 		
 		Template.get('viewArticle').events( {
-			'click #va-btnRemoveArticle': function (evt) {
+			
+			'click #va-btn-edit-article': function (evt) {
+				var id = currentArticle._id;
+				var title = currentArticle.title;
+				title = Shared.utils.formatUrlName(title);
+				
+				var path = FlowRouter.path('/articles/edit/:id/:name', { id:id, name:title } );
+				FlowRouter.go(path);
+			},
+			
+			'click #va-btn-remove-article': function (evt) {
 				
 				Client.utils.confirm(
 					Configs.client.texts.prompt_ra_msg,
