@@ -151,7 +151,8 @@ class NewArticle {
 		
 	}
 	
-	public function show(articleId:String = null) {
+	public function show(args: Dynamic ) {
+		var articleId = args != null ? args.articleId : null;
 		
 		if (articleId != null) {
 			//AutoForm.resetForm('newArticleForm');

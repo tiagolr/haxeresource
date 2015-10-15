@@ -11,11 +11,28 @@ import meteor.packages.PublishCounts;
 import meteor.Session;
 import meteor.Template;
 import model.Articles;
+import templates.ListArticles.ListArticlesSort;
 
 /**
  * ...
  * @author TiagoLr
  */
+typedef ListArticlesSort = {
+	?created:Int,
+	?votes:Int,
+	?title:Int,
+	?score:Int,
+}
+ 
+typedef ListArticlesOptions = {
+	?isSearch:Bool,
+	?sort: ListArticlesSort,
+	?limit:Int, // set to -1 to use configs page size
+	selector:Dynamic, 
+	?query:String,
+	caption:String,
+}
+
 class ListArticles {
 	
 	var subscription: { };
@@ -26,7 +43,7 @@ class ListArticles {
 	}
 	
 	// REACTIVE VARS --------------------------------------------------
-	var sort(get, set): Dynamic;
+	var sort(get, set):ListArticlesSort;
 	function set_sort(val) {
 		Session.set('list_articles_sort',val);
 		return val;
@@ -82,48 +99,44 @@ class ListArticles {
 	//-----------------------------------------------------------------
 	
 	
-	public function show(_sort:Dynamic , _limit:Int = -1, _selector:Dynamic, captionMsg:String) {
-		searchMode = false;
+	public function show(args:ListArticlesOptions) {
+		searchMode = args.isSearch == true ? true : false;
 		
-		if (_limit == -1) {
-			_limit = Configs.client.page_size;
+		if (searchMode) {
+			searchQuery = args.query;
+			selector = { score: { '$exists':true }} // selector is set to searched articles
+			
+			if (args.sort == null) {
+				sort = {score: -1}; // search mode defaults sorting to score
+			}
+		} 
+		else {
+			if (args.limit != null) {
+			limit = args.limit == -1 ? 
+				Configs.client.page_size : args.limit;
+			}
+			
+			if (args.selector != null) {
+				selector = args.selector;
+			}
+			
+			if (args.sort == null || (args.sort.created == null && args.sort.votes == null && args.sort.title == null)) {
+				sort = { created: -1 }; // default sorting
+			} else {
+				sort = args.sort;
+			}
 		}
-		//page.show(Configs.client.page_fadein_duration);
-		page.show(0);
 		
-		if (_limit != null) {
-			limit = _limit;
-		}
-		
-		if (_selector != null) {
-			selector = _selector;
-		}
-		
-		if (_sort == null || (_sort.created == null && _sort.votes == null && sort.title == null)) {
-			sort = { created: -1 }; // default sorting
-		} else {
-			sort = _sort;
-		}
-		
-		this.captionMsg = captionMsg;
+		captionMsg = args.caption;
+		page.show(Configs.client.page_fadein_duration);
 	}
 	
 	public function showSearch(_sort:{}, query:String, caption:String) {
-		captionMsg = caption;
-		searchMode = true;
-		searchQuery = query;
-		selector = { score: { '$exists':true }}
 		
-		if (_sort == null) {
-			sort = {score: -1};
-		}
-		
-		
-		page.show(0);
 	}
 	
 	public function hide() {
-		page.hide(0);
+		page.hide(Configs.client.page_fadein_duration);
 	}
 	
 	public function new() {}

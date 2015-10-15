@@ -55,26 +55,24 @@ templates_ListArticles.prototype = {
 		Session.set("search_query",val);
 		return val;
 	}
-	,show: function(_sort,_limit,_selector,captionMsg) {
-		if(_limit == null) _limit = -1;
-		this.set_searchMode(false);
-		if(_limit == -1) _limit = Configs.client.page_size;
-		this.get_page().show(0);
-		if(_limit != null) this.set_limit(_limit);
-		if(_selector != null) this.set_selector(_selector);
-		if(_sort == null || _sort.created == null && _sort.votes == null && this.get_sort().title == null) this.set_sort({ created : -1}); else this.set_sort(_sort);
-		this.set_captionMsg(captionMsg);
+	,show: function(args) {
+		this.set_searchMode(args.isSearch == true?true:false);
+		if(this.get_searchMode()) {
+			this.set_searchQuery(args.query);
+			this.set_selector({ score : { '$exists' : true}});
+			if(args.sort == null) this.set_sort({ score : -1});
+		} else {
+			if(args.limit != null) this.set_limit(args.limit == -1?Configs.client.page_size:args.limit);
+			if(args.selector != null) this.set_selector(args.selector);
+			if(args.sort == null || args.sort.created == null && args.sort.votes == null && args.sort.title == null) this.set_sort({ created : -1}); else this.set_sort(args.sort);
+		}
+		this.set_captionMsg(args.caption);
+		this.get_page().show(Configs.client.page_fadein_duration);
 	}
 	,showSearch: function(_sort,query,caption) {
-		this.set_captionMsg(caption);
-		this.set_searchMode(true);
-		this.set_searchQuery(query);
-		this.set_selector({ score : { '$exists' : true}});
-		if(_sort == null) this.set_sort({ score : -1});
-		this.get_page().show(0);
 	}
 	,hide: function() {
-		this.get_page().hide(0);
+		this.get_page().hide(Configs.client.page_fadein_duration);
 	}
 	,init: function() {
 		var _g = this;
@@ -272,8 +270,10 @@ templates_NewArticle.prototype = {
 			}
 		}});
 	}
-	,show: function(articleId) {
+	,show: function(args) {
 		var _g = this;
+		var articleId;
+		if(args != null) articleId = args.articleId; else articleId = null;
 		if(articleId != null) Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			var article = model_Articles.collection.findOne({ _id : articleId});
 			if(article != null) {
@@ -307,46 +307,55 @@ var Router = function() {
 };
 Router.__name__ = true;
 Router.prototype = {
-	get_currentRoute: function() {
-		return Session.get("current_route");
+	showPage: function(page,args) {
+		switch(page) {
+		case "listArticles":
+			Client.listArticles.show(args);
+			break;
+		case "newArticle":
+			Client.newArticle.show(args);
+			break;
+		case "viewArticle":
+			Client.viewArticle.show(args);
+			break;
+		}
+		if(this.currentPage != page) this.hidePage(this.currentPage);
+		this.currentPage = page;
 	}
-	,set_currentRoute: function(val) {
-		Session.set("current_route",val);
-		return val;
+	,hidePage: function(page) {
+		switch(page) {
+		case "listArticles":
+			Client.listArticles.hide();
+			break;
+		case "newArticle":
+			Client.newArticle.hide();
+			break;
+		case "viewArticle":
+			Client.viewArticle.hide();
+			break;
+		}
 	}
-	,get_previousRoute: function() {
-		var current = FlowRouter.current();
-		if(current != null && current.oldRoute != null) return FlowRouter.current().oldRoute.path; else return null;
+	,showListArticles: function(args) {
+		this.showPage("listArticles",args);
 	}
 	,init: function() {
 		var _g = this;
-		Tracker.autorun(function() {
-			FlowRouter.watchPathChange();
-			_g.set_currentRoute(FlowRouter.current().path);
-		});
 		FlowRouter.route("/",{ action : function() {
-			console.log("entering index |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
-			Client.listArticles.show(null,null,{ },Configs.client.texts.la_showing_all);
-		}, triggersExit : [function() {
-			console.log("exiting index |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
-			console.log("NOTICE");
-			console.log(FlowRouter.current());
-			Client.listArticles.hide();
-		}]});
+			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all});
+		}});
 		FlowRouter.route("/tag/:name",{ action : function() {
 			var tag = FlowRouter.getParam("name");
-			var selector = model_Articles.queryFromTags([tag]);
-			Client.listArticles.show(null,null,selector,Configs.client.texts.la_showing_tag(tag));
-		}, triggersExit : [function() {
-			Client.listArticles.hide();
-		}]});
+			var selector = { tags : { '$nin' : [tag]}};
+			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag)});
+		}});
 		FlowRouter.route("/tag/group/:name",{ action : function() {
 			var groupName = FlowRouter.getParam("name");
 			var g = model_TagGroups.collection.findOne({ name : groupName});
 			if(g != null) {
 				var tags = Shared.utils.resolveTags(g);
 				tags.push(g.mainTag);
-				Client.listArticles.show(null,null,model_Articles.queryFromTags(tags),Configs.client.texts.la_showing_group(groupName));
+				var selector1 = { tags : { '$in' : tags}};
+				_g.showListArticles({ selector : selector1, caption : Configs.client.texts.la_showing_group(groupName)});
 			} else if(groupName == "ungrouped") {
 				var tagNames = [];
 				var groups = templates_SideBar.get_tagGroups();
@@ -363,39 +372,25 @@ Router.prototype = {
 						tagNames.push(t.name);
 					}
 				}
-				var selector1 = { tags : { '$nin' : tagNames}};
-				Client.listArticles.show(null,null,selector1,Configs.client.texts.la_showing_ungrouped);
+				var selector2 = { tags : { '$nin' : tagNames}};
+				_g.showListArticles({ selector : selector2, caption : Configs.client.texts.la_showing_ungrouped});
 			} else FlowRouter.go("/");
-		}, triggersExit : [function() {
-			Client.listArticles.hide();
-		}]});
+		}});
 		FlowRouter.route("/search",{ action : function() {
-			console.log("entering search |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
 			var query = FlowRouter.getQueryParam("q");
-			if(query != null && query != "") Client.listArticles.showSearch(null,query,Configs.client.texts.la_showing_query(query)); else FlowRouter.go("/");
-		}, triggersExit : [function() {
-			console.log("exiting search |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
-			Client.listArticles.hide();
-		}]});
+			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
+		}});
 		FlowRouter.route("/new",{ action : function() {
-			console.log("entering new |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
-			Client.newArticle.show();
-		}, triggersExit : [function() {
-			console.log("exiting new |  current " + _g.get_currentRoute() + " | previous | " + _g.get_previousRoute());
-			Client.newArticle.hide();
-		}]});
+			_g.showPage("newArticle");
+		}});
 		FlowRouter.route("/edit/:_id/:name",{ action : function() {
 			var id = FlowRouter.getParam("_id");
-			Client.newArticle.show(id);
-		}, triggersExit : [function() {
-			Client.newArticle.hide();
-		}]});
+			_g.showPage("newArticle",{ articleId : id});
+		}});
 		FlowRouter.route("/view/:_id/:name",{ action : function() {
 			var id1 = FlowRouter.getParam("_id");
-			Client.viewArticle.show(id1);
-		}, triggersExit : [function() {
-			Client.viewArticle.hide();
-		}]});
+			_g.showPage("viewArticle",{ articleId : id1});
+		}});
 		FlowRouter.notFound = { action : function() {
 			Client.utils.notifyInfo("Url not found, redirecting to homepage");
 			FlowRouter.go("/");
@@ -583,8 +578,11 @@ templates_ViewArticle.prototype = {
 			});
 		}});
 	}
-	,show: function(articleId) {
+	,show: function(args) {
 		var _g = this;
+		var articleId;
+		if(args != null) articleId = args.articleId; else articleId = null;
+		if(articleId == null) Client.utils.notifyError("Article not found");
 		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
 		}});

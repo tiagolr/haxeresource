@@ -65,7 +65,13 @@ class ViewArticle {
 		});
 	}
 	
-	public function show(articleId:String) {
+	public function show(args:Dynamic) {
+		var articleId = args != null ? args.articleId : null;
+		
+		if (articleId == null) {
+			Client.utils.notifyError('Article not found');
+		}
+		
 		Meteor.subscribe(Articles.NAME, { _id:articleId }, null, {
 			onReady: function () {
 				currentArticle = Articles.collection.findOne( { _id:articleId } );

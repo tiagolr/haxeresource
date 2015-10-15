@@ -1,3 +1,5 @@
+import haxe.Timer;
+import js.JQuery;
 import meteor.Meteor;
 import meteor.packages.FlowRouter;
 import meteor.Session;
@@ -5,6 +7,7 @@ import meteor.Tracker;
 import model.Articles;
 import model.TagGroups;
 import templates.ListArticles;
+import templates.ListArticles.ListArticlesOptions;
 import templates.NewArticle;
 import templates.SideBar;
 import templates.ViewArticle;
@@ -15,16 +18,24 @@ import templates.ViewArticle;
 class Router {
 	
 	//-----------------------------------------------
-	// Used to control page transitions
+	// Page transitions
 	//-----------------------------------------------
-	public var visiblePage(default, null):String;
-	var currentPage(default, null):String;
 	
-	function showPage(page:String, args:Dynamic) {
-		switch page() {
+	// visible pages A and B control which pages are rendered by blaze
+	// two pages may be visible at the same time to support fading transitions
+	// only visible pages are rendered by the browser
+	public var visiblePageA(default, null):String; // TODO
+	public var visiblePageB(default, null):String; // TODO
+	
+	var currentPage(default, null):String;
+	function showPage(page:String, ?args:Dynamic) {
+		switch (page) {
 			case 'listArticles': 
+				Client.listArticles.show(args);
 			case 'newArticle':
+				Client.newArticle.show(args);
 			case 'viewArticle':
+				Client.viewArticle.show(args);
 		}
 		
 		if (currentPage != page) {
@@ -36,13 +47,15 @@ class Router {
 	
 	function hidePage(page:String) {
 		switch(page) {
-			case 'listArticles':
-				Client.listArticles.hide();
-			case 'newArticle':
-				Client.newArticle.hide();
-			case 'viewArticle':
-				Client.viewArticle.hide();
+			case 'listArticles':Client.listArticles.hide();
+			case 'newArticle': Client.newArticle.hide();
+			case 'viewArticle': Client.viewArticle.hide();
 		}
+	}
+	
+	// typed helpers
+	function showListArticles(args:ListArticlesOptions) {
+		showPage('listArticles', args);
 	}
 	//-----------------------------------------------
 	
@@ -53,35 +66,30 @@ class Router {
 		
 		FlowRouter.route('/', {
 			action: function() {
-				Client.listArticles.show(null, null, {}, Configs.client.texts.la_showing_all);
-			},
-			triggersExit: [function() {
-				Client.listArticles.hide();
-			}]
+				showListArticles({ selector: { }, caption: Configs.client.texts.la_showing_all});   
+			}
 		});
 		
 		FlowRouter.route('/tag/:name', {
 			action: function () {
 				var tag = FlowRouter.getParam('name');
+				var selector = { tags: { '$nin':[tag] }}
 				
-				var selector = Articles.queryFromTags([tag]);
-				
-				Client.listArticles.show(null, null, selector, Configs.client.texts.la_showing_tag(tag));
-			}, 
-			triggersExit:[function() {
-				Client.listArticles.hide();
-			}]
+				showListArticles( { selector:selector, caption: Configs.client.texts.la_showing_tag(tag) } );
+			} 
 		});
 		
 		FlowRouter.route('/tag/group/:name', {
 			action: function () {
 				var groupName = FlowRouter.getParam('name');
-				var g:TagGroup = TagGroups.collection.findOne({name:groupName});
+				var g:TagGroup = TagGroups.collection.findOne( { name:groupName } );
+				
 				if (g != null) {
 					var tags = Shared.utils.resolveTags(g);
 					tags.push(g.mainTag);
 					
-					Client.listArticles.show(null, null, Articles.queryFromTags(tags), Configs.client.texts.la_showing_group(groupName));
+					var selector = { tags: { '$in':tags }};
+					showListArticles( { selector: selector, caption: Configs.client.texts.la_showing_group(groupName) } );
 				} else if (groupName == 'ungrouped') {
 					var tagNames = [];
 					var groups = SideBar.tagGroups;
@@ -94,58 +102,43 @@ class Router {
 					}
 					
 					var selector = { tags: { '$nin':tagNames }};
-					Client.listArticles.show(null, null, selector, Configs.client.texts.la_showing_ungrouped); 
+					showListArticles({selector: selector, caption: Configs.client.texts.la_showing_ungrouped}); 
 					
 				} else {
 					FlowRouter.go('/');
 				}
-			},
-			triggersExit:[function() {
-				Client.listArticles.hide();
-			}]
+			}
 		});
 		
 		FlowRouter.route("/search", {
 			action:function () {
 				var query = FlowRouter.getQueryParam('q');
 				if (query != null && query != "") {
-					Client.listArticles.showSearch(null, query, Configs.client.texts.la_showing_query(query));
+					showListArticles({isSearch:true, selector:null, query:query, caption:Configs.client.texts.la_showing_query(query)});
 				} else {
 					FlowRouter.go('/');
 				}
-			},
-			triggersExit: [function () {
-				Client.listArticles.hide();
-			}]
+			}
 		});
 		
 		FlowRouter.route("/new", {
 			action:function () {
-				Client.newArticle.show();
-			},
-			triggersExit: [function () {
-				Client.newArticle.hide();
-			}]
+				showPage('newArticle');
+			}
 		});
 		
 		FlowRouter.route("/edit/:_id/:name", {
 			action:function () {
 				var id = FlowRouter.getParam('_id');
-				Client.newArticle.show(id);
-			},
-			triggersExit: [function () {
-				Client.newArticle.hide();
-			}]
+				showPage('newArticle', { articleId:id } );
+			}
 		});
 		
 		FlowRouter.route("/view/:_id/:name", {
 			action: function () {
 				var id = FlowRouter.getParam('_id');
-				Client.viewArticle.show(id);
-			}, 
-			triggersExit: [function () {
-				Client.viewArticle.hide();
-			}]
+				showPage('viewArticle', { articleId:id } );
+			}
 		});
 		
 		FlowRouter.notFound = {
