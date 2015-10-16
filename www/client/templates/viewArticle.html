@@ -1,10 +1,31 @@
 <template name="viewArticle">
 	{{#with article}}
 		<h1 id="va-title">{{title}}</h1>
-		<div id="va-description">{{description}}</div>
-		<a href="{{link}}" target="_blank">{{link}}</a>
-		<p>Tags: {{#each tags}}<a href="/articles/tag/{{this}}">{{this}} </a>{{/each}}</p>
-		<div>
+		<p id="va-description">{{description}}</p>
+		<div id="va-preview-author">
+			{{#if content}}
+			Author:
+			{{else}}
+			Submitted by:
+			{{/if}}
+			 <a href="#">{{username}}</a>
+		</div>
+		{{#if link}}
+		<div id="va-preview-article-link" style="">
+			Link: <a href="{{link}}" target="_blank">{{link}}</a>
+		</div>
+		{{/if}}
+		{{#if tags}}
+		<div id="la-preview-tags" style="padding-top:5px">
+			<small>
+				Tags: 
+				{{#each tags}}
+				<a href="/articles/tag/{{this}}">{{this}} </a> 
+				{{/each}}
+			</small>
+		</div>
+		{{/if}}
+		<div style="padding-top:10px">
 			{{#if canUpdateArticle}}
 				<button id="va-btn-edit-article" type="button" class="btn btn-success" style="display:inline">Edit</button>
 			{{/if}}
@@ -14,5 +35,7 @@
 		</div>
 		<hr>
 	{{/with}}
-		<div id="va-content">{{{parsedContent}}}</div>
+
+	<div id="va-content">{{{parsedContent}}}</div>
+
 </template>

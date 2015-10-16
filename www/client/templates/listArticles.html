@@ -95,32 +95,11 @@
 	<tr class="articleRowBody noHover">
 		<td colspan="6" class="hiddenRow" style="padding:0;border-top:0px;border-bottom:1px solid #ddd">
 			<div  id="articleRow{{_id}}" class="articleRowBody collapse">
-				<div style="padding:20px">
-				
-				<p>{{description}}</p>
-				<div>
-					{{#if content}}
-					Author:
-					{{else}}
-					Submitted by:
-					{{/if}}
-					 <a href="#">{{username}}</a>
-				</div>
-				<div>
+
+				<div style="padding:10px 20px">
 					
-					{{#if link}}
-					<button class="btn btn-warning" onClick="window.open('{{formatLink link}}')">
-						External Link
-					</button>
-					{{/if}}
-					
-					<div>
-						{{#if content}}
-						<button id="la-btn-view-article" class="btn btn-info" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
-							Read Here
-						</button>
-						{{/if}}
-						
+					<!-- Right Column -->
+					<div style="width:150px;float:right">
 						{{#if canEditArticle this}}
 							<button id="la-btn-edit-article" class="btn btn-success" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
 								Edit
@@ -133,16 +112,56 @@
 							</button>
 						{{/if}}
 					</div>
-					
-					<p>
-					Tags: 
-					{{#each tags}}
-					<a href="/articles/tag/{{this}}">{{this}} </a> 
-					{{/each}}
-					</p>
-				</div>
+					<!--  -->
+
+					<!-- Left Column -->
+					<div style="margin-right:165px">
+						<p id="la-preview-description">
+							{{description}}
+						</p>
+
+						<div id="la-preview-author" style="padding-top:20px">
+							{{#if content}}
+							Author:
+							{{else}}
+							Submitted by:
+							{{/if}}
+							 <a href="#">{{username}}</a>
+						</div>
+						
+						<div>
+							{{#if link}}
+							<div id="la-preview-article-link" style="">
+								Link: <a href="{{link}}" target="_blank">{{link}}</a>
+							</div>
+							{{/if}}
+							
+							{{#if content}}
+							<div id="la-preview-read-article" style="padding-top:10px;">
+								<button id="la-btn-view-article" class="btn btn-info" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
+									Read Here
+								</button>
+							</div>
+							{{/if}}
+							
+							{{#if tags}}
+							<div id="la-preview-tags" style="padding-top:5px">
+								<small>
+									Tags: 
+									{{#each tags}}
+									<a href="/articles/tag/{{this}}">{{this}} </a> 
+									{{/each}}
+								</small>
+							</div>
+							{{/if}}
+
+						</div>
+					</div>
+					 <!--  -->
 				</div> 
-			</div> 
+				
+
+			</div><!-- End article row --> 
 		</td>
 	</tr>
 </template>

@@ -38,12 +38,13 @@
 			</div>
 			
 			<label for="naf-articleTags" class="control-label">{{{getText "na_label_tags"}}} {{{getIconTooltip "na_tt_tags" "right"}}}
+			<a data-toggle="modal" href='#modal-tags-guide' style="font-weight: normal">Tags Guide</a>
 			</label>
 			{{> afQuickField name='tags' id='naf-articleTags' placeholder=tagsPlaceholder label=false}}
 			
 			<div style="margin-top:-10px;margin-bottom:20px"><a data-toggle="modal" href='#na-modalFeaturedTags'>{{{getText "na_a_featured"}}}</a></div>
 			</fieldset>
-			<button type="submit" class="btn btn-primary">Submit</button>
+			<button id="na-btn-submit" type="submit" class="btn btn-primary">Submit</button>
 		{{/autoForm}}
 	</div>
 
@@ -65,6 +66,32 @@
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 					<button id="na-featuredTagsAccept" type="button" class="btn btn-primary">Confirm</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="modal fade" id="modal-tags-guide">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h4 class="modal-title">Tags Guide</h4>
+				</div>
+				<div class="modal-body">
+					<p>
+						Tags can be used to categorize articles, for example the <em>Haxe</em> group captures the tag 
+						<em>haxe</em> and all tags starting with <em>haxe-*</em>. So an article with the tag <em>haxe-writting</em> will become available in the <em>Haxe</em> group, 
+						and if the subgroup <em>writting</em> is not yet listed it will be automatically added.
+					</p>
+					<p>
+						As a rule of thumb, try to reuse existing categories and tags when possible and keep the article inside 1 to 3 categories.
+						Tags can be edited and changed at any moment.
+					</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>

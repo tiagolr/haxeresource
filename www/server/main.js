@@ -178,7 +178,7 @@ Server.setupPublishes = function() {
 		if(options1 == null) options1 = { };
 		options1.fields = { score : { '$meta' : "textScore"}};
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
-		return model_Articles.collection.find({ '$text' : { '$search' : query}},options1);
+		return model_Articles.collection.find();
 	});
 };
 Server.setupPermissions = function() {
@@ -396,7 +396,6 @@ Server.createTagGroups = function() {
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
-		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
 	});
 };
 var SharedUtils = function() {
