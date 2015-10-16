@@ -79,7 +79,7 @@ class Router {
 		FlowRouter.route('/articles/tag/:name', {
 			action: function () {
 				var tag = FlowRouter.getParam('name');
-				var selector = { tags: { '$nin':[tag] }}
+				var selector = { tags: { '$in':[tag] }};
 				
 				showListArticles( { selector:selector, caption: Configs.client.texts.la_showing_tag(tag) } );
 			} 
@@ -118,12 +118,17 @@ class Router {
 		
 		FlowRouter.route("/articles/search", {
 			action:function () {
+				#if text_search
 				var query = FlowRouter.getQueryParam('q');
 				if (query != null && query != "") {
 					showListArticles({isSearch:true, selector:null, query:query, caption:Configs.client.texts.la_showing_query(query)});
 				} else {
 					FlowRouter.go('/');
 				}
+				#else 
+				Client.utils.notifyError('Indexed search is disabled in the database.');
+				FlowRouter.go('/');
+				#end
 			}
 		});
 		

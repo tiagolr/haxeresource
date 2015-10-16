@@ -1,6 +1,7 @@
 package templates;
 import js.html.GetNotificationOptions;
 import js.JQuery;
+import meteor.packages.FlowRouter;
 import meteor.Session;
 import meteor.Template;
 import model.Articles;
@@ -66,6 +67,12 @@ class SideBar {
 			}
 		});
 		
+		Template.get('sidebar').events( {
+			'click #sb-ungrouped':function (_) {
+				FlowRouter.go('/articles/tag/group/ungrouped');
+			}
+		});
+		
 		Template.get('tagGroup').helpers( {
 			countArticlesTag: function (tag) {
 				var t = Tags.collection.findOne( { name:tag } ); 
@@ -116,7 +123,8 @@ class SideBar {
 			
 			'click .nav-tag-group > div > a': function (evt) {
 				ignoreDivClick = true;
-			}
+			},
+			
 		});
 	}
 	

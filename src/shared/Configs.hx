@@ -36,7 +36,11 @@ class Configs {
 	
 	#if client
 	public static var client = {
+		#if debug
+		page_size: 3,
+		#else 
 		page_size: 10,
+		#end
 		page_fadein_duration : 500,
 		page_fadeout_duration : 0,
 		

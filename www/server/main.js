@@ -79,16 +79,14 @@ Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
 		var err = Configs.shared.error.not_authorized;
-		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw(error);
+		throw new Meteor.Error(err.code,err.reason,err.details);
 	}
 	return true;
 };
 Permissions.requirePermission = function(hasPermission) {
 	if(!hasPermission) {
 		var err = Configs.shared.error.no_permission;
-		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw(error);
+		throw new Meteor.Error(err.code,err.reason,err.details);
 	}
 	return true;
 };
@@ -154,14 +152,10 @@ Server.main = function() {
 	Server.setupMethods();
 	Server.setupMaintenanceMethods();
 	Server.setupAccounts();
+	Server.setupEmail();
 	Server.createAdmin();
 	Server.createTagGroups();
-	Server.setupIndexes();
-};
-Server.setupIndexes = function() {
-	Meteor.startup(function() {
-		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index"});
-	});
+	Server.createIndexes();
 };
 Server.setupPublishes = function() {
 	Meteor.publish("tag_groups",function() {
@@ -188,7 +182,6 @@ Server.setupPublishes = function() {
 	});
 };
 Server.setupPermissions = function() {
-	model_Tags.collection.allow({ });
 	model_TagGroups.collection.allow({ insert : function(_,_1) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canInsertTagGroups());
@@ -263,8 +256,7 @@ Server.setupMethods = function() {
 		Permissions.requireLogin();
 		if(model_Articles.collection.findOne({ _id : id}) == null) {
 			var err = Configs.shared.error.args_article_not_found;
-			var error = new Meteor.Error(err.code,err.reason,err.details);
-			throw(error);
+			throw new Meteor.Error(err.code,err.reason,err.details);
 		}
 		var votes = Meteor.user().profile.votes;
 		if(votes == null) votes = [];
@@ -282,8 +274,7 @@ Server.setupMethods = function() {
 		var user = Meteor.users.findOne({ _id : id1});
 		if(user == null) {
 			var err1 = Configs.shared.error.args_user_not_found;
-			var error1 = new Meteor.Error(err1.code,err1.reason,err1.details);
-			throw(error1);
+			throw new Meteor.Error(err1.code,err1.reason,err1.details);
 		}
 		var votes1 = user.profile.votes;
 		if(votes1 != null && votes1.length > 0) {
@@ -299,18 +290,15 @@ Server.setupMethods = function() {
 		var user1 = Meteor.users.findOne({ username : username});
 		if(user1 == null) {
 			var err2 = Configs.shared.error.args_user_not_found;
-			var error2 = new Meteor.Error(err2.code,err2.reason,err2.details);
-			throw(error2);
+			throw new Meteor.Error(err2.code,err2.reason,err2.details);
 		}
 		if(permissions == null) {
 			var err3 = Configs.shared.error.args_user_not_found;
-			var error3 = new Meteor.Error(err3.code,err3.reason,err3.details);
-			throw(error3);
+			throw new Meteor.Error(err3.code,err3.reason,err3.details);
 		}
 		if(!((permissions instanceof Array) && permissions.__enum__ == null)) {
 			var err4 = Configs.shared.error.args_bad_permissions;
-			var error4 = new Meteor.Error(err4.code,err4.reason,err4.details);
-			throw(error4);
+			throw new Meteor.Error(err4.code,err4.reason,err4.details);
 		}
 		var _g = 0;
 		while(_g < permissions.length) {
@@ -318,8 +306,7 @@ Server.setupMethods = function() {
 			++_g;
 			if(Reflect.field(Permissions.roles,p) == null || p == Permissions.roles.ADMIN) {
 				var err5 = Configs.shared.error.args_bad_permissions;
-				var error5 = new Meteor.Error(err5.code,err5.reason,err5.details);
-				throw(error5);
+				throw new Meteor.Error(err5.code,err5.reason,err5.details);
 			}
 		}
 		Permissions.requirePermission(!Roles.userIsInRole(user1._id,[Permissions.roles.ADMIN]));
@@ -328,6 +315,7 @@ Server.setupMethods = function() {
 };
 Server.setupMaintenanceMethods = function() {
 	Meteor.methods({ updateTagsArticles : function() {
+		Permissions.requirePermission(Permissions.isAdmin());
 		model_Tags.collection.remove({ });
 		var articles = model_Articles.collection.find().fetch();
 		var _g = 0;
@@ -343,14 +331,17 @@ Server.setupMaintenanceMethods = function() {
 				model_Tags.addArticle(tagname,article._id);
 			}
 		}
+	}, addProfiles : function() {
+		Permissions.requirePermission(Permissions.isAdmin());
+		Meteor.users.update({ profile : { '$exists' : false}},{ '$set' : { 'profile' : { }}},{ getAutoValues : false, removeEmptyStrings : false});
 	}});
 };
 Server.setupAccounts = function() {
 	Accounts.onCreateUser(function(options,user) {
+		if(options.profile != null) user.profile = options.profile;
 		if(user.services != null) {
 			if(user.services.github != null) {
 				var gh = user.services.github;
-				if(user.profile == null) user.profile = { };
 				var username = gh.username;
 				var i = 1;
 				while(Meteor.users.findOne({ username : username}) != null) {
@@ -360,7 +351,6 @@ Server.setupAccounts = function() {
 				user.username = username;
 			} else if(user.services.google != null) {
 				var go = user.services.google;
-				if(user.profile == null) user.profile = { };
 				var username1 = go.name;
 				var i1 = 1;
 				while(Meteor.users.findOne({ username : username1}) != null) {
@@ -370,7 +360,6 @@ Server.setupAccounts = function() {
 				user.username = username1;
 			} else if(user.services.twitter != null) {
 				var tw = user.services.twitter;
-				if(!user.profile == null) user.profile = { };
 				var username2 = tw.screenName;
 				var i2 = 1;
 				while(Meteor.users.findOne({ username : username2}) != null) {
@@ -382,6 +371,10 @@ Server.setupAccounts = function() {
 		}
 		return user;
 	});
+};
+Server.setupEmail = function() {
+	Accounts.emailTemplates.siteName = "Haxe Resource";
+	Accounts.emailTemplates.from = "Haxe Resource <no-reply@haxeresource.com>";
 };
 Server.createAdmin = function() {
 	if(Meteor.users.findOne({ roles : { '$in' : [Permissions.roles.ADMIN]}}) == null) {
@@ -400,6 +393,11 @@ Server.createTagGroups = function() {
 	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", weight : 1}});
 	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", weight : 2}});
 	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", weight : 3}});
+};
+Server.createIndexes = function() {
+	Meteor.startup(function() {
+		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
+	});
 };
 var SharedUtils = function() {
 };

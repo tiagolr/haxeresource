@@ -319,8 +319,8 @@ class ListArticles {
 						Articles.collection.remove( { _id:articleId } );
 					}
 				);
-				
 			},
+			
 		});
 		
 		Template.get('articleRow').onRendered(function () {

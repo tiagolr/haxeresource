@@ -1,6 +1,6 @@
 // spacing
 SB_PADDING = 20px // reference padding value for sidebar
-SB_SUBGROUP_PADDING_L = SB_PADDING * 2 - 5px
+SB_SUBGROUP_PADDING_L = SB_PADDING
 SB_GROUP_SPACEY = 40px
 SB_SUBGROUP_SPACEY = SB_GROUP_SPACEY - 10px
 
@@ -9,8 +9,10 @@ SB_SUBGROUP_SPACEY = SB_GROUP_SPACEY - 10px
 SB_COLOR = #f8f8f8
 SB_GROUP_COLOR = SB_COLOR
 SB_GROUP_HOVER_COLOR = SB_GROUP_COLOR - 5%
-SB_SUBGROUP_COLOR = SB_COLOR
+SB_SUBGROUP_COLOR = rgba(0,0,0,0)
 SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
+
+$sb-badge-color = #7B7B7B
 
 #sidebar-wrapper 
 	z-index 1000
@@ -35,13 +37,12 @@ SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 		margin 0
 		padding 0
 		list-style none
+		border-bottom: SB_GROUP_BORDER
 		
-		> li:first-child
-			border-top: SB_GROUP_BORDER
 	
-		> li, .link-ungrouped
+		> li
+			border-top: SB_GROUP_BORDER
 			line-height SB_GROUP_SPACEY
-			border-bottom SB_GROUP_BORDER
 			background-color SB_GROUP_COLOR
 			
 			:hover
@@ -59,7 +60,7 @@ SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 				.badge
 					margin-right (SB_GROUP_SPACEY / 2)px
 					margin-top ((SB_GROUP_SPACEY - 18) * .5)px
-					background-color #F1670B
+					background-color $sb-badge-color
 					
 				img
 					width SB_GROUP_SPACEY - 10px
@@ -71,7 +72,6 @@ SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 		.sidebar-subgroup
 			list-style-type none
 			padding-left 0px
-			border-bottom  SB_GROUP_BORDER
 			background-color SB_SUBGROUP_COLOR
 		
 			> li
@@ -80,15 +80,10 @@ SB_GROUP_BORDER = 1px solid SB_GROUP_COLOR - 10%
 			
 				> a 
 					text-decoration none
-
+			
 			.badge
-				
+				color inherit
+				background-color rgba(0,0,0,0)
 				margin-right (SB_GROUP_SPACEY / 2)px
 				margin-top ((SB_SUBGROUP_SPACEY - 18) * .5)px
-				
-	#sb-ungrouped 
-		margin:10px
-		
-		.badge
-			margin-left 10px
 	

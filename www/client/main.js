@@ -366,7 +366,7 @@ Router.prototype = {
 		}});
 		FlowRouter.route("/articles/tag/:name",{ action : function() {
 			var tag = FlowRouter.getParam("name");
-			var selector = { tags : { '$nin' : [tag]}};
+			var selector = { tags : { '$in' : [tag]}};
 			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag)});
 		}});
 		FlowRouter.route("/articles/tag/group/:name",{ action : function() {
@@ -478,6 +478,9 @@ templates_SideBar.prototype = {
 				}
 			}
 			return Client.utils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
+		}});
+		Template.sidebar.events({ 'click #sb-ungrouped' : function(_) {
+			FlowRouter.go("/articles/tag/group/ungrouped");
 		}});
 		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
 			var t1 = model_Tags.collection.findOne({ name : tag});
@@ -644,7 +647,7 @@ Client.main = function() {
 		return hljs.highlightAuto(code).value;
 	}});
 	Accounts.ui.config({ passwordSignupFields : "USERNAME_AND_EMAIL"});
-	toastr.options = { closeButton : true, progressBar : true};
+	toastr.options = { closeButton : true};
 	js.JQuery("document").ready(function(_) {
 		js.JQuery("[data-toggle=\"tooltip\"]").tooltip();
 	});
@@ -753,16 +756,14 @@ Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
 		var err = Configs.shared.error.not_authorized;
-		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw(error);
+		throw new Meteor.Error(err.code,err.reason,err.details);
 	}
 	return true;
 };
 Permissions.requirePermission = function(hasPermission) {
 	if(!hasPermission) {
 		var err = Configs.shared.error.no_permission;
-		var error = new Meteor.Error(err.code,err.reason,err.details);
-		throw(error);
+		throw new Meteor.Error(err.code,err.reason,err.details);
 	}
 	return true;
 };
@@ -1629,7 +1630,7 @@ Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
 Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";

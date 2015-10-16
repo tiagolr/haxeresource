@@ -1,2 +1,3 @@
 -D debug
+-D text_search
 release.hxml

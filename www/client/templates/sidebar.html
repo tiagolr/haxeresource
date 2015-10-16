@@ -5,15 +5,15 @@
 			{{#each tagGroups}}
 				{{> tagGroup}}
 			{{/each}}
+			<li class="nav-tag-group" id="sb-ungrouped">
+				<div class="group-toggler">
+					<a href="/articles/tag/group/ungrouped">
+						Ungrouped
+						<span class="badge pull-right">{{countUngrouped}}</span>
+					</a>
+				</div>
+			</li>
 		</ul>
-		<div id="sb-ungrouped">
-			<a href="/articles/tag/group/ungrouped">
-				<div>
-					Ungrouped 
-					<span class="badge">{{countUngrouped}}</span>
-				</div> <!-- double div to ignore event listeners -->
-			</a>
-		</div>
 		
 	</div>
 </template>
@@ -32,7 +32,7 @@
 	<div id="collapse-{{name}}" class="collapse collapsed">
 		<ul class="sidebar-subgroup">
 			{{#each resolvedTags}}
-			<li class="nav-tag"><a href="/articles/tag/{{name}}">{{formattedName}} <span class="badge pull-right">{{countArticlesTag name}}</span></a></li>
+			<li class="nav-tag"><a href="/articles/tag/{{name}}">- {{formattedName}} <span class="badge pull-right">{{countArticlesTag name}}</span></a></li>
 			{{/each}}
 		</ul>
 	</div>

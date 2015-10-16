@@ -23,7 +23,7 @@ class Permissions {
 	public static function requireLogin():Bool {
 		if (!isLogged()) {
 			var err = Configs.shared.error.not_authorized;
-			Error.throw_(new Error(err.code, err.reason, err.details));
+			throw new Error(err.code, err.reason, err.details);
 		}
 		return true;
 	}
@@ -31,7 +31,7 @@ class Permissions {
 	public static function requirePermission(hasPermission:Bool):Bool {
 		if (!hasPermission) {
 			var err = Configs.shared.error.no_permission;
-			Error.throw_(new Error(err.code, err.reason, err.details));
+			throw new Error(err.code, err.reason, err.details);
 		}
 		return true;
 	}

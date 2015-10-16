@@ -25,21 +25,11 @@ class Server {
 		setupMethods();
 		setupMaintenanceMethods();
 		setupAccounts();
+		setupEmail();
+		
 		createAdmin();
 		createTagGroups();
-		
-		setupIndexes();
-	}
-	
-	static private function setupIndexes() {
-		Meteor.startup(function() {
-			untyped Articles.collection._ensureIndex( {
-				content:'text',
-				title: 'text',
-				description: 'text',
-				tags:'text',
-			}, { name:'article_search_index' } );
-		});
+		createIndexes();
 	}
 	
 	static private function setupPublishes():Void {
@@ -73,25 +63,15 @@ class Server {
 				options.sort = { score: { '$meta': "textScore" }}; 			// configure sorting for indexed search score
 			}
 			
+			#if text_search
 			return Articles.collection.find( { "$text": { "$search": query } } , options);
+			#else
+			return Articles.collection.find();
+			#end
 		});
 	}
 	
 	static private function setupPermissions():Void {
-		Tags.collection.allow({
-			//insert: function (_, _) {
-				//Permissions.requireLogin();
-				//return Permissions.requirePermission(Permissions.canInsertTags());
-			//},
-			//update: function (_, _, _, _) {
-				//Permissions.requireLogin();
-				//return Permissions.requirePermission(Permissions.canUpdateTags());
-			//},
-			//remove: function (_, _) {
-				//Permissions.requireLogin();
-				//return Permissions.requirePermission(Permissions.canRemoveTags());
-			//}
-		});
 		
 		TagGroups.collection.allow({
 			insert: function (_, _) {
@@ -185,7 +165,7 @@ class Server {
 				Permissions.requireLogin();
 				if (Articles.collection.findOne( { _id:id } ) == null) {
 					var err = Configs.shared.error.args_article_not_found;
-					Error.throw_(new Error(err.code, err.reason, err.details));
+					throw new Error(err.code, err.reason, err.details);
 				}
 				
 				var votes:Array<String> = Meteor.user().profile.votes;
@@ -213,7 +193,7 @@ class Server {
 				var user = Meteor.users.findOne( { _id:id } );
 				if (user == null) {
 					var err = Configs.shared.error.args_user_not_found;
-					Error.throw_(new Error(err.code, err.reason, err.details));
+					throw new Error(err.code, err.reason, err.details);
 				}
 				
 				// remove user votes
@@ -237,25 +217,24 @@ class Server {
 				var user = Meteor.users.findOne( { username:username } );
 				if (user == null) {
 					var err = Configs.shared.error.args_user_not_found;
-					var error = new Error(err.code, err.reason, err.details);
-					Error.throw_(error);
+					throw new Error(err.code, err.reason, err.details);
 				}
 				
 				// verify permission args
 				if (permissions == null) {
 					var err = Configs.shared.error.args_user_not_found;
-					Error.throw_(new Error(err.code, err.reason, err.details));
+					throw new Error(err.code, err.reason, err.details);
 				}
 				if (!Std.is(permissions, Array)) {
 					var err = Configs.shared.error.args_bad_permissions;
-					Error.throw_(new Error(err.code, err.reason, err.details));
+					throw new Error(err.code, err.reason, err.details);
 				}
 				
 				// make sure permissions are well set
 				for (p in permissions) {
 					if (Reflect.field(Permissions.roles, p) == null || p == Permissions.roles.ADMIN) {
 						var err = Configs.shared.error.args_bad_permissions;
-						Error.throw_(new Error(err.code, err.reason, err.details));
+						throw new Error(err.code, err.reason, err.details);
 					}
 				}
 				
@@ -273,7 +252,10 @@ class Server {
 	 */
 	static private function setupMaintenanceMethods():Void {
 		Meteor.methods( {
+			
 			updateTagsArticles: function () {
+				Permissions.requirePermission(Permissions.isAdmin());
+				
 				Tags.collection.remove( { } );
 				var articles:Array<Article> = cast Articles.collection.find().fetch();
 				for (article in articles) {
@@ -284,20 +266,28 @@ class Server {
 						Tags.addArticle(tagname, article._id);
 					}
 				}
+			},
+			
+			addProfiles: function () {
+				Permissions.requirePermission(Permissions.isAdmin());
+				Meteor.users.update({profile:{'$exists':false}}, {'$set': {"profile": {}}}, { getAutoValues:false, removeEmptyStrings:false});
 			}
 		});
+		
 	}
 	
 	static private function setupAccounts() {
+		
 		Accounts.onCreateUser(function(options:Dynamic, user:User) {
+			if (options.profile != null) {
+				user.profile = options.profile;
+			}
+			
 			if (user.services != null) {
 				
 				// setup a github user account
 				if (user.services.github != null) {
 					var gh = user.services.github;
-					if (user.profile == null) {
-						user.profile = { };
-					}
 					//user.emails = gh.emails;
 					var username = gh.username; 
 					var i = 1;
@@ -310,9 +300,6 @@ class Server {
 				else 
 				if (user.services.google != null) {
 					var go = user.services.google;
-					if (user.profile == null) {
-						user.profile = { };
-					}
 					//user.emails = [ { address:go.email, verified:go.verified_email } ];
 					var username = go.name;
 					var i = 1;
@@ -325,9 +312,7 @@ class Server {
 				else 
 				if (user.services.twitter != null) {
 					var tw = user.services.twitter;
-					if (!user.profile == null) {
-						user.profile = { };
-					}
+					
 					var username = tw.screenName;
 					var i = 1;
 					while (Meteor.users.findOne( { username:username } ) != null) {
@@ -340,6 +325,11 @@ class Server {
 			
 			return user;
 		});
+	}
+	
+	static private function setupEmail() {
+		Accounts.emailTemplates.siteName = "Haxe Resource";
+		Accounts.emailTemplates.from = "Haxe Resource <no-reply@haxeresource.com>";
 	}
 	
 	
@@ -394,8 +384,26 @@ class Server {
 		}});
 	}
 	
-	//-----------------------------------------------
-	// AUX
-	//-----------------------------------------------
+	static private function createIndexes() {
+		Meteor.startup(function() {
+			#if text_search
+			untyped Articles.collection._ensureIndex( {
+				content:'text',
+				title: 'text',
+				description: 'text',
+				tags:'text',
+			}, 
+			{ name:'article_search_index',
+				background:true, 
+				weights: {
+					title: 10,
+					tags: 5,
+					description: 3,
+					content:1,
+				}
+			});
+			#end
+		});
+	}
 	
 }

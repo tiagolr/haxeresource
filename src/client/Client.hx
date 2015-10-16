@@ -77,7 +77,7 @@ class Client {
 		// Setup toastr notifications
 		Toastr.options = {
 			closeButton:true,
-			progressBar:true,
+			//progressBar:true,
 			//timeOut: 5000,
 			//extendedTimeOut:2500,
 		}
