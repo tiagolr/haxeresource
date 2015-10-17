@@ -2,6 +2,11 @@
 
 	<div class="row">
 		<div class="col-lg-12 ">
+			{{#if rssLink}}
+				<a id="la-rss-link" href="{{rssLink}}" target="_blank" data-toggle="tooltip" data-placement="bottom" title="Subscribe to current list RSS">
+					<img src="/img/icon-rss-32x32.png" class="img-responsive" alt="Image">
+				</a>
+			{{/if}}
 			<div id="la-title-row">
 				<h1 class="la-title">Haxe Resource</h1> <h3 class="la-subtitle"><small>Haxe tutorials and articles.</small></h3>
 			</div>
@@ -13,7 +18,9 @@
 			<table id="tableArticles" class="table table-hover" style="border-collapse:collapse">
 				<caption>
 
-				<div>{{{captionMsg}}}</div>
+				<div>
+					{{{captionMsg}}} 
+				</div>
 				<div class="row">
 					<div class="col-lg-3">
 						<form id="la-search-form" role="search">

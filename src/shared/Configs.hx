@@ -5,6 +5,12 @@
 class Configs {
 	
 	public static var shared = {
+		#if debug
+		host: 'localhost:3000',
+		#else 
+		host: 'http://haxeresource.meteor.com',
+		#end
+		
 		error : {
 			not_authorized : {
 				code : 401,

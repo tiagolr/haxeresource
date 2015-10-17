@@ -66,13 +66,21 @@ class Router {
 		
 		FlowRouter.route('/', {
 			action: function() {
-				showListArticles({ selector: { }, caption: Configs.client.texts.la_showing_all});   
+				showListArticles( { 
+					selector: { }, 
+					caption: Configs.client.texts.la_showing_all,
+					rssLink: '/rss/articles/',
+				});
 			}
 		});
 		
 		FlowRouter.route('/articles', {
 			action: function() {
-				showListArticles({ selector: { }, caption: Configs.client.texts.la_showing_all});   
+				showListArticles( { 
+					selector: { }, 
+					caption: Configs.client.texts.la_showing_all,
+					rssLink: '/rss/articles/',
+				});   
 			}
 		});
 		
@@ -81,7 +89,11 @@ class Router {
 				var tag = FlowRouter.getParam('name');
 				var selector = { tags: { '$in':[tag] }};
 				
-				showListArticles( { selector:selector, caption: Configs.client.texts.la_showing_tag(tag) } );
+				showListArticles({ 
+					selector:selector, 
+					caption: Configs.client.texts.la_showing_tag(tag), 
+					rssLink: '/rss/articles/?tag=$tag'
+				});
 			} 
 		});
 		
@@ -95,7 +107,11 @@ class Router {
 					tags.push(g.mainTag);
 					
 					var selector = { tags: { '$in':tags }};
-					showListArticles( { selector: selector, caption: Configs.client.texts.la_showing_group(groupName) } );
+					showListArticles( { 
+						selector: selector, 
+						caption: Configs.client.texts.la_showing_group(groupName), 
+						rssLink: '/rss/articles/?group=$groupName', 
+					});
 				} else if (groupName == 'ungrouped') {
 					var tagNames = [];
 					var groups = SideBar.tagGroups;
@@ -158,5 +174,7 @@ class Router {
 				FlowRouter.go('/');
 			}
 		};
+		
+		
 	}
 }

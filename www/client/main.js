@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -66,6 +66,7 @@ templates_ListArticles.prototype = {
 			if(args.selector != null) this.set_selector(args.selector);
 			if(args.sort == null || args.sort.created == null && args.sort.votes == null && args.sort.title == null) this.set_sort({ created : -1}); else this.set_sort(args.sort);
 		}
+		Session.set("rss_link",args.rssLink);
 		this.set_captionMsg(args.caption);
 		this.get_page().show(Configs.client.page_fadein_duration);
 	}
@@ -107,6 +108,8 @@ templates_ListArticles.prototype = {
 			return _g.get_sort().title == 1;
 		}, sortTitleDown : function() {
 			return _g.get_sort().title == -1;
+		}, rssLink : function() {
+			return Session.get("rss_link");
 		}});
 		Template.listArticles.onCreated(function() {
 			this.autorun(function() {
@@ -374,15 +377,15 @@ Router.prototype = {
 	,init: function() {
 		var _g = this;
 		FlowRouter.route("/",{ action : function() {
-			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all});
+			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all, rssLink : "/rss/articles/"});
 		}});
 		FlowRouter.route("/articles",{ action : function() {
-			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all});
+			_g.showListArticles({ selector : { }, caption : Configs.client.texts.la_showing_all, rssLink : "/rss/articles/"});
 		}});
 		FlowRouter.route("/articles/tag/:name",{ action : function() {
 			var tag = FlowRouter.getParam("name");
 			var selector = { tags : { '$in' : [tag]}};
-			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag)});
+			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag), rssLink : "/rss/articles/?tag=" + tag});
 		}});
 		FlowRouter.route("/articles/tag/group/:name",{ action : function() {
 			var groupName = FlowRouter.getParam("name");
@@ -391,7 +394,7 @@ Router.prototype = {
 				var tags = Shared.utils.resolveTags(g);
 				tags.push(g.mainTag);
 				var selector1 = { tags : { '$in' : tags}};
-				_g.showListArticles({ selector : selector1, caption : Configs.client.texts.la_showing_group(groupName)});
+				_g.showListArticles({ selector : selector1, caption : Configs.client.texts.la_showing_group(groupName), rssLink : "/rss/articles/?group=" + groupName});
 			} else if(groupName == "ungrouped") {
 				var tagNames = [];
 				var groups = templates_SideBar.get_tagGroups();
@@ -413,8 +416,8 @@ Router.prototype = {
 			} else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/search",{ action : function() {
-			Client.utils.notifyError("Indexed search is disabled in the database.");
-			FlowRouter.go("/");
+			var query = FlowRouter.getQueryParam("q");
+			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
@@ -638,7 +641,7 @@ templates_ViewArticle.prototype = {
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = function() { };
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
@@ -691,6 +694,7 @@ Client.main = function() {
 	Template.registerHelper("formatUrlName",function(name) {
 		return Shared.utils.formatUrlName(name);
 	});
+	AutoForm.debug();
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -765,7 +769,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = function() { };
+var Permissions = $hx_exports.Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -846,7 +850,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = function() {
+var SharedUtils = $hx_exports.sharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -897,7 +901,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -1646,8 +1650,8 @@ Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.shared = { host : "localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
@@ -1669,4 +1673,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);

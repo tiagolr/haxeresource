@@ -32,6 +32,7 @@ typedef ListArticlesOptions = {
 	selector:Dynamic, 
 	?query:String,
 	caption:String,
+	?rssLink:String,
 }
 
 class ListArticles {
@@ -128,6 +129,8 @@ class ListArticles {
 			}
 		}
 		
+		Session.set('rss_link', args.rssLink); 
+		
 		captionMsg = args.caption;
 		page.show(Configs.client.page_fadein_duration);
 	}
@@ -179,6 +182,7 @@ class ListArticles {
 			sortVotesDown: function() { return sort.votes == -1;},
 			sortTitleUp: function() { return sort.title == 1; },
 			sortTitleDown: function() { return sort.title == -1; },
+			rssLink: function() { return Session.get('rss_link'); },
 		});
 		
 		

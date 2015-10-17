@@ -69,6 +69,56 @@ class Server {
 			return Articles.collection.find();
 			#end
 		});
+		
+		untyped RssFeed.publish('articles', function(query) {
+			var self:{ setValue: String->Dynamic->Void} = Lib.nativeThis;
+			
+			var group = query.group;
+			var tag = query.tag;
+			
+			var titleSuffix = "All Articles";
+			var tags:Array<String> = null;
+			if (query.group != null) {
+				var group = TagGroups.collection.findOne( { name:query.group } );
+				tags = [];
+				if (group != null) {
+					var resolved = Shared.utils.resolveTags(group);
+					for (t in resolved) {
+						tags.push(t);
+					}
+					tags.push(group.mainTag);
+					titleSuffix = '${query.group} Group';
+				}
+			} else if (query.tag != null) {
+				tags = [];
+				if (Tags.collection.findOne({ name:query.tag }) != null) {
+					tags.push(query.tag);
+					titleSuffix = '${query.tag} Tag';
+				}
+			}
+			
+			self.setValue('title', self.cdata('HaxeResource $titleSuffix'));
+			self.setValue('description', self.cdata('Articles and tutorials from the haxe community'));
+			self.setValue('link', Configs.shared.host);
+			self.setValue('lastBuildDate', Date.now());
+			self.setValue('pubDate', Date.now());
+			self.setValue('ttl', 1);
+			
+			var selector = { };
+			selector.created = { '$gte': Date.fromTime(Date.now().getTime() - 1000 * 60 * 60 * 24 * 30) }; // fetch from last 30 days 
+			if (tags != null) {
+				selector.tags = { '$in': tags };
+			}
+			
+			Articles.collection.find( selector ).forEach(function(doc:Article) {
+				self.addItem({
+					title: doc.title,
+					description: doc.description,
+					link: Configs.shared.host + '/articles/view/' + doc._id + '/' + Shared.utils.formatUrlName(doc.title),
+					pubDate: doc.created,
+				});
+			});
+		});
 	}
 	
 	static private function setupPermissions():Void {
@@ -425,6 +475,9 @@ class Server {
 				}
 			});
 			#end
+			untyped Articles.collection._ensureIndex( { "user" : 1 } );
+			untyped Articles.collection._ensureIndex( { "username" : 1 } );
+			untyped Articles.collection._ensureIndex( { "tags": 1 } );
 		});
 	}
 	
