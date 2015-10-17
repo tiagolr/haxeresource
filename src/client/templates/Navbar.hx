@@ -1,4 +1,5 @@
 package templates;
+import js.JQuery;
 import meteor.Template;
 
 /**
@@ -9,11 +10,11 @@ class Navbar{
 
 	public function new() {}
 	public function init() {
-		/*Template.get('navbar').events( {
-			'click #btn-test' : function () {
-				//CRouter.showArticle("HAHAHAHAHAHAHA");
+		Template.get('navbar').events( {
+			'click #btn-toggle-sidebar' : function (evt) {
+				new JQuery('#wrapper').toggleClass('toggled');
 			}
-		});*/
+		});
 	}
 	
 }

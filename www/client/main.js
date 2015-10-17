@@ -199,6 +199,9 @@ var templates_Navbar = function() {
 templates_Navbar.__name__ = true;
 templates_Navbar.prototype = {
 	init: function() {
+		Template.navbar.events({ 'click #btn-toggle-sidebar' : function(evt) {
+			js.JQuery("#wrapper").toggleClass("toggled");
+		}});
 	}
 	,__class__: templates_Navbar
 };

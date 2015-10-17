@@ -3,12 +3,21 @@
 	-webkit-box-shadow none !important
 	
 	.navbar-brand
+		display none
 		text-align center
 		width $sidebar-width
-		
+		padding-left 31px
+	
 	#navbar-left-items
-		margin-left 0px
+		margin-left 56px
 		padding-left 0px
+		
+	@media(min-width 768px) 
+		.navbar-brand
+			display block
+			
+		#navbar-left-items
+			margin-left 0px
 		
 	#navbar-right-items
 		margin-right 0px
@@ -19,3 +28,25 @@
 			
 	#nav-dropdown-more
 		margin-right 10px
+		
+	#btn-toggle-sidebar
+		display block !important
+		float left
+		margin-left 10px
+		position absolute
+		padding 9px
+		margin-top 9px
+		margin-left 11px
+		background-color transparent
+		border none
+		
+		.icon-bar
+			width 14px
+	
+	#btn-toggle-sidebar:hover
+		.icon-bar
+			background-color #aaa
+		
+	#btn-toggle-sidebar:active
+		.icon-bar
+			background-color #ccc
