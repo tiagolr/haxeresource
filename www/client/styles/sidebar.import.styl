@@ -4,7 +4,6 @@ SB_SUBGROUP_PADDING_L = SB_PADDING
 SB_GROUP_SPACEY = 40px
 SB_SUBGROUP_SPACEY = SB_GROUP_SPACEY - 10px
 
-
 // color
 SB_COLOR = #f8f8f8
 SB_GROUP_COLOR = SB_COLOR
@@ -17,9 +16,10 @@ $sb-badge-color = #7B7B7B
 #sidebar-wrapper 
 	z-index 1000
 	position fixed
-	left SB_WIDTH
+	left $sidebar-width
 	height 100%
-	margin-left SB_WIDTH * -1
+	width 0
+	margin-left $sidebar-width * -1
 	overflow-y auto
 	background SB_COLOR
 	-webkit-transition all 0.5s ease
@@ -43,7 +43,7 @@ $sb-badge-color = #7B7B7B
 
 	.sidebar-groups 
 		position relative
-		width SB_WIDTH
+		width $sidebar-width
 		margin 0
 		padding 0
 		list-style none

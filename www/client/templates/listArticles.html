@@ -111,6 +111,12 @@
 								Remove
 							</button>
 						{{/if}}
+						
+						{{#if canTransferArticle this}}
+							<button id="la-btn-transfer-article" type="button" class="btn btn-primary" data-article="{{_id}}" style="margin-top:5px">
+								Transfer Ownership
+							</button>
+						{{/if}}
 					</div>
 					<!--  -->
 
@@ -124,7 +130,7 @@
 							{{#if content}}
 							Author:
 							{{else}}
-							Submitted by:
+							Posted by:
 							{{/if}}
 							 <a href="#">{{username}}</a>
 						</div>

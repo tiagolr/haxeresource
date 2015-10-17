@@ -206,10 +206,61 @@ class Server {
 				
 				// remove user articles
 				Articles.collection.remove( { user:id } );
-				
 				Meteor.users.remove( { _id:id } );
 			},
 		
+			transferArticle: function(articleId:String, username:String) {
+				Permissions.requireLogin();
+				Permissions.requirePermission(Permissions.canTransferArticle());
+				
+				// verify user args
+				var user = Meteor.users.findOne( { username:username } );
+				if (user == null) {
+					var err = Configs.shared.error.args_user_not_found;
+					throw new Error(err.code, err.reason, err.details);
+				}
+				
+				// verify articleId
+				var article = Articles.collection.findOne( { _id:articleId } );
+				if (article == null) {
+					var err = Configs.shared.error.args_article_not_found;
+					throw new Error(err.code, err.reason, err.details);
+				}
+				
+				Articles.collection.update( { _id:articleId }, { '$set': { user:user._id, username:username }}, { getAutoValues:false } );
+			}
+			
+		});
+	}
+	
+	/**
+	 * Methods used for database maintenance and admin tasks
+	 */
+	static private function setupMaintenanceMethods():Void {
+		Meteor.methods( {
+			
+			// old fix for tags without articles ids
+			updateTagsArticles: function () {
+				Permissions.requirePermission(Permissions.isAdmin());
+				
+				Tags.collection.remove( { } );
+				var articles:Array<Article> = cast Articles.collection.find().fetch();
+				for (article in articles) {
+					for (tagname in article.tags) {
+						if (Tags.collection.findOne( { name:tagname } ) == null) {
+							Tags.collection.insert( { name:tagname } );
+						}
+						Tags.addArticle(tagname, article._id);
+					}
+				}
+			},
+			
+			// old fix for users without profile
+			addProfiles: function () {
+				Permissions.requirePermission(Permissions.isAdmin());
+				Meteor.users.update({profile:{'$exists':false}}, {'$set': {"profile": {}}}, { getAutoValues:false, removeEmptyStrings:false});
+			},
+			
 			setPermissions: function (username:String, permissions:Array<String>) {
 				Permissions.requirePermission(Permissions.isAdmin());
 				
@@ -242,38 +293,9 @@ class Server {
 				Permissions.requirePermission(!Roles.userIsInRole(user._id, [Permissions.roles.ADMIN]));
 				
 				Roles.setUserRoles(user._id, permissions);
-			}
+			}, 
 			
 		});
-	}
-	
-	/**
-	 * Methods used for database maintenance and admin tasks
-	 */
-	static private function setupMaintenanceMethods():Void {
-		Meteor.methods( {
-			
-			updateTagsArticles: function () {
-				Permissions.requirePermission(Permissions.isAdmin());
-				
-				Tags.collection.remove( { } );
-				var articles:Array<Article> = cast Articles.collection.find().fetch();
-				for (article in articles) {
-					for (tagname in article.tags) {
-						if (Tags.collection.findOne( { name:tagname } ) == null) {
-							Tags.collection.insert( { name:tagname } );
-						}
-						Tags.addArticle(tagname, article._id);
-					}
-				}
-			},
-			
-			addProfiles: function () {
-				Permissions.requirePermission(Permissions.isAdmin());
-				Meteor.users.update({profile:{'$exists':false}}, {'$set': {"profile": {}}}, { getAutoValues:false, removeEmptyStrings:false});
-			}
-		});
-		
 	}
 	
 	static private function setupAccounts() {

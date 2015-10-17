@@ -1,6 +1,6 @@
 
 // Vars
-SB_WIDTH = 250px
+$sidebar-width = 250px
 $tooltip-color = #88704D
 $tooltip-text-color = #fff
 
@@ -13,7 +13,6 @@ $tooltip-text-color = #fff
 body
 	font-family: Arial !important;
 
-
 #wrapper
 	padding-left 0
 	-webkit-transition all 0.5s ease
@@ -21,15 +20,15 @@ body
 	-o-transition all 0.5s ease
 	transition all 0.5s ease
 
-	.toggled 
-		padding-left SB_WIDTH
-		
-		#sidebar-wrapper 
-			width SB_WIDTH
-		
-		#page-content-wrapper 
-			position absolute
-			margin-right SB_WIDTH * -1
+#wrapper.toggled 
+	padding-left $sidebar-width
+	
+	#sidebar-wrapper 
+		width $sidebar-width
+	
+	#page-content-wrapper
+		position absolute
+		margin-right $sidebar-width * -1
 
 
 #page-content-wrapper 
@@ -37,7 +36,7 @@ body
 	position absolute
 	padding 15px
 	margin-top 50px
-	height 500px // TODO set size using js
+	//height 100%
 	
 	.page-container
 		min-height 100%
@@ -46,24 +45,24 @@ body
 
 @media(min-width 768px) 
 	#wrapper 
-		padding-left SB_WIDTH
+		padding-left $sidebar-width
 		
-		.toggled 
-			padding-left 0
-			
-			#sidebar-wrapper 
-				width 0
-				
-			#page-content-wrapper 
-				position relative
-				margin-right 0
-	
 	#sidebar-wrapper
-		width SB_WIDTH
+		width $sidebar-width
 		
 	#page-content-wrapper
 		padding 20px
 		position relative
+		
+	#wrapper.toggled 
+		padding-left 0
+		
+		#sidebar-wrapper
+			width 0
+			
+		#page-content-wrapper 
+			position relative
+			margin-right 0
 		
 
 .icon-tooltip

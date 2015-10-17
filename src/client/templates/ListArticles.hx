@@ -1,5 +1,6 @@
 package templates;
 import js.Browser;
+import js.Error;
 import js.html.Event;
 import js.JQuery;
 import js.JQuery.JqEvent;
@@ -260,7 +261,11 @@ class ListArticles {
 			
 			canRemoveArticle: function (article) {
 				return Permissions.canRemoveArticles(article);
-			}
+			},
+			
+			canTransferArticle: function (article) {
+				return Permissions.canTransferArticle();
+			},
 			
 		});
 		
@@ -320,6 +325,22 @@ class ListArticles {
 					}
 				);
 			},
+			
+			'click #la-btn-transfer-article':function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				
+				Client.utils.prompt('Enter new owner username', function (username) {
+					if (username != null) {
+						trace('transfering $articleId to $username');
+						Meteor.call('transferArticle', articleId , username, function(error:meteor.Error, result) {
+							if (error != null) {
+								Client.utils.handleServerError(error);
+							}
+						});
+					}
+					
+				});
+			}
 			
 		});
 		

@@ -132,6 +132,9 @@ Permissions.canUpdateUsers = function(document,fields) {
 Permissions.canRemoveUser = function(document) {
 	return Permissions.isAdmin();
 };
+Permissions.canTransferArticle = function() {
+	return Permissions.isModerator();
+};
 var Reflect = function() { };
 Reflect.__name__ = true;
 Reflect.field = function(o,field) {
@@ -285,32 +288,20 @@ Server.setupMethods = function() {
 		}
 		model_Articles.collection.remove({ user : id1});
 		Meteor.users.remove({ _id : id1});
-	}, setPermissions : function(username,permissions) {
-		Permissions.requirePermission(Permissions.isAdmin());
+	}, transferArticle : function(articleId1,username) {
+		Permissions.requireLogin();
+		Permissions.requirePermission(Permissions.canTransferArticle());
 		var user1 = Meteor.users.findOne({ username : username});
 		if(user1 == null) {
 			var err2 = Configs.shared.error.args_user_not_found;
 			throw new Meteor.Error(err2.code,err2.reason,err2.details);
 		}
-		if(permissions == null) {
-			var err3 = Configs.shared.error.args_user_not_found;
+		var article = model_Articles.collection.findOne({ _id : articleId1});
+		if(article == null) {
+			var err3 = Configs.shared.error.args_article_not_found;
 			throw new Meteor.Error(err3.code,err3.reason,err3.details);
 		}
-		if(!((permissions instanceof Array) && permissions.__enum__ == null)) {
-			var err4 = Configs.shared.error.args_bad_permissions;
-			throw new Meteor.Error(err4.code,err4.reason,err4.details);
-		}
-		var _g = 0;
-		while(_g < permissions.length) {
-			var p = permissions[_g];
-			++_g;
-			if(Reflect.field(Permissions.roles,p) == null || p == Permissions.roles.ADMIN) {
-				var err5 = Configs.shared.error.args_bad_permissions;
-				throw new Meteor.Error(err5.code,err5.reason,err5.details);
-			}
-		}
-		Permissions.requirePermission(!Roles.userIsInRole(user1._id,[Permissions.roles.ADMIN]));
-		Roles.setUserRoles(user1._id,permissions);
+		model_Articles.collection.update({ _id : articleId1},{ '$set' : { user : user1._id, username : username}},{ getAutoValues : false});
 	}});
 };
 Server.setupMaintenanceMethods = function() {
@@ -334,6 +325,32 @@ Server.setupMaintenanceMethods = function() {
 	}, addProfiles : function() {
 		Permissions.requirePermission(Permissions.isAdmin());
 		Meteor.users.update({ profile : { '$exists' : false}},{ '$set' : { 'profile' : { }}},{ getAutoValues : false, removeEmptyStrings : false});
+	}, setPermissions : function(username,permissions) {
+		Permissions.requirePermission(Permissions.isAdmin());
+		var user = Meteor.users.findOne({ username : username});
+		if(user == null) {
+			var err = Configs.shared.error.args_user_not_found;
+			throw new Meteor.Error(err.code,err.reason,err.details);
+		}
+		if(permissions == null) {
+			var err1 = Configs.shared.error.args_user_not_found;
+			throw new Meteor.Error(err1.code,err1.reason,err1.details);
+		}
+		if(!((permissions instanceof Array) && permissions.__enum__ == null)) {
+			var err2 = Configs.shared.error.args_bad_permissions;
+			throw new Meteor.Error(err2.code,err2.reason,err2.details);
+		}
+		var _g3 = 0;
+		while(_g3 < permissions.length) {
+			var p = permissions[_g3];
+			++_g3;
+			if(Reflect.field(Permissions.roles,p) == null || p == Permissions.roles.ADMIN) {
+				var err3 = Configs.shared.error.args_bad_permissions;
+				throw new Meteor.Error(err3.code,err3.reason,err3.details);
+			}
+		}
+		Permissions.requirePermission(!Roles.userIsInRole(user._id,[Permissions.roles.ADMIN]));
+		Roles.setUserRoles(user._id,permissions);
 	}});
 };
 Server.setupAccounts = function() {

@@ -92,4 +92,8 @@ class Permissions {
 		return isAdmin();
 	}
 	
+	static public function canTransferArticle() {
+		return isModerator();
+	}
+	
 }

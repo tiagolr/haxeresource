@@ -64,8 +64,8 @@ class ClientUtils{
 		untyped bootbox.alert(msg, label, callback);
 	}
 	
-	public function prompt(msg:String, ?cancel:String, ?confirm:String, ?callback:Function) {
-		untyped bootbox.prompt(msg, cancel, confirm, callback);
+	public function prompt(msg:String, ?callback:String->Void) {
+		untyped bootbox.prompt(msg, callback);
 	}
 	
 	public function confirm(msg:String, ?cancel:String, ?confirm:String, ?callback:Function) {

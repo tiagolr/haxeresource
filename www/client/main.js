@@ -142,6 +142,8 @@ templates_ListArticles.prototype = {
 			return Permissions.canUpdateArticles(article);
 		}, canRemoveArticle : function(article1) {
 			return Permissions.canRemoveArticles(article1);
+		}, canTransferArticle : function(article2) {
+			return Permissions.canTransferArticle();
 		}});
 		Template.articleRow.events({ 'click .articleRowToggle' : function(event) {
 			var target = js.JQuery(event.target.getAttribute("data-target"));
@@ -174,6 +176,16 @@ templates_ListArticles.prototype = {
 			var articleId3 = event4.currentTarget.getAttribute("data-article");
 			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
 				model_Articles.collection.remove({ _id : articleId3});
+			});
+		}, 'click #la-btn-transfer-article' : function(event5) {
+			var articleId4 = event5.currentTarget.getAttribute("data-article");
+			Client.utils.prompt("Enter new owner username",function(username) {
+				if(username != null) {
+					console.log("transfering " + articleId4 + " to " + username);
+					Meteor.call("transferArticle",articleId4,username,function(error1,result) {
+						if(error1 != null) Client.utils.handleServerError(error1);
+					});
+				}
 			});
 		}});
 		Template.articleRow.onRendered(function() {
@@ -562,8 +574,8 @@ ClientUtils.prototype = {
 	,alert: function(msg,label,callback) {
 		bootbox.alert(msg,label,callback);
 	}
-	,prompt: function(msg,cancel,confirm,callback) {
-		bootbox.prompt(msg,cancel,confirm,callback);
+	,prompt: function(msg,callback) {
+		bootbox.prompt(msg,callback);
 	}
 	,confirm: function(msg,cancel,confirm,callback) {
 		bootbox.dialog({ message : msg, buttons : { cancel : { label : cancel, className : "btn-default"}, confirm : { label : confirm, className : "btn-primary", callback : callback}}});
@@ -807,6 +819,9 @@ Permissions.canUpdateUsers = function(document,fields) {
 };
 Permissions.canRemoveUser = function(document) {
 	return Permissions.isAdmin();
+};
+Permissions.canTransferArticle = function() {
+	return Permissions.isModerator();
 };
 var Reflect = function() { };
 Reflect.__name__ = true;
