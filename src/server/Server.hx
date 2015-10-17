@@ -70,6 +70,7 @@ class Server {
 			#end
 		});
 		
+		// publish rss feeds
 		untyped RssFeed.publish('articles', function(query) {
 			var self:{ setValue: String->Dynamic->Void} = Lib.nativeThis;
 			
@@ -102,7 +103,11 @@ class Server {
 			self.setValue('link', Configs.shared.host);
 			self.setValue('lastBuildDate', Date.now());
 			self.setValue('pubDate', Date.now());
+			#if debug
 			self.setValue('ttl', 1);
+			#else 
+			self.setValue('ttl', 10); // give time to modify tags until
+			#end
 			
 			var selector = { };
 			selector.created = { '$gte': Date.fromTime(Date.now().getTime() - 1000 * 60 * 60 * 24 * 30) }; // fetch from last 30 days 

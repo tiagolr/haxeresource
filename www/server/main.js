@@ -181,7 +181,7 @@ Server.setupPublishes = function() {
 		if(options1 == null) options1 = { };
 		options1.fields = { score : { '$meta' : "textScore"}};
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
-		return model_Articles.collection.find({ '$text' : { '$search' : query}},options1);
+		return model_Articles.collection.find();
 	});
 	RssFeed.publish("articles",function(query1) {
 		var self = this;
@@ -215,7 +215,7 @@ Server.setupPublishes = function() {
 		self.setValue("link",Configs.shared.host);
 		self.setValue("lastBuildDate",new Date());
 		self.setValue("pubDate",new Date());
-		self.setValue("ttl",1);
+		self.setValue("ttl",10);
 		var selector2 = { };
 		selector2.created = { '$gte' : (function($this) {
 			var $r;
@@ -460,7 +460,6 @@ Server.createTagGroups = function() {
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
-		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
 		model_Articles.collection._ensureIndex({ 'user' : 1});
 		model_Articles.collection._ensureIndex({ 'username' : 1});
 		model_Articles.collection._ensureIndex({ 'tags' : 1});
@@ -1261,7 +1260,7 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-Configs.shared = { host : "localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.server = { };
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
