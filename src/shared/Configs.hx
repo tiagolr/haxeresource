@@ -6,7 +6,7 @@ class Configs {
 	
 	public static var shared = {
 		#if debug
-		host: 'localhost:3000',
+		host: 'http://localhost:3000',
 		#else 
 		host: 'http://haxeresource.meteor.com',
 		#end
@@ -82,6 +82,9 @@ class Configs {
 	
 	#if server
 	public static var server = {
+		cache: {
+			rss_articles_ttl: 10, // time to live in minutes for articles rss feeds
+		}
 	}
 	#end
 }

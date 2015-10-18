@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "feed": {
+      "version": "http://registry.npmjs.org/feed/-/feed-0.2.6.tgz",
+      "dependencies": {
+        "xml": {
+          "version": "http://registry.npmjs.org/xml/-/xml-1.0.0.tgz"
+        }
+      }
+    }
+  }
+}
