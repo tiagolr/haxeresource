@@ -15,13 +15,8 @@ class ViewArticle {
 
 	// Current article to display
 	var currentArticle(get, set):Article;
-	function get_currentArticle() {
-		return Session.get('currentViewArticle');
-	}
-	function set_currentArticle(a:Article) {
-		Session.set('currentViewArticle', a);
-		return a;
-	}
+	function get_currentArticle() {return Session.get('currentViewArticle');}
+	function set_currentArticle(a:Article) {Session.set('currentViewArticle', a);return a;}
 	
 	// Html Page
 	var page(get, null):JQuery;

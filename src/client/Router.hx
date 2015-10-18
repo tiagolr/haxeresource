@@ -17,30 +17,6 @@ import templates.ViewArticle;
  */
 class Router {
 	
-	//-----------------------------------------------
-	// Page transitions
-	//-----------------------------------------------
-	
-	// visible pages A and B control which pages are rendered by blaze
-	// two pages may be visible at the same time to support fading transitions
-	// only visible pages are rendered by the browser
-	public static var visiblePageA(default, null):String; 
-	function get_visiblePageA():String {
-		return Session.get('visible_page_a');
-	}
-	function set_visiblePageA(val:String):String {
-		return Session.set('visible_page_a', val);
-		return val;
-	}
-	public static var visiblePageB(default, null):String; 
-	function get_visiblePageB():String {
-		return Session.get('visible_page_b');
-	}
-	function set_visiblePageB(val:String):String {
-		return Session.set('visible_page_b', val);
-		return val;
-	}
-	
 	var currentPage(default, null):String;
 	function showPage(page:String, ?args:Dynamic) {
 		switch (page) {

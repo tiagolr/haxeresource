@@ -40,66 +40,33 @@ class ListArticles {
 	var subscription: { };
 	
 	var page(get, null):JQuery;
-	function get_page():JQuery {
-		return new JQuery('#listArticlesPage');
-	}
+	function get_page():JQuery {return new JQuery('#listArticlesPage');}
 	
-	// REACTIVE VARS --------------------------------------------------
+	// Reacti ve vars -----------------------------------------------
 	var sort(get, set):ListArticlesSort;
-	function set_sort(val) {
-		Session.set('list_articles_sort',val);
-		return val;
-	}
-	function get_sort() {
-		return Session.get('list_articles_sort');
-	}
+	function set_sort(val) {Session.set('list_articles_sort',val);return val;}
+	function get_sort() {return Session.get('list_articles_sort');}
 	
 	var limit(get, set):Int;
-	function set_limit(val:Int) {
-		Session.set('list_articles_limit', val);
-		return val;
-	}
-	function get_limit() {
-		return Session.get('list_articles_limit'); 
-	}
+	function set_limit(val:Int) {Session.set('list_articles_limit', val);return val;}
+	function get_limit() {return Session.get('list_articles_limit'); }
 	
 	var selector(get, set): { };
-	function set_selector(val) {
-		Session.set('list_articles_selector', val);
-		return val;
-	}
-	function get_selector() {
-		return Session.get('list_articles_selector');
-	}
+	function set_selector(val) {Session.set('list_articles_selector', val);return val;}
+	function get_selector() {return Session.get('list_articles_selector');}
 	
 	var captionMsg(get, set):String;
-	function get_captionMsg():String {
-		return Session.get('la_captionMsg');
-	}
-	function set_captionMsg(val:String):String {
-		Session.set('la_captionMsg', val);
-		return val;
-	}
+	function get_captionMsg():String {return Session.get('la_captionMsg');}
+	function set_captionMsg(val:String):String {Session.set('la_captionMsg', val);return val;}
 	
 	var searchMode(get, set):Bool;
-	function get_searchMode():Bool {
-		return Session.get('search_mode');
-	}
-	function set_searchMode(val:Bool):Bool {
-		Session.set('search_mode', val);
-		return val;
-	}
+	function get_searchMode():Bool {return Session.get('search_mode');}
+	function set_searchMode(val:Bool):Bool {Session.set('search_mode', val);return val;}
 	
 	var searchQuery(get, set):String;
-	function get_searchQuery():String {
-		return Session.get('search_query');
-	}
-	function set_searchQuery(val:String):String {
-		Session.set('search_query', val);
-		return val;
-	}
-	//-----------------------------------------------------------------
-	
+	function get_searchQuery():String {return Session.get('search_query');}
+	function set_searchQuery(val:String):String {Session.set('search_query', val);return val;}
+	//-----------------------------------------------	
 	
 	public function show(args:ListArticlesOptions) {
 		searchMode = args.isSearch == true ? true : false;
@@ -133,10 +100,6 @@ class ListArticles {
 		
 		captionMsg = args.caption;
 		page.show(Configs.client.page_fadein_duration);
-	}
-	
-	public function showSearch(_sort:{}, query:String, caption:String) {
-		
 	}
 	
 	public function hide() {

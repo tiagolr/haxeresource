@@ -22,25 +22,18 @@ import model.Tags;
 class NewArticle {
 
 	var page(get, null):JQuery;
-	function get_page():JQuery {
-		return new JQuery('#newArticlePage');
-	}
+	function get_page():JQuery {return new JQuery('#newArticlePage');}
 	
 	var editArticle(get, set):Article;
-	function get_editArticle() {
-		return Session.get('editArticle');
-	}
-	function set_editArticle(val:Article) {
-		Session.set('editArticle', val);
-		return val;
-	}
+	function get_editArticle() {return Session.get('editArticle');}
+	function set_editArticle(val) {Session.set('editArticle', val);return val;}
 	
 	public function new() {}
 	public function init() {
 		Template.get('newArticle').helpers( {
 			
 			editArticle: function() {
-				return Session.get('editArticle');
+				return editArticle;
 			},
 			
 			featuredTags: function() {
@@ -195,9 +188,7 @@ class NewArticle {
 	}
 	
 	public function hide() {
-		if (Session.get('editArticle') != null) {
-			Session.set('editArticle', null);
-		}
+		editArticle = null;
 		
 		// clear tags input
 		untyped new JQuery("#naf-articleTags").tagsinput('removeAll');

@@ -17,13 +17,8 @@ import model.Tags.Tag;
 class SideBar {
 
 	public static var tagGroups(get, set):Array<TagGroup>;
-	static function get_tagGroups():Array<TagGroup> {
-		return Session.get('sb_tag_groups');
-	}
-	static function set_tagGroups(val:Array<TagGroup>):Array<TagGroup> {
-		Session.set('sb_tag_groups', val);
-		return val;
-	}
+	static function get_tagGroups() {return Session.get('sb_tag_groups');}
+	static function set_tagGroups(val) {Session.set('sb_tag_groups', val);return val;}
 	
 	var ignoreDivClick:Bool = false; // flag to hack the event propagation of <a></a> inside a clickable <div></div>
 
