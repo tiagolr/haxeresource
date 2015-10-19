@@ -166,7 +166,7 @@ Server.main = function() {
 	Shared.init();
 	Server.setupPublishes();
 	Server.setupPermissions();
-	Server.setupCollectionHooks();
+	Server.setupHooks();
 	Server.setupMethods();
 	Server.setupMaintenanceMethods();
 	Server.setupAccounts();
@@ -197,7 +197,7 @@ Server.setupPublishes = function() {
 		if(options1 == null) options1 = { };
 		options1.fields = { score : { '$meta' : "textScore"}};
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
-		return model_Articles.collection.find();
+		return model_Articles.collection.find({ '$text' : { '$search' : query}},options1);
 	});
 };
 Server.setupPermissions = function() {
@@ -229,7 +229,7 @@ Server.setupPermissions = function() {
 		return Permissions.requirePermission(Permissions.canUpdateUsers(document2,fields1));
 	}});
 };
-Server.setupCollectionHooks = function() {
+Server.setupHooks = function() {
 	model_Articles.collection.after.insert(function(userId,doc) {
 		if(doc.tags == null) doc.tags = [];
 		var _g = 0;
@@ -484,6 +484,7 @@ Server.createTagGroups = function() {
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
+		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
 		model_Articles.collection._ensureIndex({ 'user' : 1});
 		model_Articles.collection._ensureIndex({ 'username' : 1});
 		model_Articles.collection._ensureIndex({ 'tags' : 1});
@@ -1156,6 +1157,9 @@ var model_Articles = function() {
 	}}, content : { type : String, max : 30000, optional : true, custom : function() {
 		if(!this.field("link").isSet && !this.field("content").isSet) return "eitherArticleOrLink";
 		return undefined;
+	}, autoValue : function() {
+		if(Meteor.isServer && this.field("content").isSet) return (Meteor.npmRequire("sanitizer")).sanitize(this.field("content").value);
+		return undefined;
 	}}, tags : { type : [String], optional : true, autoform : { type : "tags", afFieldInput : { maxTags : 10, maxChars : 30}}, autoValue : function() {
 		if(this.field("tags").isSet) {
 			var tags = this.field("tags").value;
@@ -1285,7 +1289,7 @@ if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_co
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
 Cache.cache = { rss : { articles : { }}};
-Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.server = { cache : { rss_articles_ttl : 10}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();

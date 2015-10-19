@@ -22,7 +22,7 @@ class Server {
 		Shared.init();
 		setupPublishes();
 		setupPermissions();
-		setupCollectionHooks();
+		setupHooks();
 		setupMethods();
 		setupMaintenanceMethods();
 		setupAccounts();
@@ -122,7 +122,7 @@ class Server {
 		});
 	}
 	
-	static private function setupCollectionHooks():Void {
+	static private function setupHooks():Void {
 		Articles.collection.after.insert(function (userId, doc:Article) {
 			if (doc.tags == null) doc.tags = [];
 			
@@ -353,13 +353,18 @@ class Server {
 		});
 	}
 	
+	/**
+	 * 
+	 */
 	static private function setupEmail() {
 		Accounts.emailTemplates.siteName = "Haxe Resource";
 		Accounts.emailTemplates.from = "Haxe Resource <no-reply@haxeresource.com>";
 	}
 	
-	// creates a server route for rss feeds
-	// feeds are generated on request and cached for 10 minutes.
+	/**
+	 * creates a server route for rss feeds
+	 * feeds are generated on request and cached for x minutes defined in the configs file.
+	 */
 	static private function setupRss() {
 		
 		// todo remove untyped
@@ -437,7 +442,9 @@ class Server {
 		});
 	}
 	
-	
+	/**
+	 * Create admin account if there is none
+	 */
 	static private function createAdmin():Void {
 		if (Meteor.users.findOne( { roles: { '$in':[Permissions.roles.ADMIN] }} ) == null) {
 			var pwd = Md5.encode(Std.string(Math.random()));
@@ -448,7 +455,7 @@ class Server {
 				profile:{},
 			});
 			
-			Meteor.users.update( { _id:adminId }, { '$set': { profile: { }}} ); // FIX
+			Meteor.users.update( { _id:adminId }, { '$set': { profile: { }}} ); // FIX - possibly not needed
 			
 			if (adminId != null) {
 				Meteor.users.update(adminId, { '$set': { initPwd: pwd }} ); // store initial admin pass in database unencrypted
@@ -459,6 +466,9 @@ class Server {
 		}
 	}
 	
+	/**
+	 * Update existing tag groups or create new ones.
+	 */
 	static private function createTagGroups():Void {
 		TagGroups.collection.upsert( { name:'Haxe' }, { '$set' : {
 			mainTag:'haxe',
@@ -489,6 +499,9 @@ class Server {
 		}});
 	}
 	
+	/**
+	 * Setup database indexes
+	 */
 	static private function createIndexes() {
 		Meteor.startup(function() {
 			#if text_search

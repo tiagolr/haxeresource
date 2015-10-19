@@ -4,6 +4,7 @@ import meteor.Accounts;
 import meteor.Collection;
 import meteor.Meteor;
 import meteor.packages.AutoForm;
+import meteor.packages.npm.Sanitizer;
 import meteor.packages.SimpleSchema;
 import model.Articles.Article;
 
@@ -70,6 +71,12 @@ class Articles extends Collection {
 				custom: function() {
 					if (!SchemaCtx.field('link').isSet && !SchemaCtx.field('content').isSet) {
 						return "eitherArticleOrLink";
+					}
+					return Lib.undefined;
+				},
+				autoValue: function () {
+					if (Meteor.isServer && SchemaCtx.field('content').isSet) {
+						return Sanitizer.sanitize(SchemaCtx.field('content').value);
 					}
 					return Lib.undefined;
 				}

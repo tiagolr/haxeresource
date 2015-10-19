@@ -7,6 +7,9 @@
           "version": "http://registry.npmjs.org/xml/-/xml-1.0.0.tgz"
         }
       }
+    },
+    "sanitizer": {
+      "version": "http://registry.npmjs.org/sanitizer/-/sanitizer-0.1.2.tgz"
     }
   }
 }
