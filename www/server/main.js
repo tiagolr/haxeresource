@@ -10,13 +10,29 @@ var Cache = function() { };
 Cache.__name__ = true;
 Cache.setArticleRss = function(params,output) {
 	var hash = "articleRss" + Shared.utils.objectToHash(params);
-	Reflect.setField(Cache.cache.rss.articles,hash,{ val : output, ts : new Date().getTime()});
+	Reflect.setField(Cache.cache.rss.articles,hash,Cache.createEntry(output));
 };
 Cache.getArticleRss = function(params) {
 	var hash = "articleRss" + Shared.utils.objectToHash(params);
 	var res = Reflect.field(Cache.cache.rss.articles,hash);
-	if(res != null && new Date().getTime() - res.ts < Configs.server.cache.rss_articles_ttl * 60 * 1000) return res.val;
+	if(res != null && !Cache.hasExpired(res,Configs.server.cache.rss_articles_ttl)) return res.val;
 	return null;
+};
+Cache.setSEOHtml = function(params,html) {
+	var hash = "seoHtml" + Shared.utils.objectToHash(params);
+	Reflect.setField(Cache.cache.seo.html,hash,Cache.createEntry(html));
+};
+Cache.getSEOHtml = function(params) {
+	var hash = "seoHtml" + Shared.utils.objectToHash(params);
+	var res = Reflect.field(Cache.cache.seo.html,hash);
+	if(res != null && !Cache.hasExpired(res,Configs.server.cache.seo_html_ttl)) return res.val;
+	return null;
+};
+Cache.createEntry = function(val) {
+	return { val : val, ts : new Date().getTime()};
+};
+Cache.hasExpired = function(entry,ttl_mnts) {
+	return new Date().getTime() - entry.ts > ttl_mnts * 60 * 1000;
 };
 var Configs = function() { };
 Configs.__name__ = true;
@@ -160,6 +176,89 @@ Reflect.field = function(o,field) {
 Reflect.setField = function(o,field,value) {
 	o[field] = value;
 };
+var SEO = function() { };
+SEO.__name__ = true;
+SEO.init = function() {
+	SSR.compileTemplate("layout",Assets.getText("seo/layout.html"));
+	Template.layout.helpers({ getDocType : function() {
+		return "<!DOCTYPE html>";
+	}});
+	SSR.compileTemplate("index",Assets.getText("seo/index.html"));
+	SSR.compileTemplate("group",Assets.getText("seo/group.html"));
+	SSR.compileTemplate("tag",Assets.getText("seo/tag.html"));
+	SSR.compileTemplate("article",Assets.getText("seo/article.html"));
+	Template.index.helpers({ formatUrl : function(str) {
+		return Shared.utils.formatUrlName(str);
+	}});
+	Template.tag.helpers({ formatUrl : function(str1) {
+		return Shared.utils.formatUrlName(str1);
+	}});
+	Template.group.helpers({ formatUrl : function(str2) {
+		return Shared.utils.formatUrlName(str2);
+	}});
+	Template.article.helpers({ formatUrl : function(str3) {
+		return Shared.utils.formatUrlName(str3);
+	}});
+	SEO.seoPicker = Picker.filter(function(req,res) {
+		return (js_Boot.__cast(req.url , String)).indexOf("_escaped_fragment_") != -1;
+	});
+	SEO.defineRoutes();
+};
+SEO.defineRoutes = function() {
+	SEO.seoPicker.route("/",function(params,req,res,next) {
+		var html = Cache.getSEOHtml(["/"]);
+		if(html != null) {
+			res.end(html);
+			return;
+		}
+		var articles = model_Articles.collection.find({ },{ fields : { _id : 1, title : 1}});
+		var tags = model_Tags.collection.find({ },{ fields : { name : 1}});
+		var groups = model_TagGroups.collection.find({ },{ fields : { name : 1}});
+		html = SSR.render("layout",{ title : "Haxe Resource - Haxe documentation, articles and tutorials", description : "Haxe resource is a community site that collects learning material such as articles and tutorials related to the Haxe programming language.", template : "index", articles : articles, tags : tags, groups : groups});
+		Cache.setSEOHtml(["/"],html);
+		res.end(html);
+	});
+	SEO.seoPicker.route("/articles/:name",function(params1,req1,res1,next1) {
+		var tagName = params1.name;
+		var html1 = Cache.getSEOHtml(["/articles/tag/:name",tagName]);
+		if(html1 != null) {
+			res1.end(html1);
+			return;
+		}
+		var articles1 = model_Articles.collection.find({ tags : { '$in' : [tagName]}},{ fields : { _id : 1, title : 1}});
+		html1 = SSR.render("layout",{ title : "Haxe Resource - " + tagName + " tag", description : "Articles tagged as " + tagName + ".", template : "tag", articles : articles1});
+		Cache.setSEOHtml(["/articles/tag/:name",tagName],html1);
+		res1.end(html1);
+	});
+	SEO.seoPicker.route("/articles/group/:name",function(params2,req2,res2,next2) {
+		var groupName = params2.name;
+		var html2 = Cache.getSEOHtml(["/articles/group/:name",groupName]);
+		if(html2 != null) {
+			res2.end(html2);
+			return;
+		}
+		var group = model_TagGroups.collection.findOne({ name : groupName});
+		var tags1 = Shared.utils.resolveTags(group);
+		tags1.push(group.mainTag);
+		var articles2 = model_Articles.collection.find({ tags : { '$in' : tags1}},{ fields : { _id : 1, title : 1}});
+		html2 = SSR.render("layout",{ title : "Haxe Resource - " + groupName + " group", description : group.description, template : "group", tags : tags1, articles : articles2});
+		Cache.setSEOHtml(["/articles/group/:name",groupName],html2);
+		res2.end(html2);
+	});
+	SEO.seoPicker.route("/articles/view/:_id/:name",function(params3,req3,res3,next3) {
+		var articleId = params3._id;
+		var html3 = Cache.getSEOHtml(["/articles/view/:_id/:name",articleId]);
+		if(html3 != null) {
+			res3.end(html3);
+			return;
+		}
+		var article = model_Articles.collection.findOne({ _id : articleId});
+		if(article.content != null) article.content = (Meteor.npmRequire("marked"))(article.content);
+		html3 = SSR.render("layout",{ title : "Haxe Resource - " + article.title, description : article.description, template : "article", article : article});
+		Cache.setSEOHtml(["/articles/view/:_id/:name",articleId],html3);
+		res3.end(html3);
+	});
+};
 var Server = function() { };
 Server.__name__ = true;
 Server.main = function() {
@@ -172,6 +271,7 @@ Server.main = function() {
 	Server.setupAccounts();
 	Server.setupEmail();
 	Server.setupRss();
+	SEO.init();
 	Server.createAdmin();
 	Server.createTagGroups();
 	Server.createIndexes();
@@ -197,7 +297,7 @@ Server.setupPublishes = function() {
 		if(options1 == null) options1 = { };
 		options1.fields = { score : { '$meta' : "textScore"}};
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
-		return model_Articles.collection.find({ '$text' : { '$search' : query}},options1);
+		return model_Articles.collection.find();
 	});
 };
 Server.setupPermissions = function() {
@@ -445,7 +545,7 @@ Server.setupRss = function() {
 			}
 		}
 		var feed = new (Meteor.npmRequire("feed"))({ title : "HaxeResource " + titleSuffix, description : "Articles and tutorials from the haxe community", link : Configs.shared.host});
-		var selector = { };
+		var selector = { created : null, tags : null};
 		selector.created = { '$gte' : (function($this) {
 			var $r;
 			var t1 = new Date().getTime() - 86400000 * 30;
@@ -477,14 +577,13 @@ Server.createAdmin = function() {
 	}
 };
 Server.createTagGroups = function() {
-	model_TagGroups.collection.upsert({ name : "Haxe"},{ '$set' : { mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", weight : 0}});
-	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", weight : 1}});
-	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", weight : 2}});
-	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", weight : 3}});
+	model_TagGroups.collection.upsert({ name : "Haxe"},{ '$set' : { mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", description : "Haxe syntax, macros, compilation and more.", weight : 0}});
+	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", description : "Openfl and lime frameworks.", weight : 1}});
+	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", description : "Haxe flixel and game development.", weight : 2}});
+	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", description : "Other libraries and subjects.", weight : 3}});
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
-		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
 		model_Articles.collection._ensureIndex({ 'user' : 1});
 		model_Articles.collection._ensureIndex({ 'username' : 1});
 		model_Articles.collection._ensureIndex({ 'tags' : 1});
@@ -1218,7 +1317,7 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}, description : { type : String}});
 };
 model_TagGroups.__name__ = true;
 model_TagGroups.__super__ = Mongo.Collection;
@@ -1288,9 +1387,9 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-Cache.cache = { rss : { articles : { }}};
-Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.server = { cache : { rss_articles_ttl : 10}};
+Cache.cache = { rss : { articles : { }}, seo : { html : { }}};
+Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.server = { cache : { rss_articles_ttl : 10, seo_html_ttl : 180}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {

@@ -1,4 +1,4 @@
-(function (console, $hx_exports) { "use strict";
+(function (console) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -385,7 +385,7 @@ Router.prototype = {
 			var selector = { tags : { '$in' : [tag]}};
 			_g.showListArticles({ selector : selector, caption : Configs.client.texts.la_showing_tag(tag), rssLink : "/rss/articles/?tag=" + tag});
 		}});
-		FlowRouter.route("/articles/tag/group/:name",{ action : function() {
+		FlowRouter.route("/articles/group/:name",{ action : function() {
 			var groupName = FlowRouter.getParam("name");
 			var g = model_TagGroups.collection.findOne({ name : groupName});
 			if(g != null) {
@@ -414,8 +414,8 @@ Router.prototype = {
 			} else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/search",{ action : function() {
-			var query = FlowRouter.getQueryParam("q");
-			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
+			Client.utils.notifyError("Indexed search is disabled in the database.");
+			FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
@@ -496,7 +496,7 @@ templates_SideBar.prototype = {
 			return Client.utils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
 		}});
 		Template.sidebar.events({ 'click #sb-ungrouped' : function(_) {
-			FlowRouter.go("/articles/tag/group/ungrouped");
+			FlowRouter.go("/articles/group/ungrouped");
 		}});
 		Template.tagGroup.helpers({ countArticlesTag : function(tag) {
 			var t1 = model_Tags.collection.findOne({ name : tag});
@@ -639,7 +639,7 @@ templates_ViewArticle.prototype = {
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = $hx_exports.Client = function() { };
+var Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
@@ -692,7 +692,6 @@ Client.main = function() {
 	Template.registerHelper("formatUrlName",function(name) {
 		return Shared.utils.formatUrlName(name);
 	});
-	AutoForm.debug();
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -767,7 +766,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = $hx_exports.Permissions = function() { };
+var Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -848,7 +847,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = $hx_exports.sharedUtils = function() {
+var SharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -899,7 +898,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = $hx_exports.Shared = function() { };
+var Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -1572,7 +1571,7 @@ model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
-	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}});
+	model_TagGroups.schema = new SimpleSchema({ name : { type : String, unique : true}, mainTag : { type : String, max : 30}, weight : { type : Number, defaultValue : 10}, icon : { type : String}, tags : { optional : true, type : [String]}, description : { type : String}});
 };
 model_TagGroups.__name__ = true;
 model_TagGroups.__super__ = Mongo.Collection;
@@ -1651,8 +1650,8 @@ Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
@@ -1674,4 +1673,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
+})(typeof console != "undefined" ? console : {log:function(){}});

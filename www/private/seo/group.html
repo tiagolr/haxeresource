@@ -1,0 +1,12 @@
+<div class="tags">
+	<h1>Tags</h1>
+	{{#each tags}}
+	<a href="/articles/tag/{{this}}" style="display:block">{{this}}</a>
+	{{/each}}
+</div>
+<div class="articles">
+	<h1>Articles</h1>
+	{{#each articles}}
+	<a href="/articles/view/{{_id}}/{{formatUrl title}}" style="display:block">{{title}}</a>
+	{{/each}}
+</div>

@@ -7,6 +7,7 @@ import meteor.Meteor;
 import meteor.packages.npm.Feed;
 import meteor.packages.PublishCounts;
 import meteor.packages.Roles;
+import meteor.Picker;
 import model.Articles;
 import model.Articles.Article;
 import model.TagGroups;
@@ -28,6 +29,7 @@ class Server {
 		setupAccounts();
 		setupEmail();
 		setupRss();
+		SEO.init();
 		
 		createAdmin();
 		createTagGroups();
@@ -368,7 +370,7 @@ class Server {
 	static private function setupRss() {
 		
 		// todo remove untyped
-		untyped Picker.route('/rss/articles', function(params, req, res, next) {
+		Picker.route('/rss/articles', function(params, req, res, next) {
 			var queryGroup = params.query == null ? null : params.query.group;
 			var queryTag = params.query == null ? null : params.query.tag;
 			
@@ -413,7 +415,7 @@ class Server {
 			});
 			
 			// create article selector
-			var selector = { };
+			var selector = { created:null, tags:null };
 			selector.created = { '$gte': Date.fromTime(Date.now().getTime() - 1000 * 60 * 60 * 24 * 30) }; // fetch from last 30 days 
 			if (tags != null) {
 				selector.tags = { '$in': tags };
@@ -474,6 +476,7 @@ class Server {
 			mainTag:'haxe',
 			tags: ["~/^haxe-..*$/"], 
 			icon:'/img/haxe-logo-50x50.png',
+			description: "Haxe syntax, macros, compilation and more.",
 			weight:0
 		}});
 		
@@ -481,6 +484,7 @@ class Server {
 			mainTag:'openfl',
 			tags: ["~/^openfl-..*$/"],
 			icon:'/img/openfl-logo-50x50.png',
+			description: "Openfl and lime frameworks.",
 			weight:1
 		}});
 		
@@ -488,6 +492,7 @@ class Server {
 			mainTag:'flixel',
 			tags: ["~/^flixel-..*$/", "~/^haxeflixel-..*$/"], 
 			icon:'/img/haxeflixel-logo-50x50.png',
+			description: "Haxe flixel and game development.",
 			weight:2
 		}});
 		
@@ -495,6 +500,7 @@ class Server {
 			mainTag:'other',
 			tags: ["~/^other-..*$/"], 
 			icon:'/img/other-logo-50x50.png',
+			description: "Other libraries and subjects.",
 			weight:3
 		}});
 	}

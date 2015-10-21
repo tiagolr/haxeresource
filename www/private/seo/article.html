@@ -1,0 +1,13 @@
+<p><h1>title</h1>{{article.title}}</p>
+<p><h4>description:</h4> {{article.description}}</p>
+<p><h4>username:</h4> {{article.username}}</p>
+<p><h4>link:</h4> {{article.link}}</p>
+<p>tags:
+{{#each article.tags}}
+<a href="/articles/tag/{{this}}">{{this}}</a>
+{{/each}}
+</p>
+<hr/>
+<h4>Contents: </h4>
+<div>{{{article.content}}}
+</div>

@@ -64,7 +64,7 @@ class SideBar {
 		
 		Template.get('sidebar').events( {
 			'click #sb-ungrouped':function (_) {
-				FlowRouter.go('/articles/tag/group/ungrouped');
+				FlowRouter.go('/articles/group/ungrouped');
 			}
 		});
 		

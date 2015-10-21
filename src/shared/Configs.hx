@@ -84,6 +84,7 @@ class Configs {
 	public static var server = {
 		cache: {
 			rss_articles_ttl: 10, // time to live in minutes for articles rss feeds
+			seo_html_ttl: 180 // time to live in minutes for crawlers html
 		}
 	}
 	#end

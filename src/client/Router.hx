@@ -87,7 +87,7 @@ class Router {
 			} 
 		});
 		
-		FlowRouter.route('/articles/tag/group/:name', {
+		FlowRouter.route('/articles/group/:name', {
 			action: function () {
 				var groupName = FlowRouter.getParam('name');
 				var g:TagGroup = TagGroups.collection.findOne( { name:groupName } );
@@ -100,7 +100,7 @@ class Router {
 					showListArticles( { 
 						selector: selector, 
 						caption: Configs.client.texts.la_showing_group(groupName), 
-						rssLink: '/rss/articles/?group=$groupName', 
+						rssLink: '/rss/articles/?group=$groupName',
 					});
 				} else if (groupName == 'ungrouped') {
 					var tagNames = [];

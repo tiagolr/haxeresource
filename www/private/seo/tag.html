@@ -1,0 +1,6 @@
+<div class="articles">
+	<h1>Articles</h1>
+	{{#each articles}}
+	<a href="/articles/view/{{_id}}/{{formatUrl title}}" style="display:block">{{title}}</a>
+	{{/each}}
+</div>

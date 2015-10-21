@@ -1,0 +1,19 @@
+<div class="groups">
+	<h1>Groups</h1>
+	{{#each groups}}
+	<a href="/articles/group/{{name}}" style="display:block">{{name}}</a>
+	{{/each}}
+</div>
+<div class="tags">
+	<h1>Tags</h1>
+	{{#each tags}}
+	<a href="/articles/tag/{{name}}" style="display:block">{{name}}</a>
+	{{/each}}
+</div>
+<div class="articles">
+	<h1>Articles</h1>
+	{{#each articles}}
+	<a href="/articles/view/{{_id}}/{{formatUrl title}}" style="display:block">{{title}}</a>
+	{{/each}}
+</div>
+

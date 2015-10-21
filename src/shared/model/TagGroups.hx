@@ -44,6 +44,9 @@ class TagGroups extends Collection {
 			tags: {
 				optional: true,
 				type: [String],
+			},
+			description: {
+				type: String,
 			}
 		});
 	}
