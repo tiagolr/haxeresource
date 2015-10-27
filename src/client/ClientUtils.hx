@@ -101,4 +101,31 @@ class ClientUtils{
 		return final;
 	}
 	
+	public function articleLinkToIframe(link:String) {
+		if (link == null || link == "") 
+			return "";
+		
+		// detect youtube links and embed them
+		if (link.indexOf('www.youtube.com') != -1 || link.indexOf('www.youtu.be') != -1) {
+			var ryoutube = ~/(?:watch\?v=)(.+)/gi;
+			if (ryoutube.match(link)) {
+				try {
+					link = 'https://www.youtube.com/embed/' + ryoutube.matched(1);
+				} catch(e:Dynamic) {}
+			}
+		} 
+		else 
+		
+		// detect try_haxe link and embed them
+		if (link.indexOf('//try.haxe.org') != -1) {
+			var rtryhaxe = ~/(try.haxe.org\/)#(.+)/gi;
+			if (rtryhaxe.match(link)) {
+				try {
+					link = 'http://try.haxe.org/embed/' + rtryhaxe.matched(2);
+				} catch(e:Dynamic) {}
+			}
+		}
+		
+		return '<iframe class="va-article-frame" src="$link" allowfullscreen></iframe>';
+	}
 }

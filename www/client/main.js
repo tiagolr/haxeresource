@@ -259,7 +259,9 @@ templates_NewArticle.prototype = {
 			js.JQuery("#na-previewTitle").html(title);
 			js.JQuery("#na-articleDescription").html(desc);
 			js.JQuery("#na-previewLink").html("<a href=\"" + link + "\" target=\"_blank\">" + link + "</a>");
-			js.JQuery("#na-previewContent").html(Client.utils.parseMarkdown(content));
+			var res = "";
+			if(link != null && link != "" && (content == null || content == "")) res = Client.utils.articleLinkToIframe(link); else res = Client.utils.parseMarkdown(content);
+			js.JQuery("#na-previewContent").html(res);
 		}, 'beforeItemAdd input' : function(evt1) {
 			if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
 		}, 'change #na-featuredTagsList' : function(evt2) {
@@ -680,6 +682,25 @@ ClientUtils.prototype = {
 		}
 		return $final;
 	}
+	,articleLinkToIframe: function(link) {
+		if(link == null || link == "") return "";
+		if(link.indexOf("www.youtube.com") != -1 || link.indexOf("www.youtu.be") != -1) {
+			var ryoutube = new EReg("(?:watch\\?v=)(.+)","gi");
+			if(ryoutube.match(link)) try {
+				link = "https://www.youtube.com/embed/" + ryoutube.matched(1);
+			} catch( e ) {
+				if (e instanceof js__$Boot_HaxeError) e = e.val;
+			}
+		} else if(link.indexOf("//try.haxe.org") != -1) {
+			var rtryhaxe = new EReg("(try.haxe.org/)#(.+)","gi");
+			if(rtryhaxe.match(link)) try {
+				link = "http://try.haxe.org/embed/" + rtryhaxe.matched(2);
+			} catch( e1 ) {
+				if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
+			}
+		}
+		return "<iframe class=\"va-article-frame\" src=\"" + link + "\" allowfullscreen></iframe>";
+	}
 	,__class__: ClientUtils
 };
 var templates_ViewArticle = function() {
@@ -702,25 +723,7 @@ templates_ViewArticle.prototype = {
 			return _g.get_currentArticle();
 		}, parsedContent : function() {
 			if(_g.get_currentArticle() == null) return "";
-			if(_g.get_currentArticle().content == "" || _g.get_currentArticle().content == null) {
-				var src = _g.get_currentArticle().link;
-				if(_g.get_currentArticle().link.indexOf("www.youtube.com") != -1 || _g.get_currentArticle().link.indexOf("www.youtu.be") != -1) {
-					var ryoutube = new EReg("(?:watch\\?v=)(.+)","gi");
-					if(ryoutube.match(src)) try {
-						src = "https://www.youtube.com/embed/" + ryoutube.matched(1);
-					} catch( e ) {
-						if (e instanceof js__$Boot_HaxeError) e = e.val;
-					}
-				} else if(_g.get_currentArticle().link.indexOf("//try.haxe.org") != -1) {
-					var rtryhaxe = new EReg("(try.haxe.org/)#(.+)","gi");
-					if(rtryhaxe.match(src)) try {
-						src = "http://try.haxe.org/embed/" + rtryhaxe.matched(2);
-					} catch( e1 ) {
-						if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
-					}
-				}
-				return "<iframe class=\"va-article-frame\" src=\"" + src + "\" allowfullscreen></iframe>";
-			}
+			if(_g.get_currentArticle().content == "" || _g.get_currentArticle().content == null) return Client.utils.articleLinkToIframe(_g.get_currentArticle().link);
 			return Client.utils.parseMarkdown(_g.get_currentArticle().content);
 		}, canUpdateArticle : function() {
 			return Permissions.canUpdateArticles(_g.get_currentArticle());

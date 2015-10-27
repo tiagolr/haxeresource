@@ -81,7 +81,15 @@ class NewArticle {
 				new JQuery('#na-previewTitle').html(title);
 				new JQuery('#na-articleDescription').html(desc);
 				new JQuery('#na-previewLink').html('<a href="$link" target="_blank">$link</a>');
-				new JQuery('#na-previewContent').html(Client.utils.parseMarkdown(content));
+				
+				
+				var res = "";
+				if (link != null && link != "" && (content == null || content == "")) {
+					res = Client.utils.articleLinkToIframe(link);
+				} else {
+					res = Client.utils.parseMarkdown(content);
+				}
+				new JQuery('#na-previewContent').html(res);
 			},
 			
 			// Only accept valid tags
