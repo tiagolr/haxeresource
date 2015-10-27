@@ -188,9 +188,13 @@ templates_ListArticles.prototype = {
 					});
 				}
 			});
+		}, 'click .la-report-link' : function(event6) {
+			var articleId5 = event6.currentTarget.getAttribute("data-article");
+			Client.reportModal.show("ARTICLE",articleId5);
 		}});
 		Template.articleRow.onRendered(function() {
 			js.JQuery(this.find(".articleRowHeader")).show(500);
+			this.$(".la-report-link").tooltip({ title : Configs.client.texts.la_tt_report, placement : "left"});
 		});
 	}
 	,__class__: templates_ListArticles
@@ -336,6 +340,85 @@ templates_NewArticle.prototype = {
 		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,__class__: templates_NewArticle
+};
+var templates_ReportModal = function() {
+};
+templates_ReportModal.__name__ = true;
+templates_ReportModal.prototype = {
+	set_isVisible: function(val) {
+		Session.set("report_modal_visible",val);
+		return val;
+	}
+	,get_isVisible: function() {
+		return Session.get("report_modal_visible");
+	}
+	,set_type: function(val) {
+		Session.set("report_modal_type",val);
+		return val;
+	}
+	,get_type: function() {
+		return Session.get("report_modal_type");
+	}
+	,set_resource: function(val) {
+		Session.set("report_modal_resource",val);
+		return val;
+	}
+	,get_resource: function() {
+		return Session.get("report_modal_resource");
+	}
+	,init: function() {
+		var _g = this;
+		Template.reportModal.helpers({ isVisible : function() {
+			return _g.get_isVisible();
+		}, type : function() {
+			return _g.get_type();
+		}, typeCapitalize : function() {
+			return Client.utils.capitalize(_g.get_type());
+		}, resource : function() {
+			return _g.get_resource();
+		}});
+		AutoForm.addHooks("reportForm",{ onSubmit : function(insertDoc,_,_1) {
+			this.event.preventDefault();
+			var ctx = this;
+			var _g1 = _g.get_type();
+			switch(_g1) {
+			case "ARTICLE":
+				if(model_Articles.collection.findOne({ _id : _g.get_resource()} == null)) {
+					_g.hide();
+					Client.utils.notifyError("Article to report not found");
+					throw new js__$Boot_HaxeError("Article to report not found");
+				}
+				break;
+			default:
+				throw new js__$Boot_HaxeError("report type not supported");
+			}
+			model_Reports.collection.insert(insertDoc,null,function(error) {
+				if(error != null) {
+					Client.utils.handleServerError(error);
+					ctx.done(error);
+				} else {
+					Client.utils.notifySuccess("Report sent");
+					ctx.done();
+				}
+			});
+			_g.hide();
+		}});
+	}
+	,show: function(type,resourceId) {
+		var _g = this;
+		console.log("showing type " + type + " id " + resourceId + " yo");
+		this.set_type(type);
+		this.set_resource(resourceId);
+		this.set_isVisible(true);
+		js.JQuery("#reportModal").modal("show");
+		js.JQuery("#reportModal").one("hidden.bs.modal",function(_) {
+			_g.set_isVisible(false);
+		});
+	}
+	,hide: function() {
+		js.JQuery("#reportModal").modal("hide");
+	}
+	,__class__: templates_ReportModal
 };
 var Router = function() {
 };
@@ -584,6 +667,19 @@ ClientUtils.prototype = {
 	,confirm: function(msg,cancel,confirm,callback) {
 		bootbox.dialog({ message : msg, buttons : { cancel : { label : cancel, className : "btn-default"}, confirm : { label : confirm, className : "btn-primary", callback : callback}}});
 	}
+	,capitalize: function(type) {
+		if(type == null || type.length == 0) return type;
+		var $final = "";
+		var split = type.split(" ");
+		var _g = 0;
+		while(_g < split.length) {
+			var s = split[_g];
+			++_g;
+			if($final.length > 0) $final += " ";
+			$final += HxOverrides.substr(s,0,1).toUpperCase() + HxOverrides.substr(s,1,null).toLowerCase();
+		}
+		return $final;
+	}
 	,__class__: ClientUtils
 };
 var templates_ViewArticle = function() {
@@ -646,6 +742,7 @@ Client.main = function() {
 	window.tags = model_Tags.collection;
 	window.articles = model_Articles.collection;
 	window.tag_groups = model_TagGroups.collection;
+	window.reports = model_Reports.collection;
 	Meteor.subscribe("tags");
 	Meteor.subscribe("tag_groups",{ onReady : function() {
 		Client.preloadReqs.tagGroups = true;
@@ -656,6 +753,7 @@ Client.main = function() {
 	Client.listArticles.init();
 	Client.newArticle.init();
 	Client.viewArticle.init();
+	Client.reportModal.init();
 	FlowRouter.wait();
 	Client.router.init();
 	SimpleSchema.messages({ eitherArticleOrLink : "An article must link to an external resource, or have embed contents, or both."});
@@ -904,9 +1002,11 @@ Shared.init = function() {
 	new model_TagGroups();
 	new model_Articles();
 	new model_Tags();
+	new model_Reports();
 	model_Articles.collection.attachSchema(model_Articles.schema);
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
+	model_Reports.collection.attachSchema(model_Reports.schema);
 };
 var Std = function() { };
 Std.__name__ = true;
@@ -1568,6 +1668,26 @@ model_Articles.__super__ = Mongo.Collection;
 model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_Articles
 });
+var model_Reports = function() {
+	Mongo.Collection.call(this,"reports");
+	model_Reports.collection = this;
+	model_Reports.schema = new SimpleSchema({ type : { type : String, allowedValues : ["ARTICLE","COMMENT","USER"]}, resource : { type : String, max : 50}, reason : { type : String, max : 100}, details : { type : String, optional : true, max : 512}, user : { type : String, optional : true, autoValue : function() {
+		if(this.isInsert) return Meteor.userId(); else {
+			this.unset();
+			return undefined;
+		}
+	}}, created : { type : Date, optional : true, autoValue : function() {
+		if(this.isInsert) return new Date(); else {
+			this.unset();
+			return undefined;
+		}
+	}}});
+};
+model_Reports.__name__ = true;
+model_Reports.__super__ = Mongo.Collection;
+model_Reports.prototype = $extend(Mongo.Collection.prototype,{
+	__class__: model_Reports
+});
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
@@ -1649,6 +1769,7 @@ Client.listArticles = new templates_ListArticles();
 Client.newArticle = new templates_NewArticle();
 Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
+Client.reportModal = new templates_ReportModal();
 Client.preloadReqs = { tagGroups : false};
 Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
@@ -1657,7 +1778,7 @@ Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_dura
 	return "Showing <em>" + group + "</em> group";
 }, la_showing_query : function(query) {
 	return "Showing results for <em>" + query + "</em> query";
-}, la_showing_ungrouped : "Showing ungrouped articles", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Content ", na_label_tags : "Tags ", na_tt_links : "Url to the article web-page.\nRequired if not posting any content.", na_tt_contents : "Articles can provide only external link or only markdown content or both.", na_tt_tags : "Enter tags by pressing `comma` or `enter` keys.\nChars allowed : [a-zA-Z.0-9-_].\nTags are automatically converted to lowercase when storing.", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
+}, la_showing_ungrouped : "Showing ungrouped articles", la_tt_report : "Report spam or other issues with this article.", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Content ", na_label_tags : "Tags ", na_tt_links : "Url to the article web-page.\nRequired if not posting any content.", na_tt_contents : "Articles can provide only external link or only markdown content or both.", na_tt_tags : "Enter tags by pressing `comma` or `enter` keys.\nChars allowed : [a-zA-Z.0-9-_].\nTags are automatically converted to lowercase when storing.", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 Shared.utils = new SharedUtils();
 haxe_io_FPHelper.i64tmp = (function($this) {
@@ -1669,6 +1790,7 @@ haxe_io_FPHelper.i64tmp = (function($this) {
 js_Boot.__toStr = {}.toString;
 js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
 model_Articles.NAME = "articles";
+model_Reports.NAME = "reports";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;

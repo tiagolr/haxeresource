@@ -1,4 +1,5 @@
 import model.Articles;
+import model.Reports;
 import model.TagGroups;
 import model.Tags;
 
@@ -12,16 +13,17 @@ import model.Tags;
 class Shared {
 
 	public static var utils:SharedUtils = new SharedUtils();
-	//public static var permissions:Permissions = new Permissions();
 	
 	public static function init() {
 		new TagGroups();
 		new Articles();
 		new Tags();
+		new Reports();
 		
 		untyped Articles.collection.attachSchema(Articles.schema);
 		untyped Tags.collection.attachSchema(Tags.schema);
 		untyped TagGroups.collection.attachSchema(TagGroups.schema);
+		untyped Reports.collection.attachSchema(Reports.schema);
 	}
 	
 }

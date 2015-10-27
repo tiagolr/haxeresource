@@ -12,6 +12,8 @@ import meteor.packages.PublishCounts;
 import meteor.Session;
 import meteor.Template;
 import model.Articles;
+import model.Reports;
+import model.Reports.ReportTypes;
 import templates.ListArticles.ListArticlesSort;
 
 /**
@@ -307,12 +309,21 @@ class ListArticles {
 					}
 					
 				});
+			},
+		
+			'click .la-report-link': function (event:JqEvent) {
+				var articleId = event.currentTarget.getAttribute('data-article');
+				Client.reportModal.show(ReportTypes.ARTICLE, articleId);
 			}
-			
 		});
 		
 		Template.get('articleRow').onRendered(function () {
 			new JQuery(TemplateCtx.find('.articleRowHeader')).show(500);
+			
+			TemplateCtx.findAllAsJQuery('.la-report-link').tooltip( {
+				title:Configs.client.texts.la_tt_report,
+				placement: 'left',
+			});
 		});
 		
 	}

@@ -85,4 +85,20 @@ class ClientUtils{
 		});
 	}
 	
+	public function capitalize(type:String) {
+		if (type == null || type.length == 0) {
+			return type;
+		}
+		
+		var final = "";
+		var split = type.split(' ');
+		for (s in split) {
+			if (final.length > 0) {
+				final += ' ';
+			}
+			final += s.substr(0, 1).toUpperCase() + s.substr(1).toLowerCase();
+		}
+		return final;
+	}
+	
 }

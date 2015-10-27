@@ -10,6 +10,7 @@ import meteor.packages.Roles;
 import meteor.Picker;
 import model.Articles;
 import model.Articles.Article;
+import model.Reports;
 import model.TagGroups;
 import model.Tags;
 
@@ -74,7 +75,13 @@ class Server {
 			#end
 		});
 		
-		
+		Meteor.publish(Reports.NAME, function() {
+			if (Permissions.isModerator()) {
+				return Reports.collection.find();
+			} else {
+				return null;
+			}
+		});
 	}
 	
 	static private function setupPermissions():Void {
@@ -106,6 +113,17 @@ class Server {
 			remove: function (_, document:Article) {
 				Permissions.requireLogin();
 				return Permissions.requirePermission(Permissions.canRemoveArticles(document));
+			}
+		});
+		
+		Reports.collection.allow( {
+			insert: function (_, _) {
+				Permissions.requireLogin();
+				return true;
+			},
+			remove: function (_, _) {
+				Permissions.requireLogin();
+				return Permissions.requirePermission(Permissions.isModerator());
 			}
 		});
 		
@@ -415,7 +433,7 @@ class Server {
 			});
 			
 			// create article selector
-			var selector = { created:null, tags:null };
+			var selector:Dynamic = { };
 			selector.created = { '$gte': Date.fromTime(Date.now().getTime() - 1000 * 60 * 60 * 24 * 30) }; // fetch from last 30 days 
 			if (tags != null) {
 				selector.tags = { '$in': tags };
@@ -472,37 +490,43 @@ class Server {
 	 * Update existing tag groups or create new ones.
 	 */
 	static private function createTagGroups():Void {
-		TagGroups.collection.upsert( { name:'Haxe' }, { '$set' : {
+		TagGroups.collection.remove( { } ); // first remove all groups
+		
+		TagGroups.collection.insert( {
+			name: 'Haxe',
 			mainTag:'haxe',
 			tags: ["~/^haxe-..*$/"], 
 			icon:'/img/haxe-logo-50x50.png',
 			description: "Haxe syntax, macros, compilation and more.",
 			weight:0
-		}});
+		});
 		
-		TagGroups.collection.upsert( { name:'Openfl' }, { '$set' : {
+		TagGroups.collection.insert( {
+			name:'Openfl',	
 			mainTag:'openfl',
 			tags: ["~/^openfl-..*$/"],
 			icon:'/img/openfl-logo-50x50.png',
 			description: "Openfl and lime frameworks.",
 			weight:1
-		}});
+		});
 		
-		TagGroups.collection.upsert( { name:'HaxeFlixel' }, { '$set' : {
+		TagGroups.collection.insert( {
+			name:'HaxeFlixel',	
 			mainTag:'flixel',
 			tags: ["~/^flixel-..*$/", "~/^haxeflixel-..*$/"], 
 			icon:'/img/haxeflixel-logo-50x50.png',
 			description: "Haxe flixel and game development.",
 			weight:2
-		}});
+		});
 		
-		TagGroups.collection.upsert( { name:'Other' }, { '$set' : {
+		TagGroups.collection.insert( {
+			name:'Other',	
 			mainTag:'other',
 			tags: ["~/^other-..*$/"], 
 			icon:'/img/other-logo-50x50.png',
 			description: "Other libraries and subjects.",
 			weight:3
-		}});
+		});
 	}
 	
 	/**

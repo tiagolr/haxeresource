@@ -3,7 +3,7 @@
 	<div class="row">
 		<div class="col-lg-12 ">
 			{{#if rssLink}}
-				<a id="la-rss-link" href="{{rssLink}}" target="_blank" data-toggle="tooltip" data-placement="bottom" title="Subscribe to current list RSS">
+				<a id="la-rss-link" href="{{rssLink}}" target="_blank" data-toggle="tooltip" data-placement="left" title="Current list RSS feeds">
 					<img src="/img/icon-rss-32x32.png" class="img-responsive" alt="Image">
 				</a>
 			{{/if}}
@@ -99,12 +99,11 @@
 		</td>
 		<td class="articleRowToggle text-center" data-target="#articleRow{{_id}}" data-toggle="collapse" >{{formatDate created}}</td>
 	</tr>
-	<tr class="articleRowBody noHover">
+	<tr class="">
 		<td colspan="6" class="hiddenRow" style="padding:0;border-top:0px;border-bottom:1px solid #ddd">
 			<div  id="articleRow{{_id}}" class="articleRowBody collapse">
 
 				<div style="padding:10px 20px">
-					
 					<!-- Right Column -->
 					<div style="width:150px;float:right">
 						{{#if canEditArticle this}}
@@ -119,11 +118,19 @@
 							</button>
 						{{/if}}
 						
+						{{#if currentUser}}
+						<div class="pull-right" style="display:inline">
+							<span data-article="{{_id}}" class="glyphicon glyphicon-exclamation-sign la-report-link" aria-hidden="true"></span>
+						</div>
+						{{/if}}
+						
 						{{#if canTransferArticle this}}
 							<button id="la-btn-transfer-article" type="button" class="btn btn-primary" data-article="{{_id}}" style="margin-top:5px">
-								Transfer Ownership
+								Change Owner
 							</button>
 						{{/if}}
+
+						
 					</div>
 					<!--  -->
 
@@ -152,11 +159,11 @@
 							{{#if content}}
 							<div id="la-preview-read-article" style="padding-top:10px;">
 								<button id="la-btn-view-article" class="btn btn-info" data-article="{{_id}}" data-title="{{title}}" style="display:inline">
-									Read Here
+									View Here
 								</button>
 							</div>
 							{{/if}}
-							
+
 							{{#if tags}}
 							<div id="la-preview-tags" style="padding-top:5px">
 								<small>

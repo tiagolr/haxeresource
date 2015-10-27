@@ -299,6 +299,9 @@ Server.setupPublishes = function() {
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
 		return model_Articles.collection.find();
 	});
+	Meteor.publish("reports",function() {
+		if(Permissions.isModerator()) return model_Reports.collection.find(); else return null;
+	});
 };
 Server.setupPermissions = function() {
 	model_TagGroups.collection.allow({ insert : function(_,_1) {
@@ -321,10 +324,17 @@ Server.setupPermissions = function() {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canRemoveArticles(document1));
 	}});
-	Meteor.users.deny({ update : function(_12,_13,_14,_15) {
+	model_Reports.collection.allow({ insert : function(_12,_13) {
+		Permissions.requireLogin();
+		return true;
+	}, remove : function(_14,_15) {
+		Permissions.requireLogin();
+		return Permissions.requirePermission(Permissions.isModerator());
+	}});
+	Meteor.users.deny({ update : function(_16,_17,_18,_19) {
 		return true;
 	}});
-	Meteor.users.allow({ update : function(_16,document2,fields1,modifier1) {
+	Meteor.users.allow({ update : function(_20,document2,fields1,modifier1) {
 		Permissions.requireLogin();
 		return Permissions.requirePermission(Permissions.canUpdateUsers(document2,fields1));
 	}});
@@ -545,7 +555,7 @@ Server.setupRss = function() {
 			}
 		}
 		var feed = new (Meteor.npmRequire("feed"))({ title : "HaxeResource " + titleSuffix, description : "Articles and tutorials from the haxe community", link : Configs.shared.host});
-		var selector = { created : null, tags : null};
+		var selector = { };
 		selector.created = { '$gte' : (function($this) {
 			var $r;
 			var t1 = new Date().getTime() - 86400000 * 30;
@@ -577,10 +587,11 @@ Server.createAdmin = function() {
 	}
 };
 Server.createTagGroups = function() {
-	model_TagGroups.collection.upsert({ name : "Haxe"},{ '$set' : { mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", description : "Haxe syntax, macros, compilation and more.", weight : 0}});
-	model_TagGroups.collection.upsert({ name : "Openfl"},{ '$set' : { mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", description : "Openfl and lime frameworks.", weight : 1}});
-	model_TagGroups.collection.upsert({ name : "HaxeFlixel"},{ '$set' : { mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", description : "Haxe flixel and game development.", weight : 2}});
-	model_TagGroups.collection.upsert({ name : "Other"},{ '$set' : { mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", description : "Other libraries and subjects.", weight : 3}});
+	model_TagGroups.collection.remove({ });
+	model_TagGroups.collection.insert({ name : "Haxe", mainTag : "haxe", tags : ["~/^haxe-..*$/"], icon : "/img/haxe-logo-50x50.png", description : "Haxe syntax, macros, compilation and more.", weight : 0});
+	model_TagGroups.collection.insert({ name : "Openfl", mainTag : "openfl", tags : ["~/^openfl-..*$/"], icon : "/img/openfl-logo-50x50.png", description : "Openfl and lime frameworks.", weight : 1});
+	model_TagGroups.collection.insert({ name : "HaxeFlixel", mainTag : "flixel", tags : ["~/^flixel-..*$/","~/^haxeflixel-..*$/"], icon : "/img/haxeflixel-logo-50x50.png", description : "Haxe flixel and game development.", weight : 2});
+	model_TagGroups.collection.insert({ name : "Other", mainTag : "other", tags : ["~/^other-..*$/"], icon : "/img/other-logo-50x50.png", description : "Other libraries and subjects.", weight : 3});
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
@@ -646,9 +657,11 @@ Shared.init = function() {
 	new model_TagGroups();
 	new model_Articles();
 	new model_Tags();
+	new model_Reports();
 	model_Articles.collection.attachSchema(model_Articles.schema);
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
+	model_Reports.collection.attachSchema(model_Reports.schema);
 };
 var Std = function() { };
 Std.__name__ = true;
@@ -1314,6 +1327,26 @@ model_Articles.__super__ = Mongo.Collection;
 model_Articles.prototype = $extend(Mongo.Collection.prototype,{
 	__class__: model_Articles
 });
+var model_Reports = function() {
+	Mongo.Collection.call(this,"reports");
+	model_Reports.collection = this;
+	model_Reports.schema = new SimpleSchema({ type : { type : String, allowedValues : ["ARTICLE","COMMENT","USER"]}, resource : { type : String, max : 50}, reason : { type : String, max : 100}, details : { type : String, optional : true, max : 512}, user : { type : String, optional : true, autoValue : function() {
+		if(this.isInsert) return Meteor.userId(); else {
+			this.unset();
+			return undefined;
+		}
+	}}, created : { type : Date, optional : true, autoValue : function() {
+		if(this.isInsert) return new Date(); else {
+			this.unset();
+			return undefined;
+		}
+	}}});
+};
+model_Reports.__name__ = true;
+model_Reports.__super__ = Mongo.Collection;
+model_Reports.prototype = $extend(Mongo.Collection.prototype,{
+	__class__: model_Reports
+});
 var model_TagGroups = function() {
 	Mongo.Collection.call(this,"tag_groups");
 	model_TagGroups.collection = this;
@@ -1401,6 +1434,7 @@ haxe_io_FPHelper.i64tmp = (function($this) {
 js_Boot.__toStr = {}.toString;
 js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
 model_Articles.NAME = "articles";
+model_Reports.NAME = "reports";
 model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;

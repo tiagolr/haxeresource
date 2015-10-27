@@ -1,0 +1,26 @@
+<template name="reportModal">
+	<div class="modal fade" id="reportModal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+			{{#if isVisible}}
+				{{#autoForm collection="reports" id="reportForm" type="normal"}}
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h4 class="modal-title">{{typeCapitalize}} Report</h4>
+					</div>
+					<div class="modal-body">
+						{{> afQuickField name='reason' id='rm-report-reason'}}
+						{{> afQuickField name='details' id='rm-report-details' rows=2}}
+						{{> afQuickField name='type' id='rm-report-type' value=type type="hidden"}}
+						{{> afQuickField name='resource' id='rm-report-resource' value=resource  type="hidden"}}
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+						<button id="na-btn-submit" type="submit" class="btn btn-primary">Submit</button>
+					</div>
+				{{/autoForm}}
+			{{/if}}
+			</div>
+		</div>
+	</div>
+</template>

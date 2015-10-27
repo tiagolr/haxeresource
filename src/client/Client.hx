@@ -11,11 +11,13 @@ import meteor.packages.SimpleSchema;
 import meteor.packages.Toastr;
 import meteor.Template;
 import model.Articles;
+import model.Reports;
 import model.TagGroups;
 import model.Tags;
 import templates.ListArticles;
 import templates.Navbar;
 import templates.NewArticle;
+import templates.ReportModal;
 import templates.SideBar;
 import templates.ViewArticle;
 
@@ -35,6 +37,7 @@ class Client {
 	static public var newArticle:NewArticle = new NewArticle();
 	static public var viewArticle:ViewArticle = new ViewArticle();
 	static public var router:Router = new Router();
+	static public var reportModal:ReportModal = new ReportModal();
 	
 	static var preloadReqs = {
 		tagGroups:false,
@@ -43,9 +46,11 @@ class Client {
 	public static function main() {
 		Shared.init();
 		
+		// expose collections
 		untyped Browser.window[Tags.NAME] 		= untyped Tags.collection;
 		untyped Browser.window[Articles.NAME] 	= untyped Articles.collection;
 		untyped Browser.window[TagGroups.NAME] 	= untyped TagGroups.collection;
+		untyped Browser.window[Reports.NAME] 	= untyped Reports.collection;
 
 		Meteor.subscribe(Tags.NAME);
 		Meteor.subscribe(TagGroups.NAME, { onReady : function() { preloadReqs.tagGroups = true; checkPreload(); }} );
@@ -55,6 +60,7 @@ class Client {
 		listArticles.init();
 		newArticle.init();
 		viewArticle.init();
+		reportModal.init();
 		
 		FlowRouter.wait();
 		router.init();
