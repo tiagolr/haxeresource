@@ -31,9 +31,42 @@ class ViewArticle {
 				return currentArticle;
 			},
 			parsedContent: function () {
-				return currentArticle == null ? 
-					"" :
-					Client.utils.parseMarkdown(currentArticle.content);
+				// current article not set, return empty content
+				if (currentArticle == null) {
+					return "";
+				}
+				
+				// only link is set, return iframe
+				if (currentArticle.content == "" || currentArticle.content == null) {
+					
+					var src = currentArticle.link;
+					
+					// detect youtube links and embed them
+					if (currentArticle.link.indexOf('www.youtube.com') != -1 || currentArticle.link.indexOf('www.youtu.be') != -1) {
+						var ryoutube = ~/(?:watch\?v=)(.+)/gi;
+						if (ryoutube.match(src)) {
+							try {
+								src = 'https://www.youtube.com/embed/' + ryoutube.matched(1);
+							} catch(e:Dynamic) {}
+						}
+					} 
+					else 
+					
+					// detect try_haxe link and embed them
+					if (currentArticle.link.indexOf('//try.haxe.org') != -1) {
+						var rtryhaxe = ~/(try.haxe.org\/)#(.+)/gi;
+						if (rtryhaxe.match(src)) {
+							try {
+								src = 'http://try.haxe.org/embed/' + rtryhaxe.matched(2);
+							} catch(e:Dynamic) {}
+						}
+					}
+					
+					return '<iframe class="va-article-frame" src="$src" allowfullscreen></iframe>';
+				} 
+				
+				// contents are set, return parsed markdown
+				return Client.utils.parseMarkdown(currentArticle.content);
 			},
 			canUpdateArticle: function () {
 				return Permissions.canUpdateArticles(currentArticle);

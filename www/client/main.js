@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -497,8 +497,8 @@ Router.prototype = {
 			} else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/search",{ action : function() {
-			Client.utils.notifyError("Indexed search is disabled in the database.");
-			FlowRouter.go("/");
+			var query = FlowRouter.getQueryParam("q");
+			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
@@ -701,7 +701,27 @@ templates_ViewArticle.prototype = {
 		Template.viewArticle.helpers({ article : function() {
 			return _g.get_currentArticle();
 		}, parsedContent : function() {
-			if(_g.get_currentArticle() == null) return ""; else return Client.utils.parseMarkdown(_g.get_currentArticle().content);
+			if(_g.get_currentArticle() == null) return "";
+			if(_g.get_currentArticle().content == "" || _g.get_currentArticle().content == null) {
+				var src = _g.get_currentArticle().link;
+				if(_g.get_currentArticle().link.indexOf("www.youtube.com") != -1 || _g.get_currentArticle().link.indexOf("www.youtu.be") != -1) {
+					var ryoutube = new EReg("(?:watch\\?v=)(.+)","gi");
+					if(ryoutube.match(src)) try {
+						src = "https://www.youtube.com/embed/" + ryoutube.matched(1);
+					} catch( e ) {
+						if (e instanceof js__$Boot_HaxeError) e = e.val;
+					}
+				} else if(_g.get_currentArticle().link.indexOf("//try.haxe.org") != -1) {
+					var rtryhaxe = new EReg("(try.haxe.org/)#(.+)","gi");
+					if(rtryhaxe.match(src)) try {
+						src = "http://try.haxe.org/embed/" + rtryhaxe.matched(2);
+					} catch( e1 ) {
+						if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
+					}
+				}
+				return "<iframe class=\"va-article-frame\" src=\"" + src + "\" allowfullscreen></iframe>";
+			}
+			return Client.utils.parseMarkdown(_g.get_currentArticle().content);
 		}, canUpdateArticle : function() {
 			return Permissions.canUpdateArticles(_g.get_currentArticle());
 		}, canRemoveArticle : function() {
@@ -735,7 +755,7 @@ templates_ViewArticle.prototype = {
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = function() { };
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
 	Shared.init();
@@ -790,6 +810,7 @@ Client.main = function() {
 	Template.registerHelper("formatUrlName",function(name) {
 		return Shared.utils.formatUrlName(name);
 	});
+	AutoForm.debug();
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -815,6 +836,9 @@ EReg.prototype = {
 		this.r.m = this.r.exec(s);
 		this.r.s = s;
 		return this.r.m != null;
+	}
+	,matched: function(n) {
+		if(this.r.m != null && n >= 0 && n < this.r.m.length) return this.r.m[n]; else throw new js__$Boot_HaxeError("EReg::matched");
 	}
 	,__class__: EReg
 };
@@ -864,7 +888,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = function() { };
+var Permissions = $hx_exports.Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -945,7 +969,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = function() {
+var SharedUtils = $hx_exports.sharedUtils = function() {
 };
 SharedUtils.__name__ = true;
 SharedUtils.prototype = {
@@ -996,7 +1020,7 @@ SharedUtils.prototype = {
 	}
 	,__class__: SharedUtils
 };
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -1771,8 +1795,8 @@ Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.reportModal = new templates_ReportModal();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
@@ -1795,4 +1819,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
