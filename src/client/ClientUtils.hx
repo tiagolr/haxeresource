@@ -110,7 +110,15 @@ class ClientUtils{
 			var ryoutube = ~/(?:watch\?v=)(.+)/gi;
 			if (ryoutube.match(link)) {
 				try {
-					link = 'https://www.youtube.com/embed/' + ryoutube.matched(1);
+					var res = ryoutube.matched(1);
+					
+					// if the query string has more arguments after movie id, format the query string
+					var idx = res.indexOf('&'); 
+					if (idx >= 0) {
+						res = res.substr(0, idx) + '?' + res.substr(idx); 
+					}
+					
+					link = 'https://www.youtube.com/embed/' + res;
 				} catch(e:Dynamic) {}
 			}
 		} 
