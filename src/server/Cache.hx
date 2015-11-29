@@ -16,12 +16,12 @@ class Cache {
 	 * RSS Cache
 	 ************************************************/
 	static public function setArticleRss(params:Dynamic, output:String) {
-		var hash = 'articleRss' + Shared.utils.objectToHash(params);
+		var hash = 'articleRss' + SharedUtils.objectToHash(params);
 		Reflect.setField(cache.rss.articles, hash, createEntry(output));
 	}
 	
 	static public function getArticleRss(params:Dynamic) {
-		var hash = 'articleRss' + Shared.utils.objectToHash(params);
+		var hash = 'articleRss' + SharedUtils.objectToHash(params);
 		var res = Reflect.field(cache.rss.articles, hash);
 		
 		if (res != null && !hasExpired(res, Configs.server.cache.rss_articles_ttl)) {
@@ -35,12 +35,12 @@ class Cache {
 	 * SEO HTML Cache
 	 ************************************************/
 	static public function setSEOHtml(params:Dynamic,  html:String) {
-		var hash = 'seoHtml' + Shared.utils.objectToHash(params);
+		var hash = 'seoHtml' + SharedUtils.objectToHash(params);
 		Reflect.setField(cache.seo.html, hash, createEntry(html));
 	}
 	
 	static public function getSEOHtml(params:Dynamic):String {
-		var hash = 'seoHtml' + Shared.utils.objectToHash(params);
+		var hash = 'seoHtml' + SharedUtils.objectToHash(params);
 		var res = Reflect.field(cache.seo.html, hash);
 		
 		if (res != null && !hasExpired(res, Configs.server.cache.seo_html_ttl)) {

@@ -38,11 +38,11 @@ class ViewArticle {
 				
 				// only link is set, return iframe
 				if (currentArticle.content == "" || currentArticle.content == null) {
-					return Client.utils.articleLinkToIframe(currentArticle.link);
+					return ClientUtils.articleLinkToIframe(currentArticle.link);
 				} 
 				
 				// contents are set, return parsed markdown
-				return Client.utils.parseMarkdown(currentArticle.content);
+				return ClientUtils.parseMarkdown(currentArticle.content);
 			},
 			canUpdateArticle: function () {
 				return Permissions.canUpdateArticles(currentArticle);
@@ -58,7 +58,7 @@ class ViewArticle {
 			'click #va-btn-edit-article': function (evt) {
 				var id = currentArticle._id;
 				var title = currentArticle.title;
-				title = Shared.utils.formatUrlName(title);
+				title = SharedUtils.formatUrlName(title);
 				
 				var path = FlowRouter.path('/articles/edit/:id/:name', { id:id, name:title } );
 				FlowRouter.go(path);
@@ -66,7 +66,7 @@ class ViewArticle {
 			
 			'click #va-btn-remove-article': function (evt) {
 				
-				Client.utils.confirm(
+				ClientUtils.confirm(
 					Configs.client.texts.prompt_ra_msg,
 					Configs.client.texts.prompt_ra_cancel,
 					Configs.client.texts.prompt_ra_confirm, 
@@ -83,7 +83,7 @@ class ViewArticle {
 		var articleId = args != null ? args.articleId : null;
 		
 		if (articleId == null) {
-			Client.utils.notifyError('Article not found');
+			ClientUtils.notifyError('Article not found');
 		}
 		
 		Meteor.subscribe(Articles.NAME, { _id:articleId }, null, {

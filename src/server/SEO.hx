@@ -25,10 +25,10 @@ class SEO{
 		untyped SSR.compileTemplate('tag', Assets.getText('seo/tag.html'));
 		untyped SSR.compileTemplate('article', Assets.getText('seo/article.html'));
 		
-		untyped Template.index.helpers( { formatUrl: function (str) { return Shared.utils.formatUrlName(str); }, } );
-		untyped Template.tag.helpers( {formatUrl: function (str) {return Shared.utils.formatUrlName(str);},});
-		untyped Template.group.helpers( {formatUrl: function (str) {return Shared.utils.formatUrlName(str);},});
-		untyped Template.article.helpers( {formatUrl: function (str) {return Shared.utils.formatUrlName(str);},});
+		untyped Template.index.helpers( { formatUrl: function (str) { return SharedUtils.formatUrlName(str); }, } );
+		untyped Template.tag.helpers( {formatUrl: function (str) {return SharedUtils.formatUrlName(str);},});
+		untyped Template.group.helpers( {formatUrl: function (str) {return SharedUtils.formatUrlName(str);},});
+		untyped Template.article.helpers( {formatUrl: function (str) {return SharedUtils.formatUrlName(str);},});
 		
 		seoPicker = Picker.filter(function(req, res) {
 			return cast (req.url, String).indexOf('_escaped_fragment_') != -1;
@@ -92,7 +92,7 @@ class SEO{
 			}
 			
 			var group:TagGroup = cast TagGroups.collection.findOne( { name:groupName } );
-			var tags = Shared.utils.resolveTags(group);
+			var tags = SharedUtils.resolveTags(group);
 			tags.push(group.mainTag);
 			var articles = Articles.collection.find( { tags: {'$in':  tags }} , { fields: { _id:1, title:1 }} );
 			

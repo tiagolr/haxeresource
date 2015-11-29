@@ -36,7 +36,7 @@ class ReportModal{
 				return type;
 			},
 			typeCapitalize: function() {
-				return Client.utils.capitalize(type);
+				return ClientUtils.capitalize(type);
 			},
 			resource: function () {
 				return resource;
@@ -52,7 +52,7 @@ class ReportModal{
 					case ReportTypes.ARTICLE:
 						if (Articles.collection.findOne( { _id:resource } == null)) {
 							hide();
-							Client.utils.notifyError('Article to report not found');
+							ClientUtils.notifyError('Article to report not found');
 							throw 'Article to report not found';
 						}
 					default : throw 'report type not supported';
@@ -60,10 +60,10 @@ class ReportModal{
 				
 				Reports.collection.insert(insertDoc, function (error) {
 					if (error != null) {
-						Client.utils.handleServerError(cast error);
+						ClientUtils.handleServerError(cast error);
 						ctx.done(error);
 					} else {
-						Client.utils.notifySuccess('Report sent');
+						ClientUtils.notifySuccess('Report sent');
 						ctx.done();
 					}
 				});

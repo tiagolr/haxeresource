@@ -9,21 +9,21 @@ function $extend(from, fields) {
 var Cache = function() { };
 Cache.__name__ = true;
 Cache.setArticleRss = function(params,output) {
-	var hash = "articleRss" + Shared.utils.objectToHash(params);
+	var hash = "articleRss" + SharedUtils.objectToHash(params);
 	Reflect.setField(Cache.cache.rss.articles,hash,Cache.createEntry(output));
 };
 Cache.getArticleRss = function(params) {
-	var hash = "articleRss" + Shared.utils.objectToHash(params);
+	var hash = "articleRss" + SharedUtils.objectToHash(params);
 	var res = Reflect.field(Cache.cache.rss.articles,hash);
 	if(res != null && !Cache.hasExpired(res,Configs.server.cache.rss_articles_ttl)) return res.val;
 	return null;
 };
 Cache.setSEOHtml = function(params,html) {
-	var hash = "seoHtml" + Shared.utils.objectToHash(params);
+	var hash = "seoHtml" + SharedUtils.objectToHash(params);
 	Reflect.setField(Cache.cache.seo.html,hash,Cache.createEntry(html));
 };
 Cache.getSEOHtml = function(params) {
-	var hash = "seoHtml" + Shared.utils.objectToHash(params);
+	var hash = "seoHtml" + SharedUtils.objectToHash(params);
 	var res = Reflect.field(Cache.cache.seo.html,hash);
 	if(res != null && !Cache.hasExpired(res,Configs.server.cache.seo_html_ttl)) return res.val;
 	return null;
@@ -188,16 +188,16 @@ SEO.init = function() {
 	SSR.compileTemplate("tag",Assets.getText("seo/tag.html"));
 	SSR.compileTemplate("article",Assets.getText("seo/article.html"));
 	Template.index.helpers({ formatUrl : function(str) {
-		return Shared.utils.formatUrlName(str);
+		return SharedUtils.formatUrlName(str);
 	}});
 	Template.tag.helpers({ formatUrl : function(str1) {
-		return Shared.utils.formatUrlName(str1);
+		return SharedUtils.formatUrlName(str1);
 	}});
 	Template.group.helpers({ formatUrl : function(str2) {
-		return Shared.utils.formatUrlName(str2);
+		return SharedUtils.formatUrlName(str2);
 	}});
 	Template.article.helpers({ formatUrl : function(str3) {
-		return Shared.utils.formatUrlName(str3);
+		return SharedUtils.formatUrlName(str3);
 	}});
 	SEO.seoPicker = Picker.filter(function(req,res) {
 		return (js_Boot.__cast(req.url , String)).indexOf("_escaped_fragment_") != -1;
@@ -238,7 +238,7 @@ SEO.defineRoutes = function() {
 			return;
 		}
 		var group = model_TagGroups.collection.findOne({ name : groupName});
-		var tags1 = Shared.utils.resolveTags(group);
+		var tags1 = SharedUtils.resolveTags(group);
 		tags1.push(group.mainTag);
 		var articles2 = model_Articles.collection.find({ tags : { '$in' : tags1}},{ fields : { _id : 1, title : 1}});
 		html2 = SSR.render("layout",{ title : "Haxe Resource - " + groupName + " group", description : group.description, template : "group", tags : tags1, articles : articles2});
@@ -297,7 +297,7 @@ Server.setupPublishes = function() {
 		if(options1 == null) options1 = { };
 		options1.fields = { score : { '$meta' : "textScore"}};
 		if(options1.sort == null || options1.sort.score != null) options1.sort = { score : { '$meta' : "textScore"}};
-		return model_Articles.collection.find();
+		return model_Articles.collection.find({ '$text' : { '$search' : query}},options1);
 	});
 	Meteor.publish("reports",function() {
 		if(Permissions.isModerator()) return model_Reports.collection.find(); else return null;
@@ -537,7 +537,7 @@ Server.setupRss = function() {
 			var group = model_TagGroups.collection.findOne({ name : queryGroup});
 			tags = [];
 			if(group != null) {
-				var resolved = Shared.utils.resolveTags(group);
+				var resolved = SharedUtils.resolveTags(group);
 				var _g = 0;
 				while(_g < resolved.length) {
 					var t = resolved[_g];
@@ -566,7 +566,7 @@ Server.setupRss = function() {
 		}(this))};
 		if(tags != null) selector.tags = { '$in' : tags};
 		model_Articles.collection.find(selector,{ sort : { created : -1}}).forEach(function(doc) {
-			feed.addItem({ title : doc.title, link : Configs.shared.host + "/articles/view/" + doc._id + "/" + Shared.utils.formatUrlName(doc.title), description : doc.description, author : [{ name : doc.username}], date : doc.created});
+			feed.addItem({ title : doc.title, link : Configs.shared.host + "/articles/view/" + doc._id + "/" + SharedUtils.formatUrlName(doc.title), description : doc.description, author : [{ name : doc.username}], date : doc.created});
 		});
 		var output = feed.render("atom-1.0");
 		Cache.setArticleRss({ group : queryGroup, tag : queryTag},output);
@@ -595,61 +595,11 @@ Server.createTagGroups = function() {
 };
 Server.createIndexes = function() {
 	Meteor.startup(function() {
+		model_Articles.collection._ensureIndex({ content : "text", title : "text", description : "text", tags : "text"},{ name : "article_search_index", background : true, weights : { title : 10, tags : 5, description : 3, content : 1}});
 		model_Articles.collection._ensureIndex({ 'user' : 1});
 		model_Articles.collection._ensureIndex({ 'username' : 1});
 		model_Articles.collection._ensureIndex({ 'tags' : 1});
 	});
-};
-var SharedUtils = function() {
-};
-SharedUtils.__name__ = true;
-SharedUtils.prototype = {
-	objectToHash: function(o) {
-		var str = Std.string(o);
-		return haxe_crypto_Md5.encode(str);
-	}
-	,resolveTags: function(g) {
-		var tags = model_Tags.collection.find().fetch();
-		var resolved = [];
-		var _g = 0;
-		var _g1 = g.tags;
-		while(_g < _g1.length) {
-			var entry = _g1[_g];
-			++_g;
-			if(StringTools.startsWith(entry,"~")) {
-				var split = entry.split("/");
-				var reg = new EReg(split[1],split[2]);
-				var _g2 = 0;
-				while(_g2 < tags.length) {
-					var t = tags[_g2];
-					++_g2;
-					if(reg.match(t.name) && !Lambda.has(resolved,t.name) && t != g.mainTag) resolved.push(t.name);
-				}
-			} else {
-				var _g21 = 0;
-				while(_g21 < tags.length) {
-					var t1 = tags[_g21];
-					++_g21;
-					if(t1.name == entry && !Lambda.has(resolved,t1.name) && t1 != g.mainTag) {
-						resolved = [t1.name];
-						break;
-					}
-				}
-			}
-		}
-		resolved.sort(function(a,b) {
-			if(a < b) return -1;
-			if(a > b) return 1;
-			return 0;
-		});
-		return resolved;
-	}
-	,formatUrlName: function(name) {
-		name = StringTools.trim(name);
-		name = StringTools.replace(name," ","-");
-		return name;
-	}
-	,__class__: SharedUtils
 };
 var Shared = function() { };
 Shared.__name__ = true;
@@ -662,6 +612,63 @@ Shared.init = function() {
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
 	model_Reports.collection.attachSchema(model_Reports.schema);
+};
+var SharedUtils = function() { };
+SharedUtils.__name__ = true;
+SharedUtils.objectToHash = function(o) {
+	var str = Std.string(o);
+	return haxe_crypto_Md5.encode(str);
+};
+SharedUtils.resolveTags = function(g) {
+	var tags = model_Tags.collection.find().fetch();
+	var resolved = [];
+	var _g = 0;
+	var _g1 = g.tags;
+	while(_g < _g1.length) {
+		var entry = _g1[_g];
+		++_g;
+		if(StringTools.startsWith(entry,"~")) {
+			var split = entry.split("/");
+			var reg = new EReg(split[1],split[2]);
+			var _g2 = 0;
+			while(_g2 < tags.length) {
+				var t = tags[_g2];
+				++_g2;
+				if(reg.match(t.name) && !Lambda.has(resolved,t.name) && t != g.mainTag) resolved.push(t.name);
+			}
+		} else {
+			var _g21 = 0;
+			while(_g21 < tags.length) {
+				var t1 = tags[_g21];
+				++_g21;
+				if(t1.name == entry && !Lambda.has(resolved,t1.name) && t1 != g.mainTag) {
+					resolved = [t1.name];
+					break;
+				}
+			}
+		}
+	}
+	resolved.sort(function(a,b) {
+		if(a < b) return -1;
+		if(a > b) return 1;
+		return 0;
+	});
+	return resolved;
+};
+SharedUtils.formatUrlName = function(name) {
+	name = StringTools.trim(name);
+	name = StringTools.replace(name," ","-");
+	return name;
+};
+SharedUtils.profileStart = function(name) {
+	var value = new Date().getTime();
+	SharedUtils.profiler.set(name,value);
+};
+SharedUtils.profileEnd = function(name) {
+	if(SharedUtils.profiler.exists(name)) {
+		var elapsed = new Date().getTime() - SharedUtils.profiler.get(name);
+		console.log("profiler: finished " + name + " in " + elapsed + " ms");
+	}
 };
 var Std = function() { };
 Std.__name__ = true;
@@ -695,6 +702,8 @@ StringTools.trim = function(s) {
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
 };
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = true;
 var haxe__$Int64__$_$_$Int64 = function(high,low) {
 	this.high = high;
 	this.low = low;
@@ -874,6 +883,36 @@ haxe_crypto_Md5.prototype = {
 		return [a,b,c,d];
 	}
 	,__class__: haxe_crypto_Md5
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = true;
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,__class__: haxe_ds_StringMap
 };
 var haxe_io_Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
 haxe_io_Error.Blocked = ["Blocked",0];
@@ -1416,15 +1455,16 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = { __name__ : ["Class"]};
 var Enum = { };
+var __map_reserved = {}
 var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuffer : null"))() || js_html_compat_ArrayBuffer;
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
 Cache.cache = { rss : { articles : { }}, seo : { html : { }}};
-Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
 Configs.server = { cache : { rss_articles_ttl : 10, seo_html_ttl : 180}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
-Shared.utils = new SharedUtils();
+SharedUtils.profiler = new haxe_ds_StringMap();
 haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;
 	var x = new haxe__$Int64__$_$_$Int64(0,0);

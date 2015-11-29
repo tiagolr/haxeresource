@@ -85,9 +85,9 @@ class NewArticle {
 				
 				var res = "";
 				if (link != null && link != "" && (content == null || content == "")) {
-					res = Client.utils.articleLinkToIframe(link);
+					res = ClientUtils.articleLinkToIframe(link);
 				} else {
-					res = Client.utils.parseMarkdown(content);
+					res = ClientUtils.parseMarkdown(content);
 				}
 				new JQuery('#na-previewContent').html(res);
 			},
@@ -126,13 +126,13 @@ class NewArticle {
 					// insert new document
 					id = Articles.collection.insert(insertDoc, function (error) {
 						if (error == null) {
-							var title = Shared.utils.formatUrlName(insertDoc.title);
+							var title = SharedUtils.formatUrlName(insertDoc.title);
 							var path = FlowRouter.path('/articles/view/:id/:name', { id:id, name:title } );
 							
 							FlowRouter.go(path);
 							ctx.done();
 						} else {
-							Client.utils.handleServerError(cast error);
+							ClientUtils.handleServerError(cast error);
 							ctx.done(error);
 						}
 					});
@@ -143,13 +143,13 @@ class NewArticle {
 						if (error == null) {
 							
 							var title = Articles.collection.findOne( { _id:id } ).title;
-							title = Shared.utils.formatUrlName(title);
+							title = SharedUtils.formatUrlName(title);
 							var path = FlowRouter.path('/articles/view/:id/:name', { id:id, name:title } );
 							
 							FlowRouter.go(path);
 							ctx.done();
 						} else {
-							Client.utils.handleServerError(cast error);
+							ClientUtils.handleServerError(cast error);
 							ctx.done(error);
 						}
 					});
@@ -181,7 +181,7 @@ class NewArticle {
 							}
 						}
 					} else {
-						Client.utils.notifyError('Could not find article $articleId to edit');
+						ClientUtils.notifyError('Could not find article $articleId to edit');
 						FlowRouter.go('/');
 					}
 				}, onError: function(e) {

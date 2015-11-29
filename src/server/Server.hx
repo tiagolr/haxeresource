@@ -407,7 +407,7 @@ class Server {
 				var group = TagGroups.collection.findOne( { name:queryGroup } );
 				tags = [];
 				if (group != null) {
-					var resolved = Shared.utils.resolveTags(group);
+					var resolved = SharedUtils.resolveTags(group);
 					for (t in resolved) {
 						tags.push(t);
 					}
@@ -443,7 +443,7 @@ class Server {
 			Articles.collection.find( selector, { sort:{created:-1}} ).forEach(function(doc:Article) {
 				feed.addItem({
 					title: doc.title,
-					link: Configs.shared.host + '/articles/view/' + doc._id + '/' + Shared.utils.formatUrlName(doc.title),
+					link: Configs.shared.host + '/articles/view/' + doc._id + '/' + SharedUtils.formatUrlName(doc.title),
 					description: doc.description,
 					author: [{
 						name: doc.username,

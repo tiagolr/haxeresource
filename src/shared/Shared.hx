@@ -12,8 +12,6 @@ import model.Tags;
 #end
 class Shared {
 
-	public static var utils:SharedUtils = new SharedUtils();
-	
 	public static function init() {
 		new TagGroups();
 		new Articles();

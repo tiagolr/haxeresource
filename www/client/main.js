@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -89,11 +89,11 @@ templates_ListArticles.prototype = {
 		}, totalCount : function() {
 			var s;
 			if(_g.get_searchMode() == true) s = { '$text' : { '$search' : _g.get_searchQuery()}}; else s = _g.get_selector();
-			return Client.utils.retrieveArticleCount(s);
+			return ClientUtils.retrieveArticleCount(s);
 		}, allEntriesLoaded : function() {
 			var s1;
 			if(_g.get_searchMode() == true) s1 = { '$text' : { '$search' : _g.get_searchQuery()}}; else s1 = _g.get_selector();
-			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count() == Client.utils.retrieveArticleCount(s1);
+			return model_Articles.collection.find(_g.get_selector(),{ limit : _g.get_limit()}).count() == ClientUtils.retrieveArticleCount(s1);
 		}, sortAgeUp : function() {
 			return _g.get_sort().created == 1;
 		}, sortAgeDown : function() {
@@ -159,32 +159,32 @@ templates_ListArticles.prototype = {
 			var articleId = event1.currentTarget.getAttribute("data-article");
 			event1.stopImmediatePropagation();
 			Meteor.call("toggleArticleVote",articleId,function(error) {
-				if(error != null) Client.utils.handleServerError(error);
+				if(error != null) ClientUtils.handleServerError(error);
 			});
 		}, 'click #la-btn-view-article' : function(event2) {
 			var articleId1 = event2.currentTarget.getAttribute("data-article");
 			var title = event2.currentTarget.getAttribute("data-title");
-			title = Shared.utils.formatUrlName(title);
+			title = SharedUtils.formatUrlName(title);
 			var path = FlowRouter.path("/articles/view/:id/:name",{ id : articleId1, name : title});
 			FlowRouter.go(path);
 		}, 'click #la-btn-edit-article' : function(event3) {
 			var articleId2 = event3.currentTarget.getAttribute("data-article");
 			var title1 = event3.currentTarget.getAttribute("data-title");
-			title1 = Shared.utils.formatUrlName(title1);
+			title1 = SharedUtils.formatUrlName(title1);
 			var path1 = FlowRouter.path("/articles/edit/:id/:name",{ id : articleId2, name : title1});
 			FlowRouter.go(path1);
 		}, 'click #la-btn-remove-article' : function(event4) {
 			var articleId3 = event4.currentTarget.getAttribute("data-article");
-			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
+			ClientUtils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
 				model_Articles.collection.remove({ _id : articleId3});
 			});
 		}, 'click #la-btn-transfer-article' : function(event5) {
 			var articleId4 = event5.currentTarget.getAttribute("data-article");
-			Client.utils.prompt("Enter new owner username",function(username) {
+			ClientUtils.prompt("Enter new owner username",function(username) {
 				if(username != null) {
 					console.log("transfering " + articleId4 + " to " + username);
 					Meteor.call("transferArticle",articleId4,username,function(error1,result) {
-						if(error1 != null) Client.utils.handleServerError(error1);
+						if(error1 != null) ClientUtils.handleServerError(error1);
 					});
 				}
 			});
@@ -260,7 +260,7 @@ templates_NewArticle.prototype = {
 			js.JQuery("#na-articleDescription").html(desc);
 			js.JQuery("#na-previewLink").html("<a href=\"" + link + "\" target=\"_blank\">" + link + "</a>");
 			var res = "";
-			if(link != null && link != "" && (content == null || content == "")) res = Client.utils.articleLinkToIframe(link); else res = Client.utils.parseMarkdown(content);
+			if(link != null && link != "" && (content == null || content == "")) res = ClientUtils.articleLinkToIframe(link); else res = ClientUtils.parseMarkdown(content);
 			js.JQuery("#na-previewContent").html(res);
 		}, 'beforeItemAdd input' : function(evt1) {
 			if(!model_Tags.regEx.test(evt1.item)) evt1.cancel = true;
@@ -284,12 +284,12 @@ templates_NewArticle.prototype = {
 			var id = null;
 			if(Session.get("editArticle") == null) id = model_Articles.collection.insert(insertDoc,null,function(error) {
 				if(error == null) {
-					var title1 = Shared.utils.formatUrlName(insertDoc.title);
+					var title1 = SharedUtils.formatUrlName(insertDoc.title);
 					var path = FlowRouter.path("/articles/view/:id/:name",{ id : id, name : title1});
 					FlowRouter.go(path);
 					ctx.done();
 				} else {
-					Client.utils.handleServerError(error);
+					ClientUtils.handleServerError(error);
 					ctx.done(error);
 				}
 			}); else {
@@ -297,12 +297,12 @@ templates_NewArticle.prototype = {
 				model_Articles.collection.update({ _id : id},updateDoc,null,function(error1,doc) {
 					if(error1 == null) {
 						var title2 = model_Articles.collection.findOne({ _id : id}).title;
-						title2 = Shared.utils.formatUrlName(title2);
+						title2 = SharedUtils.formatUrlName(title2);
 						var path1 = FlowRouter.path("/articles/view/:id/:name",{ id : id, name : title2});
 						FlowRouter.go(path1);
 						ctx.done();
 					} else {
-						Client.utils.handleServerError(error1);
+						ClientUtils.handleServerError(error1);
 						ctx.done(error1);
 					}
 				});
@@ -329,7 +329,7 @@ templates_NewArticle.prototype = {
 					}
 				}
 			} else {
-				Client.utils.notifyError("Could not find article " + articleId + " to edit");
+				ClientUtils.notifyError("Could not find article " + articleId + " to edit");
 				FlowRouter.go("/");
 			}
 		}, onError : function(e) {
@@ -375,7 +375,7 @@ templates_ReportModal.prototype = {
 		}, type : function() {
 			return _g.get_type();
 		}, typeCapitalize : function() {
-			return Client.utils.capitalize(_g.get_type());
+			return ClientUtils.capitalize(_g.get_type());
 		}, resource : function() {
 			return _g.get_resource();
 		}});
@@ -387,7 +387,7 @@ templates_ReportModal.prototype = {
 			case "ARTICLE":
 				if(model_Articles.collection.findOne({ _id : _g.get_resource()} == null)) {
 					_g.hide();
-					Client.utils.notifyError("Article to report not found");
+					ClientUtils.notifyError("Article to report not found");
 					throw new js__$Boot_HaxeError("Article to report not found");
 				}
 				break;
@@ -396,10 +396,10 @@ templates_ReportModal.prototype = {
 			}
 			model_Reports.collection.insert(insertDoc,null,function(error) {
 				if(error != null) {
-					Client.utils.handleServerError(error);
+					ClientUtils.handleServerError(error);
 					ctx.done(error);
 				} else {
-					Client.utils.notifySuccess("Report sent");
+					ClientUtils.notifySuccess("Report sent");
 					ctx.done();
 				}
 			});
@@ -474,7 +474,7 @@ Router.prototype = {
 			var groupName = FlowRouter.getParam("name");
 			var g = model_TagGroups.collection.findOne({ name : groupName});
 			if(g != null) {
-				var tags = Shared.utils.resolveTags(g);
+				var tags = SharedUtils.resolveTags(g);
 				tags.push(g.mainTag);
 				var selector1 = { tags : { '$in' : tags}};
 				_g.showListArticles({ selector : selector1, caption : Configs.client.texts.la_showing_group(groupName), rssLink : "/rss/articles/?group=" + groupName});
@@ -499,8 +499,8 @@ Router.prototype = {
 			} else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/search",{ action : function() {
-			Client.utils.notifyError("Indexed search is disabled in the database.");
-			FlowRouter.go("/");
+			var query = FlowRouter.getQueryParam("q");
+			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
@@ -514,7 +514,7 @@ Router.prototype = {
 			_g.showPage("viewArticle",{ articleId : id1});
 		}});
 		FlowRouter.notFound = { action : function() {
-			Client.utils.notifyInfo("Url not found, redirecting to homepage");
+			ClientUtils.notifyInfo("Url not found, redirecting to homepage");
 			FlowRouter.go("/");
 		}};
 	}
@@ -549,7 +549,7 @@ templates_SideBar.prototype = {
 			while(_g1 < groups.length) {
 				var g = groups[_g1];
 				++_g1;
-				var resolved = Shared.utils.resolveTags(g);
+				var resolved = SharedUtils.resolveTags(g);
 				var $final = [];
 				var _g11 = 0;
 				while(_g11 < resolved.length) {
@@ -578,7 +578,7 @@ templates_SideBar.prototype = {
 					tagNames.push(t.name);
 				}
 			}
-			return Client.utils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
+			return ClientUtils.retrieveArticleCount({ tags : { '$nin' : tagNames}});
 		}});
 		Template.sidebar.events({ 'click #sb-ungrouped' : function(_) {
 			FlowRouter.go("/articles/group/ungrouped");
@@ -631,81 +631,6 @@ templates_SideBar.prototype = {
 	}
 	,__class__: templates_SideBar
 };
-var ClientUtils = function() {
-	this.articleCountSubs = [];
-};
-ClientUtils.__name__ = true;
-ClientUtils.prototype = {
-	retrieveArticleCount: function(selector) {
-		if(selector == null) selector = { };
-		var id = Shared.utils.objectToHash(selector);
-		Meteor.subscribe("countArticles",id,selector);
-		return Counts.get("countArticles" + id);
-	}
-	,parseMarkdown: function(raw) {
-		if(raw == null) return null; else return marked(raw);
-	}
-	,handleServerError: function(error) {
-		if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);
-	}
-	,notifyInfo: function(msg,title) {
-		toastr.info(msg,title);
-	}
-	,notifyError: function(msg,title) {
-		toastr.error(msg,title);
-	}
-	,notifySuccess: function(msg,title) {
-		toastr.success(msg,title);
-	}
-	,notifyWarning: function(msg,title) {
-		toastr.warning(msg,title);
-	}
-	,alert: function(msg,label,callback) {
-		bootbox.alert(msg,label,callback);
-	}
-	,prompt: function(msg,callback) {
-		bootbox.prompt(msg,callback);
-	}
-	,confirm: function(msg,cancel,confirm,callback) {
-		bootbox.dialog({ message : msg, buttons : { cancel : { label : cancel, className : "btn-default"}, confirm : { label : confirm, className : "btn-primary", callback : callback}}});
-	}
-	,capitalize: function(type) {
-		if(type == null || type.length == 0) return type;
-		var $final = "";
-		var split = type.split(" ");
-		var _g = 0;
-		while(_g < split.length) {
-			var s = split[_g];
-			++_g;
-			if($final.length > 0) $final += " ";
-			$final += HxOverrides.substr(s,0,1).toUpperCase() + HxOverrides.substr(s,1,null).toLowerCase();
-		}
-		return $final;
-	}
-	,articleLinkToIframe: function(link) {
-		if(link == null || link == "") return "";
-		if(link.indexOf("www.youtube.com") != -1 || link.indexOf("www.youtu.be") != -1) {
-			var ryoutube = new EReg("(?:watch\\?v=)(.+)","gi");
-			if(ryoutube.match(link)) try {
-				var res = ryoutube.matched(1);
-				var idx = res.indexOf("&");
-				if(idx >= 0) res = HxOverrides.substr(res,0,idx) + "?" + HxOverrides.substr(res,idx,null);
-				link = "https://www.youtube.com/embed/" + res;
-			} catch( e ) {
-				if (e instanceof js__$Boot_HaxeError) e = e.val;
-			}
-		} else if(link.indexOf("//try.haxe.org") != -1) {
-			var rtryhaxe = new EReg("(try.haxe.org/)#(.+)","gi");
-			if(rtryhaxe.match(link)) try {
-				link = "http://try.haxe.org/embed/" + rtryhaxe.matched(2);
-			} catch( e1 ) {
-				if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
-			}
-		}
-		return "<iframe class=\"va-article-frame\" src=\"" + link + "\" allowfullscreen></iframe>";
-	}
-	,__class__: ClientUtils
-};
 var templates_ViewArticle = function() {
 };
 templates_ViewArticle.__name__ = true;
@@ -726,8 +651,8 @@ templates_ViewArticle.prototype = {
 			return _g.get_currentArticle();
 		}, parsedContent : function() {
 			if(_g.get_currentArticle() == null) return "";
-			if(_g.get_currentArticle().content == "" || _g.get_currentArticle().content == null) return Client.utils.articleLinkToIframe(_g.get_currentArticle().link);
-			return Client.utils.parseMarkdown(_g.get_currentArticle().content);
+			if(_g.get_currentArticle().content == "" || _g.get_currentArticle().content == null) return ClientUtils.articleLinkToIframe(_g.get_currentArticle().link);
+			return ClientUtils.parseMarkdown(_g.get_currentArticle().content);
 		}, canUpdateArticle : function() {
 			return Permissions.canUpdateArticles(_g.get_currentArticle());
 		}, canRemoveArticle : function() {
@@ -736,11 +661,11 @@ templates_ViewArticle.prototype = {
 		Template.viewArticle.events({ 'click #va-btn-edit-article' : function(evt) {
 			var id = _g.get_currentArticle()._id;
 			var title = _g.get_currentArticle().title;
-			title = Shared.utils.formatUrlName(title);
+			title = SharedUtils.formatUrlName(title);
 			var path = FlowRouter.path("/articles/edit/:id/:name",{ id : id, name : title});
 			FlowRouter.go(path);
 		}, 'click #va-btn-remove-article' : function(evt1) {
-			Client.utils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
+			ClientUtils.confirm(Configs.client.texts.prompt_ra_msg,Configs.client.texts.prompt_ra_cancel,Configs.client.texts.prompt_ra_confirm,function() {
 				model_Articles.collection.remove({ _id : _g.get_currentArticle()._id});
 				FlowRouter.go("/");
 			});
@@ -750,7 +675,7 @@ templates_ViewArticle.prototype = {
 		var _g = this;
 		var articleId;
 		if(args != null) articleId = args.articleId; else articleId = null;
-		if(articleId == null) Client.utils.notifyError("Article not found");
+		if(articleId == null) ClientUtils.notifyError("Article not found");
 		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
 		}});
@@ -761,9 +686,10 @@ templates_ViewArticle.prototype = {
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = function() { };
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.main = function() {
+	SharedUtils.profileStart("preload");
 	Shared.init();
 	window.tags = model_Tags.collection;
 	window.articles = model_Articles.collection;
@@ -814,8 +740,9 @@ Client.main = function() {
 		return "<div class=\"icon-tooltip\" data-toggle=\"tooltip\" data-placement=\"" + placement + "\" title=\"" + tip + "\">\r\n\t\t\t\t<span class=\"glyphicon glyphicon-question-sign\"></span>\r\n\t\t\t</div>";
 	});
 	Template.registerHelper("formatUrlName",function(name) {
-		return Shared.utils.formatUrlName(name);
+		return SharedUtils.formatUrlName(name);
 	});
+	AutoForm.debug();
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -826,7 +753,78 @@ Client.checkPreload = function() {
 		++_g;
 		if(reqs[req] != true) return;
 	}
+	SharedUtils.profileEnd("preload");
 	FlowRouter.initialize();
+};
+var ClientUtils = function() { };
+ClientUtils.__name__ = true;
+ClientUtils.retrieveArticleCount = function(selector) {
+	if(selector == null) selector = { };
+	var id = SharedUtils.objectToHash(selector);
+	Meteor.subscribe("countArticles",id,selector);
+	return Counts.get("countArticles" + id);
+};
+ClientUtils.parseMarkdown = function(raw) {
+	if(raw == null) return null; else return marked(raw);
+};
+ClientUtils.handleServerError = function(error) {
+	if(js_Boot.__instanceof(error.error,Int)) toastr.error(error.details,error.reason);
+};
+ClientUtils.notifyInfo = function(msg,title) {
+	toastr.info(msg,title);
+};
+ClientUtils.notifyError = function(msg,title) {
+	toastr.error(msg,title);
+};
+ClientUtils.notifySuccess = function(msg,title) {
+	toastr.success(msg,title);
+};
+ClientUtils.notifyWarning = function(msg,title) {
+	toastr.warning(msg,title);
+};
+ClientUtils.alert = function(msg,label,callback) {
+	bootbox.alert(msg,label,callback);
+};
+ClientUtils.prompt = function(msg,callback) {
+	bootbox.prompt(msg,callback);
+};
+ClientUtils.confirm = function(msg,cancel,confirm,callback) {
+	bootbox.dialog({ message : msg, buttons : { cancel : { label : cancel, className : "btn-default"}, confirm : { label : confirm, className : "btn-primary", callback : callback}}});
+};
+ClientUtils.capitalize = function(type) {
+	if(type == null || type.length == 0) return type;
+	var $final = "";
+	var split = type.split(" ");
+	var _g = 0;
+	while(_g < split.length) {
+		var s = split[_g];
+		++_g;
+		if($final.length > 0) $final += " ";
+		$final += HxOverrides.substr(s,0,1).toUpperCase() + HxOverrides.substr(s,1,null).toLowerCase();
+	}
+	return $final;
+};
+ClientUtils.articleLinkToIframe = function(link) {
+	if(link == null || link == "") return "";
+	if(link.indexOf("www.youtube.com") != -1 || link.indexOf("www.youtu.be") != -1) {
+		var ryoutube = new EReg("(?:watch\\?v=)(.+)","gi");
+		if(ryoutube.match(link)) try {
+			var res = ryoutube.matched(1);
+			var idx = res.indexOf("&");
+			if(idx >= 0) res = HxOverrides.substr(res,0,idx) + "?" + HxOverrides.substr(res,idx,null);
+			link = "https://www.youtube.com/embed/" + res;
+		} catch( e ) {
+			if (e instanceof js__$Boot_HaxeError) e = e.val;
+		}
+	} else if(link.indexOf("//try.haxe.org") != -1) {
+		var rtryhaxe = new EReg("(try.haxe.org/)#(.+)","gi");
+		if(rtryhaxe.match(link)) try {
+			link = "http://try.haxe.org/embed/" + rtryhaxe.matched(2);
+		} catch( e1 ) {
+			if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
+		}
+	}
+	return "<iframe class=\"va-article-frame\" src=\"" + link + "\" allowfullscreen></iframe>";
 };
 var Configs = function() { };
 Configs.__name__ = true;
@@ -893,7 +891,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = function() { };
+var Permissions = $hx_exports.Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -974,58 +972,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var SharedUtils = function() {
-};
-SharedUtils.__name__ = true;
-SharedUtils.prototype = {
-	objectToHash: function(o) {
-		var str = Std.string(o);
-		return haxe_crypto_Md5.encode(str);
-	}
-	,resolveTags: function(g) {
-		var tags = model_Tags.collection.find().fetch();
-		var resolved = [];
-		var _g = 0;
-		var _g1 = g.tags;
-		while(_g < _g1.length) {
-			var entry = _g1[_g];
-			++_g;
-			if(StringTools.startsWith(entry,"~")) {
-				var split = entry.split("/");
-				var reg = new EReg(split[1],split[2]);
-				var _g2 = 0;
-				while(_g2 < tags.length) {
-					var t = tags[_g2];
-					++_g2;
-					if(reg.match(t.name) && !Lambda.has(resolved,t.name) && t != g.mainTag) resolved.push(t.name);
-				}
-			} else {
-				var _g21 = 0;
-				while(_g21 < tags.length) {
-					var t1 = tags[_g21];
-					++_g21;
-					if(t1.name == entry && !Lambda.has(resolved,t1.name) && t1 != g.mainTag) {
-						resolved = [t1.name];
-						break;
-					}
-				}
-			}
-		}
-		resolved.sort(function(a,b) {
-			if(a < b) return -1;
-			if(a > b) return 1;
-			return 0;
-		});
-		return resolved;
-	}
-	,formatUrlName: function(name) {
-		name = StringTools.trim(name);
-		name = StringTools.replace(name," ","-");
-		return name;
-	}
-	,__class__: SharedUtils
-};
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -1036,6 +983,63 @@ Shared.init = function() {
 	model_Tags.collection.attachSchema(model_Tags.schema);
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
 	model_Reports.collection.attachSchema(model_Reports.schema);
+};
+var SharedUtils = $hx_exports.sharedUtils = function() { };
+SharedUtils.__name__ = true;
+SharedUtils.objectToHash = function(o) {
+	var str = Std.string(o);
+	return haxe_crypto_Md5.encode(str);
+};
+SharedUtils.resolveTags = function(g) {
+	var tags = model_Tags.collection.find().fetch();
+	var resolved = [];
+	var _g = 0;
+	var _g1 = g.tags;
+	while(_g < _g1.length) {
+		var entry = _g1[_g];
+		++_g;
+		if(StringTools.startsWith(entry,"~")) {
+			var split = entry.split("/");
+			var reg = new EReg(split[1],split[2]);
+			var _g2 = 0;
+			while(_g2 < tags.length) {
+				var t = tags[_g2];
+				++_g2;
+				if(reg.match(t.name) && !Lambda.has(resolved,t.name) && t != g.mainTag) resolved.push(t.name);
+			}
+		} else {
+			var _g21 = 0;
+			while(_g21 < tags.length) {
+				var t1 = tags[_g21];
+				++_g21;
+				if(t1.name == entry && !Lambda.has(resolved,t1.name) && t1 != g.mainTag) {
+					resolved = [t1.name];
+					break;
+				}
+			}
+		}
+	}
+	resolved.sort(function(a,b) {
+		if(a < b) return -1;
+		if(a > b) return 1;
+		return 0;
+	});
+	return resolved;
+};
+SharedUtils.formatUrlName = function(name) {
+	name = StringTools.trim(name);
+	name = StringTools.replace(name," ","-");
+	return name;
+};
+SharedUtils.profileStart = function(name) {
+	var value = new Date().getTime();
+	SharedUtils.profiler.set(name,value);
+};
+SharedUtils.profileEnd = function(name) {
+	if(SharedUtils.profiler.exists(name)) {
+		var elapsed = new Date().getTime() - SharedUtils.profiler.get(name);
+		console.log("profiler: finished " + name + " in " + elapsed + " ms");
+	}
 };
 var Std = function() { };
 Std.__name__ = true;
@@ -1069,6 +1073,8 @@ StringTools.trim = function(s) {
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
 };
+var haxe_IMap = function() { };
+haxe_IMap.__name__ = true;
 var haxe__$Int64__$_$_$Int64 = function(high,low) {
 	this.high = high;
 	this.low = low;
@@ -1248,6 +1254,36 @@ haxe_crypto_Md5.prototype = {
 		return [a,b,c,d];
 	}
 	,__class__: haxe_crypto_Md5
+};
+var haxe_ds_StringMap = function() {
+	this.h = { };
+};
+haxe_ds_StringMap.__name__ = true;
+haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
+haxe_ds_StringMap.prototype = {
+	set: function(key,value) {
+		if(__map_reserved[key] != null) this.setReserved(key,value); else this.h[key] = value;
+	}
+	,get: function(key) {
+		if(__map_reserved[key] != null) return this.getReserved(key);
+		return this.h[key];
+	}
+	,exists: function(key) {
+		if(__map_reserved[key] != null) return this.existsReserved(key);
+		return this.h.hasOwnProperty(key);
+	}
+	,setReserved: function(key,value) {
+		if(this.rh == null) this.rh = { };
+		this.rh["$" + key] = value;
+	}
+	,getReserved: function(key) {
+		if(this.rh == null) return null; else return this.rh["$" + key];
+	}
+	,existsReserved: function(key) {
+		if(this.rh == null) return false;
+		return this.rh.hasOwnProperty("$" + key);
+	}
+	,__class__: haxe_ds_StringMap
 };
 var haxe_io_Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] };
 haxe_io_Error.Blocked = ["Blocked",0];
@@ -1777,6 +1813,7 @@ var Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = { __name__ : ["Class"]};
 var Enum = { };
+var __map_reserved = {}
 var q = window.jQuery;
 var js = js || {}
 js.JQuery = q;
@@ -1791,7 +1828,6 @@ var ArrayBuffer = (Function("return typeof ArrayBuffer != 'undefined' ? ArrayBuf
 if(ArrayBuffer.prototype.slice == null) ArrayBuffer.prototype.slice = js_html_compat_ArrayBuffer.sliceImpl;
 var DataView = (Function("return typeof DataView != 'undefined' ? DataView : null"))() || js_html_compat_DataView;
 var Uint8Array = (Function("return typeof Uint8Array != 'undefined' ? Uint8Array : null"))() || js_html_compat_Uint8Array._new;
-Client.utils = new ClientUtils();
 Client.navbar = new templates_Navbar();
 Client.sidebar = new templates_SideBar();
 Client.listArticles = new templates_ListArticles();
@@ -1800,8 +1836,9 @@ Client.viewArticle = new templates_ViewArticle();
 Client.router = new Router();
 Client.reportModal = new templates_ReportModal();
 Client.preloadReqs = { tagGroups : false};
-Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+ClientUtils.articleCountSubs = [];
+Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
@@ -1809,7 +1846,7 @@ Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_dura
 	return "Showing results for <em>" + query + "</em> query";
 }, la_showing_ungrouped : "Showing ungrouped articles", la_tt_report : "Report spam or other issues with this article.", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Content ", na_label_tags : "Tags ", na_tt_links : "Url to the article web-page.\nRequired if not posting any content.", na_tt_contents : "Articles can provide only external link or only markdown content or both.", na_tt_tags : "Enter tags by pressing `comma` or `enter` keys.\nChars allowed : [a-zA-Z.0-9-_].\nTags are automatically converted to lowercase when storing.", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
-Shared.utils = new SharedUtils();
+SharedUtils.profiler = new haxe_ds_StringMap();
 haxe_io_FPHelper.i64tmp = (function($this) {
 	var $r;
 	var x = new haxe__$Int64__$_$_$Int64(0,0);
@@ -1824,4 +1861,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);

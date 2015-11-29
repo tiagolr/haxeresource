@@ -32,7 +32,7 @@ class SideBar {
 				
 				// resolve each group tags from tag names and regular expressions
 				for (g in groups) {
-					var resolved = Shared.utils.resolveTags(g);
+					var resolved = SharedUtils.resolveTags(g);
 					var final = new Array<{name:String, formattedName:String}>();
 					for (name in resolved) {
 						final.push( { name:name, formattedName:formatTagName(name) } ); // format name
@@ -58,7 +58,7 @@ class SideBar {
 					}
 				}
 				
-				return Client.utils.retrieveArticleCount( { tags: { '$nin':tagNames }} );
+				return ClientUtils.retrieveArticleCount( { tags: { '$nin':tagNames }} );
 			}
 		});
 		

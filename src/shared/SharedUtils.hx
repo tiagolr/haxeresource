@@ -12,15 +12,13 @@ using Lambda;
 #end
 class SharedUtils{
 
-	public function new() { }
-
-	public function objectToHash(o: { } ):String {
+	static public function objectToHash(o: { } ):String {
 		var str = Std.string(o);
 		return Md5.encode(str);
 	}
 	
 	// return tag names that belong to a TagGroup
-	public function resolveTags(g:TagGroup):Array<String> {
+	static public function resolveTags(g:TagGroup):Array<String> {
 		var tags = Tags.collection.find().fetch();
 		var resolved:Array<String> = new Array<String>();
 		
@@ -58,10 +56,24 @@ class SharedUtils{
 	/**
 	 * Replaces spaces with hyphens for url
 	 */
-	public function formatUrlName(name:String) {
+	static public function formatUrlName(name:String) {
 		name = StringTools.trim(name);
 		name =  StringTools.replace(name, ' ', '-');
 		return name;
 	}
+	
+	//#if debug
+	static var profiler:Map<String, Float> = new Map<String, Float>();
+	static public function profileStart(name:String) {
+		profiler.set(name, Date.now().getTime());
+	}
+	static public function profileEnd(name:String) {
+		if (profiler.exists(name)) {
+			var elapsed = Date.now().getTime() - profiler[name];
+			trace('profiler: finished $name in $elapsed ms');
+		}
+	}
+	//#end
+	
 	
 }

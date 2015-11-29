@@ -132,13 +132,13 @@ class ListArticles {
 			
 			totalCount: function () {
 				var s = searchMode == true ?  { "$text": { "$search": searchQuery }} : selector;
-				return Client.utils.retrieveArticleCount(s);
+				return ClientUtils.retrieveArticleCount(s);
 			},
 			
 			// return currentCount == totalCount
 			allEntriesLoaded: function() {
 				var s = searchMode == true ?  { "$text": { "$search": searchQuery }} : selector;
-				return Articles.collection.find(selector, { limit:limit } ).count() == Client.utils.retrieveArticleCount(s);
+				return Articles.collection.find(selector, { limit:limit } ).count() == ClientUtils.retrieveArticleCount(s);
 			},
 			
 			sortAgeUp: function() { return sort.created == 1;},
@@ -259,7 +259,7 @@ class ListArticles {
 				
 				Meteor.call('toggleArticleVote', articleId, function (error) {
 					if (error != null) {
-						Client.utils.handleServerError(error);
+						ClientUtils.handleServerError(error);
 					}
 				});
 			},
@@ -267,7 +267,7 @@ class ListArticles {
 			'click #la-btn-view-article':function (event:JqEvent) {
 				var articleId = event.currentTarget.getAttribute('data-article');
 				var title = event.currentTarget.getAttribute('data-title');
-				title = Shared.utils.formatUrlName(title);
+				title = SharedUtils.formatUrlName(title);
 				
 				var path = FlowRouter.path('/articles/view/:id/:name', { id:articleId, name:title } );
 				FlowRouter.go(path);
@@ -276,7 +276,7 @@ class ListArticles {
 			'click #la-btn-edit-article':function (event:JqEvent) {
 				var articleId = event.currentTarget.getAttribute('data-article');
 				var title = event.currentTarget.getAttribute('data-title');
-				title = Shared.utils.formatUrlName(title);
+				title = SharedUtils.formatUrlName(title);
 				
 				var path = FlowRouter.path('/articles/edit/:id/:name', { id:articleId, name:title } );
 				FlowRouter.go(path);
@@ -285,7 +285,7 @@ class ListArticles {
 			'click #la-btn-remove-article':function (event:JqEvent) {
 				var articleId = event.currentTarget.getAttribute('data-article');
 				
-				Client.utils.confirm(
+				ClientUtils.confirm(
 					Configs.client.texts.prompt_ra_msg,
 					Configs.client.texts.prompt_ra_cancel,
 					Configs.client.texts.prompt_ra_confirm, 
@@ -298,12 +298,12 @@ class ListArticles {
 			'click #la-btn-transfer-article':function (event:JqEvent) {
 				var articleId = event.currentTarget.getAttribute('data-article');
 				
-				Client.utils.prompt('Enter new owner username', function (username) {
+				ClientUtils.prompt('Enter new owner username', function (username) {
 					if (username != null) {
 						trace('transfering $articleId to $username');
 						Meteor.call('transferArticle', articleId , username, function(error:meteor.Error, result) {
 							if (error != null) {
-								Client.utils.handleServerError(error);
+								ClientUtils.handleServerError(error);
 							}
 						});
 					}

@@ -30,7 +30,6 @@ import templates.ViewArticle;
 #end
 class Client {
 	
-	static public var utils:ClientUtils = new ClientUtils();
 	static public var navbar:Navbar = new Navbar();
 	static public var sidebar:SideBar = new SideBar();
 	static public var listArticles:ListArticles = new ListArticles();
@@ -44,6 +43,7 @@ class Client {
 	}
 	
 	public static function main() {
+		SharedUtils.profileStart('preload');
 		Shared.init();
 		
 		// expose collections
@@ -136,7 +136,7 @@ class Client {
 		});
 		
 		Template.registerHelper('formatUrlName', function(name:String) {
-			return Shared.utils.formatUrlName(name);
+			return SharedUtils.formatUrlName(name);
 		});
 		
 		//-----------------------------------------------
@@ -157,6 +157,7 @@ class Client {
 		}
 		
 		// all requirements are ready
+		SharedUtils.profileEnd('preload');
 		FlowRouter.initialize();
 	}
 

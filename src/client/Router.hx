@@ -93,7 +93,7 @@ class Router {
 				var g:TagGroup = TagGroups.collection.findOne( { name:groupName } );
 				
 				if (g != null) {
-					var tags = Shared.utils.resolveTags(g);
+					var tags = SharedUtils.resolveTags(g);
 					tags.push(g.mainTag);
 					
 					var selector = { tags: { '$in':tags }};
@@ -132,7 +132,7 @@ class Router {
 					FlowRouter.go('/');
 				}
 				#else 
-				Client.utils.notifyError('Indexed search is disabled in the database.');
+				ClientUtils.notifyError('Indexed search is disabled in the database.');
 				FlowRouter.go('/');
 				#end
 			}
@@ -160,7 +160,7 @@ class Router {
 		
 		FlowRouter.notFound = {
 			action: function() {
-				Client.utils.notifyInfo('Url not found, redirecting to homepage');
+				ClientUtils.notifyInfo('Url not found, redirecting to homepage');
 				FlowRouter.go('/');
 			}
 		};
