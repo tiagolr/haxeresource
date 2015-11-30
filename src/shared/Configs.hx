@@ -49,6 +49,7 @@ class Configs {
 		#end
 		page_fadein_duration : 500,
 		page_fadeout_duration : 0,
+		min_iframe_height: 250,
 		
 		texts: {
 			la_showing_all: 	'Showing <em>all</em> articles',

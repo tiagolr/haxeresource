@@ -1,4 +1,5 @@
 package templates;
+import js.Browser;
 import js.JQuery;
 import meteor.Meteor;
 import meteor.packages.FlowRouter;
@@ -39,7 +40,7 @@ class ViewArticle {
 				// only link is set, return iframe
 				if (currentArticle.content == "" || currentArticle.content == null) {
 					return ClientUtils.articleLinkToIframe(currentArticle.link);
-				} 
+				}
 				
 				// contents are set, return parsed markdown
 				return ClientUtils.parseMarkdown(currentArticle.content);
@@ -75,8 +76,10 @@ class ViewArticle {
 						FlowRouter.go('/');
 					}
 				);
-			}
+			},
+			
 		});
+		
 	}
 	
 	public function show(args:Dynamic) {
@@ -92,7 +95,33 @@ class ViewArticle {
 			}
 			// TODO on error
 		});
-		page.show(Configs.client.page_fadein_duration);
+		page.show(Configs.client.page_fadein_duration, resizeIframe);
+		
+	}
+	
+	function resizeIframe() {
+		// calculate iframe height if it exists
+		if (new JQuery('.va-article-frame') != null) {
+			// viewport height
+			var vh = Math.max(Browser.document.documentElement.clientHeight, Browser.window.innerHeight); 
+			// page height
+			var ph = new JQuery('#page-content-wrapper').outerHeight();
+			// content height
+			var ch = new JQuery('#va-content').height();
+			
+			//
+			var freeSpace = vh;
+			if (vh > 480 ) { 
+				// if viewport height is high enough resize iframe
+				// TODO - remove hardcoded 50 px for navbar, 5px for iframe bottom 
+				freeSpace = vh - (ph - ch) - 50 - 5; 
+			}
+			
+			trace(freeSpace + '  ' + vh);
+			new JQuery('.va-article-frame').css('height', freeSpace + 'px');
+			
+			// TODO on resize - if frame <
+		}
 	}
 	
 	public function hide() {

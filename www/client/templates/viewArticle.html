@@ -1,40 +1,42 @@
 <template name="viewArticle">
-	{{#with article}}
-		<h1 id="va-title">{{title}}</h1>
-		<p id="va-description">{{description}}</p>
-		<div id="va-preview-author">
-			{{#if content}}
-			Author:
-			{{else}}
-			Posted by:
+	<div id="va-info">
+		{{#with article}}
+			<h1 id="va-title">{{title}}</h1>
+			<p id="va-description">{{description}}</p>
+			<div id="va-preview-author">
+				{{#if content}}
+				Author:
+				{{else}}
+				Posted by:
+				{{/if}}
+				 <a href="#">{{username}}</a>
+			</div>
+			{{#if link}}
+			<div id="va-preview-article-link" style="">
+				Link: <a href="{{link}}" target="_blank">{{link}}</a>
+			</div>
 			{{/if}}
-			 <a href="#">{{username}}</a>
-		</div>
-		{{#if link}}
-		<div id="va-preview-article-link" style="">
-			Link: <a href="{{link}}" target="_blank">{{link}}</a>
-		</div>
-		{{/if}}
-		{{#if tags}}
-		<div id="la-preview-tags" style="padding-top:5px">
-			<small>
-				Tags: 
-				{{#each tags}}
-				<a href="/articles/tag/{{this}}">{{this}} </a> 
-				{{/each}}
-			</small>
-		</div>
-		{{/if}}
-		<div style="padding-top:10px">
-			{{#if canUpdateArticle}}
-				<button id="va-btn-edit-article" type="button" class="btn btn-success" style="display:inline">Edit</button>
+			{{#if tags}}
+			<div id="la-preview-tags" style="padding-top:5px">
+				<small>
+					Tags: 
+					{{#each tags}}
+					<a href="/articles/tag/{{this}}">{{this}} </a> 
+					{{/each}}
+				</small>
+			</div>
 			{{/if}}
-			{{#if canRemoveArticle}}
-				<button id="va-btn-remove-article" type="button" class="btn btn-danger" style="display:inline">Remove</button>
-			{{/if}}
-		</div>
-		<hr>
-	{{/with}}
+			<div style="padding-top:10px">
+				{{#if canUpdateArticle}}
+					<button id="va-btn-edit-article" type="button" class="btn btn-success" style="display:inline">Edit</button>
+				{{/if}}
+				{{#if canRemoveArticle}}
+					<button id="va-btn-remove-article" type="button" class="btn btn-danger" style="display:inline">Remove</button>
+				{{/if}}
+			</div>
+			<hr>
+		{{/with}}
+	</div>
 
 	<div id="va-content">{{{parsedContent}}}</div>
 

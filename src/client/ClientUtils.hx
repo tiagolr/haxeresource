@@ -1,9 +1,12 @@
 import haxe.Constraints.Function;
+import js.Browser;
+import js.JQuery;
 import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.FlowRouter;
 import meteor.packages.PublishCounts;
 import meteor.packages.Toastr;
+import templates.ViewArticle;
 
 using Lambda;
 /**
@@ -131,6 +134,6 @@ class ClientUtils{
 			}
 		}
 		
-		return '<iframe class="va-article-frame" src="$link" allowfullscreen></iframe>';
+		return '<iframe class="va-article-frame" src="$link" frameBorder="0" allowfullscreen></iframe>';
 	}
 }

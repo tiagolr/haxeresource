@@ -1,4 +1,5 @@
 import haxe.DynamicAccess;
+import haxe.Timer;
 import js.Browser;
 import js.JQuery;
 import meteor.Accounts;
@@ -46,7 +47,7 @@ class Client {
 	static function set_preload(val:Bool):Bool { Session.set('preloading', val); return val; }
 	
 	public static function main() {
-		preload = true;
+		startPreload();
 		Shared.init();
 		
 		// expose collections
@@ -151,6 +152,18 @@ class Client {
 		#if debug
 		AutoForm.debug();
 		#end
+	}
+	
+	static private function startPreload() {
+		preload = true;
+		Timer.delay(function () {
+			if (preload) {
+				var el = new JQuery('#preload-refresh');
+				if (el != null) {
+					el.fadeIn(2000);
+				}
+			}
+		}, 4500);
 	}
 	
 	static function checkPreload() {

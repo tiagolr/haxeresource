@@ -1,4 +1,4 @@
-(function (console) { "use strict";
+(function (console, $hx_exports) { "use strict";
 var $estr = function() { return js_Boot.__string_rec(this,''); };
 function $extend(from, fields) {
 	function Inherit() {} Inherit.prototype = from; var proto = new Inherit();
@@ -499,8 +499,8 @@ Router.prototype = {
 			} else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/search",{ action : function() {
-			ClientUtils.notifyError("Indexed search is disabled in the database.");
-			FlowRouter.go("/");
+			var query = FlowRouter.getQueryParam("q");
+			if(query != null && query != "") _g.showListArticles({ isSearch : true, selector : null, query : query, caption : Configs.client.texts.la_showing_query(query)}); else FlowRouter.go("/");
 		}});
 		FlowRouter.route("/articles/new",{ action : function() {
 			_g.showPage("newArticle");
@@ -679,14 +679,25 @@ templates_ViewArticle.prototype = {
 		Meteor.subscribe("articles",{ _id : articleId},null,{ onReady : function() {
 			_g.set_currentArticle(model_Articles.collection.findOne({ _id : articleId}));
 		}});
-		this.get_page().show(Configs.client.page_fadein_duration);
+		this.get_page().show(Configs.client.page_fadein_duration,$bind(this,this.resizeIframe));
+	}
+	,resizeIframe: function() {
+		if(js.JQuery(".va-article-frame") != null) {
+			var vh = Math.max(window.document.documentElement.clientHeight,window.innerHeight);
+			var ph = js.JQuery("#page-content-wrapper").outerHeight();
+			var ch = js.JQuery("#va-content").height();
+			var freeSpace = vh;
+			if(vh > 480) freeSpace = vh - (ph - ch) - 50 - 5;
+			console.log(freeSpace + "  " + vh);
+			js.JQuery(".va-article-frame").css("height",freeSpace + "px");
+		}
 	}
 	,hide: function() {
 		this.get_page().hide(Configs.client.page_fadeout_duration);
 	}
 	,__class__: templates_ViewArticle
 };
-var Client = function() { };
+var Client = $hx_exports.Client = function() { };
 Client.__name__ = true;
 Client.get_preload = function() {
 	return Session.get("preloading");
@@ -696,7 +707,7 @@ Client.set_preload = function(val) {
 	return val;
 };
 Client.main = function() {
-	Client.set_preload(true);
+	Client.startPreload();
 	Shared.init();
 	window.tags = model_Tags.collection;
 	window.articles = model_Articles.collection;
@@ -752,6 +763,16 @@ Client.main = function() {
 	Template.registerHelper("preload",function() {
 		return Client.get_preload();
 	});
+	AutoForm.debug();
+};
+Client.startPreload = function() {
+	Client.set_preload(true);
+	haxe_Timer.delay(function() {
+		if(Client.get_preload()) {
+			var el = js.JQuery("#preload-refresh");
+			if(el != null) el.fadeIn(2000);
+		}
+	},4500);
 };
 Client.checkPreload = function() {
 	var reqs = Client.preloadReqs;
@@ -833,7 +854,7 @@ ClientUtils.articleLinkToIframe = function(link) {
 			if (e1 instanceof js__$Boot_HaxeError) e1 = e1.val;
 		}
 	}
-	return "<iframe class=\"va-article-frame\" src=\"" + link + "\" allowfullscreen></iframe>";
+	return "<iframe class=\"va-article-frame\" src=\"" + link + "\" frameBorder=\"0\" allowfullscreen></iframe>";
 };
 var Configs = function() { };
 Configs.__name__ = true;
@@ -900,7 +921,7 @@ Lambda.has = function(it,elt) {
 	return false;
 };
 Math.__name__ = true;
-var Permissions = function() { };
+var Permissions = $hx_exports.Permissions = function() { };
 Permissions.__name__ = true;
 Permissions.requireLogin = function() {
 	if(!Permissions.isLogged()) {
@@ -981,7 +1002,7 @@ Reflect.fields = function(o) {
 	}
 	return a;
 };
-var Shared = function() { };
+var Shared = $hx_exports.Shared = function() { };
 Shared.__name__ = true;
 Shared.init = function() {
 	new model_TagGroups();
@@ -993,7 +1014,7 @@ Shared.init = function() {
 	model_TagGroups.collection.attachSchema(model_TagGroups.schema);
 	model_Reports.collection.attachSchema(model_Reports.schema);
 };
-var SharedUtils = function() { };
+var SharedUtils = $hx_exports.sharedUtils = function() { };
 SharedUtils.__name__ = true;
 SharedUtils.objectToHash = function(o) {
 	var str = Std.string(o);
@@ -1091,6 +1112,31 @@ var haxe__$Int64__$_$_$Int64 = function(high,low) {
 haxe__$Int64__$_$_$Int64.__name__ = true;
 haxe__$Int64__$_$_$Int64.prototype = {
 	__class__: haxe__$Int64__$_$_$Int64
+};
+var haxe_Timer = function(time_ms) {
+	var me = this;
+	this.id = setInterval(function() {
+		me.run();
+	},time_ms);
+};
+haxe_Timer.__name__ = true;
+haxe_Timer.delay = function(f,time_ms) {
+	var t = new haxe_Timer(time_ms);
+	t.run = function() {
+		t.stop();
+		f();
+	};
+	return t;
+};
+haxe_Timer.prototype = {
+	stop: function() {
+		if(this.id == null) return;
+		clearInterval(this.id);
+		this.id = null;
+	}
+	,run: function() {
+	}
+	,__class__: haxe_Timer
 };
 var haxe_crypto_Md5 = function() {
 };
@@ -1846,8 +1892,8 @@ Client.router = new Router();
 Client.reportModal = new templates_ReportModal();
 Client.preloadReqs = { tagGroups : false};
 ClientUtils.articleCountSubs = [];
-Configs.shared = { host : "http://haxeresource.meteor.com", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
-Configs.client = { page_size : 10, page_fadein_duration : 500, page_fadeout_duration : 0, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
+Configs.shared = { host : "http://localhost:3000", error : { not_authorized : { code : 401, reason : "Not authorized", details : "User must be logged."}, no_permission : { code : 403, reason : "No permission", details : "User does not have the required permissions."}, args_article_not_found : { code : 412, reason : "Invalid argument : article", details : "Article not found."}, args_user_not_found : { code : 412, reason : "Invalid argument : user", details : "User not found."}, args_bad_permissions : { code : 412, reason : "Invalid argument : permissions", details : "Invalid permission types"}}};
+Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_duration : 0, min_iframe_height : 250, texts : { la_showing_all : "Showing <em>all</em> articles", la_showing_tag : function(tag) {
 	return "Showing <em>" + tag + "</em> tag";
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
@@ -1870,4 +1916,4 @@ model_TagGroups.NAME = "tag_groups";
 model_Tags.NAME = "tags";
 model_Tags.MAX_CHARS = 30;
 Client.main();
-})(typeof console != "undefined" ? console : {log:function(){}});
+})(typeof console != "undefined" ? console : {log:function(){}}, typeof window != "undefined" ? window : exports);
