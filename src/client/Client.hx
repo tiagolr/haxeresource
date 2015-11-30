@@ -1,14 +1,13 @@
 import haxe.DynamicAccess;
 import js.Browser;
-import js.html.Event;
 import js.JQuery;
 import meteor.Accounts;
-import meteor.Error;
 import meteor.Meteor;
 import meteor.packages.AutoForm;
 import meteor.packages.FlowRouter;
 import meteor.packages.SimpleSchema;
 import meteor.packages.Toastr;
+import meteor.Session;
 import meteor.Template;
 import model.Articles;
 import model.Reports;
@@ -42,8 +41,12 @@ class Client {
 		tagGroups:false,
 	}
 	
+	static var preload(get, set):Bool;
+	static function get_preload():Bool { return Session.get('preloading'); }
+	static function set_preload(val:Bool):Bool { Session.set('preloading', val); return val; }
+	
 	public static function main() {
-		SharedUtils.profileStart('preload');
+		preload = true;
 		Shared.init();
 		
 		// expose collections
@@ -139,9 +142,11 @@ class Client {
 			return SharedUtils.formatUrlName(name);
 		});
 		
+		Template.registerHelper('preload', function() {
+			return preload;
+		});
+		
 		//-----------------------------------------------
-		
-		
 		
 		#if debug
 		AutoForm.debug();
@@ -156,8 +161,9 @@ class Client {
 			}
 		}
 		
+		preload = false;
+		
 		// all requirements are ready
-		SharedUtils.profileEnd('preload');
 		FlowRouter.initialize();
 	}
 
