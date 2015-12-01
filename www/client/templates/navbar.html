@@ -12,16 +12,15 @@
 
 		<a class="navbar-brand" href="/">Haxe Resource <small>(beta)</small></a>
 
-		<ul class="nav navbar-nav" id="navbar-left-items">
-			{{#if currentUser}}
-			<a id="btn-newArticle" class="btn btn-success navbar-btn" href="/articles/new">
-				<span class="glyphicon glyphicon-file"></span> New Article
-			</a>
-			{{/if}}
-		</ul>
-
-
 		<ul class="nav navbar-nav navbar-right" id="navbar-right-items">
+			{{#if currentUser}}
+			<li>
+				<button id="btn-new-article" class="btn btn-success navbar-btn">
+					<span class="glyphicon glyphicon-file"></span> 
+					<!-- <div class="hide-mobile">New Article</div> -->
+				</button>
+			</li>
+			{{/if}}
 			{{> loginButtons}}
 			<li id='nav-dropdown-more' class="dropdown">
 				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">More <span class="caret"></span></a>
@@ -31,6 +30,15 @@
 				</ul>
 			</li>
 		</ul>
+
+		<form id="nav-search-form" class="navbar-form">
+        	<div class="form-group" style="display:inline;">
+        	  <div class="input-group" style="display:table;">
+        	    <input class="form-control" name="search" placeholder="Search Here" autocomplete="off" autofocus="autofocus" type="text">
+        	    <span class="input-group-addon" style="width:1%;"><span class="glyphicon glyphicon-search"></span></span>
+        	  </div>
+        	</div>
+      	</form>
 
 	</nav>
 

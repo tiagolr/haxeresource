@@ -136,4 +136,5 @@ class ClientUtils{
 		
 		return '<iframe class="va-article-frame" src="$link" frameBorder="0" allowfullscreen></iframe>';
 	}
+
 }

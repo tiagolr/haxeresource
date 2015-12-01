@@ -78,6 +78,17 @@ class ViewArticle {
 				);
 			},
 			
+			'click #va-btn-toggle-info': function (_) {
+				
+				var info:JQuery = new JQuery('#va-info');
+				if (info != null) {
+					info.slideToggle(500, function () {
+						resizeIframe();
+					});
+				}
+				
+			},
+			
 		});
 		
 	}
@@ -104,23 +115,21 @@ class ViewArticle {
 		if (new JQuery('.va-article-frame') != null) {
 			// viewport height
 			var vh = Math.max(Browser.document.documentElement.clientHeight, Browser.window.innerHeight); 
+			
 			// page height
 			var ph = new JQuery('#page-content-wrapper').outerHeight();
+			
 			// content height
 			var ch = new JQuery('#va-content').height();
 			
-			//
-			var freeSpace = vh;
+			var newHeight = vh;
 			if (vh > 480 ) { 
 				// if viewport height is high enough resize iframe
-				// TODO - remove hardcoded 50 px for navbar, 5px for iframe bottom 
-				freeSpace = vh - (ph - ch) - 50 - 5; 
+				// hardcoded 50 px for navbar and 5px for iframe bottom
+				newHeight = vh - (ph - ch) - 50 - 5; 
 			}
 			
-			trace(freeSpace + '  ' + vh);
-			new JQuery('.va-article-frame').css('height', freeSpace + 'px');
-			
-			// TODO on resize - if frame <
+			new JQuery('.va-article-frame').css('height', newHeight + 'px');
 		}
 	}
 	

@@ -123,10 +123,6 @@ templates_ListArticles.prototype = {
 			_g.set_sort(_g.get_sort().title == null?{ title : 1}:{ title : _g.get_sort().title * -1});
 		}, 'click #btnSortByVotes' : function(_3) {
 			_g.set_sort(_g.get_sort().votes == null?{ votes : 1}:{ votes : _g.get_sort().votes * -1});
-		}, 'submit #la-search-form' : function(evt) {
-			var query = js.JQuery("#la-search-form input").val();
-			if(query != null && query != "") FlowRouter.go("/articles/search",{ },{ q : query}); else FlowRouter.go("/");
-			return false;
 		}});
 		Template.articleRow.helpers({ hasUserVote : function(id) {
 			if(Meteor.userId() == null) return false;
@@ -206,6 +202,12 @@ templates_Navbar.prototype = {
 	init: function() {
 		Template.navbar.events({ 'click #btn-toggle-sidebar' : function(evt) {
 			js.JQuery("#wrapper").toggleClass("toggled");
+		}, 'click #btn-new-article' : function(evt1) {
+			FlowRouter.go("/articles/new");
+		}, 'submit #nav-search-form' : function(evt2) {
+			var query = js.JQuery("#nav-search-form input").val();
+			if(query != null && query != "") FlowRouter.go("/articles/search",{ },{ q : query}); else FlowRouter.go("/");
+			return false;
 		}});
 	}
 	,__class__: templates_Navbar
@@ -669,6 +671,11 @@ templates_ViewArticle.prototype = {
 				model_Articles.collection.remove({ _id : _g.get_currentArticle()._id});
 				FlowRouter.go("/");
 			});
+		}, 'click #va-btn-toggle-info' : function(_) {
+			var info = js.JQuery("#va-info");
+			if(info != null) info.slideToggle(500,function() {
+				_g.resizeIframe();
+			});
 		}});
 	}
 	,show: function(args) {
@@ -686,10 +693,9 @@ templates_ViewArticle.prototype = {
 			var vh = Math.max(window.document.documentElement.clientHeight,window.innerHeight);
 			var ph = js.JQuery("#page-content-wrapper").outerHeight();
 			var ch = js.JQuery("#va-content").height();
-			var freeSpace = vh;
-			if(vh > 480) freeSpace = vh - (ph - ch) - 50 - 5;
-			console.log(freeSpace + "  " + vh);
-			js.JQuery(".va-article-frame").css("height",freeSpace + "px");
+			var newHeight = vh;
+			if(vh > 480) newHeight = vh - (ph - ch) - 50 - 5;
+			js.JQuery(".va-article-frame").css("height",newHeight + "px");
 		}
 	}
 	,hide: function() {
@@ -1898,7 +1904,7 @@ Configs.client = { page_size : 3, page_fadein_duration : 500, page_fadeout_durat
 }, la_showing_group : function(group) {
 	return "Showing <em>" + group + "</em> group";
 }, la_showing_query : function(query) {
-	return "Showing results for <em>" + query + "</em> query";
+	return "Showing results for <em>" + query + "</em> ";
 }, la_showing_ungrouped : "Showing ungrouped articles", la_tt_report : "Report spam or other issues with this article.", na_placeh_title : "Title goes here", na_placeh_desc : "Brief description about the subject", na_placeh_link : "ex: http://www.site.com/article", na_placeh_content : "Text contents using github flavored markdown", na_placeh_tags : "", na_label_title : "Title*", na_label_desc : "Description*", na_label_link : "Link ", na_label_content : "Content ", na_label_tags : "Tags ", na_tt_links : "Url to the article web-page.\nRequired if not posting any content.", na_tt_contents : "Articles can provide only external link or only markdown content or both.", na_tt_tags : "Enter tags by pressing `comma` or `enter` keys.\nChars allowed : [a-zA-Z.0-9-_].\nTags are automatically converted to lowercase when storing.", na_a_featured : "Select from existing grouped tags.", na_fmodal_title : "Select Featured Tags", na_fmodal_desc : "Select one or more existing tags to make your article visible.", prompt_ra_msg : "The article will be permanently deleted, are you sure?", prompt_ra_confirm : "Yes", prompt_ra_cancel : "No"}};
 Permissions.roles = { ADMIN : "ADMIN", MODERATOR : "MODERATOR"};
 SharedUtils.profiler = new haxe_ds_StringMap();

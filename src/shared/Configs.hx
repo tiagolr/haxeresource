@@ -55,7 +55,7 @@ class Configs {
 			la_showing_all: 	'Showing <em>all</em> articles',
 			la_showing_tag: 	function(tag:String) return 'Showing <em>$tag</em> tag',
 			la_showing_group: 	function(group:String) return 'Showing <em>$group</em> group',
-			la_showing_query:	function(query:String) return 'Showing results for <em>$query</em> query',
+			la_showing_query:	function(query:String) return 'Showing results for <em>$query</em> ',
 			la_showing_ungrouped: "Showing ungrouped articles",
 			la_tt_report:		"Report spam or other issues with this article.",
 			na_placeh_title:	"Title goes here",

@@ -184,18 +184,6 @@ class ListArticles {
 					{ votes : sort.votes * -1 };
 			},
 			
-			'submit #la-search-form' : function(evt:JqEvent) {
-				var query = new JQuery('#la-search-form input').val();
-				
-				if (query != null && query != "") {
-					FlowRouter.go('/articles/search',{}, {q:query});
-				} else {
-					FlowRouter.go('/'); // show all articles
-				}
-				
-				return false;
-			}
-			
 		});
 		
 		Template.get('articleRow').helpers( {
